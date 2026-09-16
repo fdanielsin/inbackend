@@ -1,0 +1,21 @@
+# Go
+*.o
+*.a
+*.so
+.DS_Store
+app
+dist/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
