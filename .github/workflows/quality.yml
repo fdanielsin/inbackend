@@ -1,0 +1,52 @@
+name: Backend Code Quality
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'inbackend/**'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'inbackend/**'
+
+jobs:
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+      
+      - name: Run vet
+        run: cd inbackend && go vet ./...
+      
+      - name: Run go fmt check
+        run: cd inbackend && if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then echo "Code needs formatting"; gofmt -s -d .; exit 1; fi
+      
+      - name: Run go mod tidy check
+        run: cd inbackend && go mod tidy && git diff --exit-code go.mod go.sum || (echo "go.mod/go.sum not tidy"; exit 1)
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy security scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'inbackend'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
