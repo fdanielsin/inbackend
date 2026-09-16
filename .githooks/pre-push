@@ -1,0 +1,17 @@
+#!/bin/bash
+# Pre-push hook for Go backend
+# Runs tests before pushing to ensure quality
+
+set -e
+
+echo "🧪 Running pre-push tests..."
+
+# Run unit tests
+echo "  • Running unit tests..."
+if ! go test -short ./...; then
+  echo "❌ Unit tests failed"
+  exit 1
+fi
+
+echo "✅ All tests passed, safe to push"
+exit 0
