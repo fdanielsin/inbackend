@@ -1,0 +1,156 @@
+name: PR Validation (feature branches)
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'inbackend/**'
+      - '.github/workflows/pr.yml'
+
+jobs:
+  lint-and-format:
+    runs-on: ubuntu-latest
+    name: Lint & Format Check
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: inbackend/go.sum
+      
+      - name: Format check (gofmt)
+        run: |
+          cd inbackend
+          if ! gofmt -l . | grep -q .; then
+            echo "✅ Code is properly formatted"
+          else
+            echo "❌ Code formatting issues found:"
+            gofmt -l .
+            exit 1
+          fi
+      
+      - name: Vet check
+        run: cd inbackend && go vet ./...
+      
+      - name: Mod tidy check
+        run: |
+          cd inbackend
+          go mod tidy
+          if ! git diff --exit-code go.mod go.sum; then
+            echo "❌ go.mod or go.sum is not tidy"
+            exit 1
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    name: Unit Tests
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: inbackend/go.sum
+      
+      - name: Run unit tests
+        run: cd inbackend && go test -v -race -coverprofile=coverage.out ./...
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./inbackend/coverage.out
+          flags: backend-unit
+          fail_ci_if_error: false
+
+  build:
+    runs-on: ubuntu-latest
+    name: Build Verification
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: inbackend/go.sum
+      
+      - name: Build
+        run: cd inbackend && CGO_ENABLED=1 go build -o app .
+        env:
+          GOOS: linux
+          GOARCH: amd64
+      
+      - name: Check binary size
+        run: |
+          SIZE=$(stat -f%z inbackend/app 2>/dev/null || stat -c%s inbackend/app 2>/dev/null)
+          SIZE_MB=$((SIZE / 1024 / 1024))
+          echo "Binary size: ${SIZE_MB}MB"
+          if [ $SIZE_MB -gt 100 ]; then
+            echo "❌ Binary too large (> 100MB)"
+            exit 1
+          fi
+
+  security:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run Trivy scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: 'inbackend'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+      
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+        if: always()
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Integration Tests (with Docker)
+    
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.23'
+          cache: true
+          cache-dependency-path: inbackend/go.sum
+      
+      - name: Run integration tests
+        run: cd inbackend && go test -v -race -tags=integration ./tests/...
+        env:
+          DATABASE_URL: 'postgres://postgres:postgres@localhost:5432/testdb?sslmode=disable'
+          TEST_DB: 'true'
