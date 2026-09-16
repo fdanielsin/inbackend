@@ -25,6 +25,9 @@ jobs:
         ports:
           - 5432:5432
     
+    env:
+      DATABASE_URL: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
+    
     steps:
       - uses: actions/checkout@v4
       
@@ -60,18 +63,12 @@ jobs:
       
       - name: Run integration tests
         run: go test -v -race ./tests/...
-        env:
-          DATABASE_URL: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
       
       - name: Run E2E tests
         run: go test -v -race -run E2E ./tests/...
-        env:
-          DATABASE_URL: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
       
       - name: Generate coverage report
         run: go test -coverprofile=coverage.out ./...
-        env:
-          DATABASE_URL: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
       
       - name: Upload coverage
         uses: codecov/codecov-action@v3
