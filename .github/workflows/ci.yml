@@ -1,28 +1,165 @@
-name: Backend CI/CD
+name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, develop, feature/**, bugfix/**]
   pull_request:
     branches: [main, develop]
 
 jobs:
-  build:
+  # ===== STAGE 1: LINT & FORMAT =====
+  lint:
+    name: "1️⃣ Lint & Format Check"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Go
-        uses: actions/setup-go@v4
+      - uses: actions/setup-go@v4
         with:
           go-version: '1.21'
-      - name: Format check
+          cache: false
+      
+      - name: Format check (gofmt)
         run: |
           if [ -n "$(gofmt -s -l .)" ]; then
-            echo "Code not formatted"
+            echo "❌ Code not formatted"
             gofmt -s -d .
             exit 1
           fi
-      - name: Build
-        run: go build -v -o app .
-      - name: Test
-        run: go test -v -short ./internal/...
+          echo "✅ Format OK"
+      
+      - name: Vet check
+        run: go vet ./... && echo "✅ Vet OK"
+      
+      - name: Module tidy check
+        run: |
+          go mod tidy
+          if [ -n "$(git diff go.mod go.sum)" ]; then
+            echo "❌ go.mod/go.sum out of sync"
+            exit 1
+          fi
+          echo "✅ Modules OK"
+      
+      - name: Golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --timeout=5m
+
+  # ===== STAGE 2: BUILD =====
+  build:
+    name: "2️⃣ Build"
+    runs-on: ubuntu-latest
+    needs: [lint]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: false
+      
+      - name: Download dependencies
+        run: go mod download
+      
+      - name: Build application
+        run: |
+          go build -v -o app .
+          echo "✅ Build successful"
+
+  # ===== STAGE 3: TEST =====
+  test:
+    name: "3️⃣ Tests"
+    runs-on: ubuntu-latest
+    needs: [build]
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
+    env:
+      DATABASE_URL: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
+    
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: false
+      
+      - name: Download dependencies
+        run: go mod download
+      
+      - name: "3.1 - Unit Tests"
+        run: |
+          go test -v -race -short ./internal/... -timeout 30s
+          echo "✅ Unit tests passed"
+      
+      - name: "3.2 - Integration Tests"
+        run: |
+          go test -v -race ./tests/... -timeout 60s -run '!E2E'
+          echo "✅ Integration tests passed"
+      
+      - name: "3.3 - E2E Tests"
+        run: |
+          go test -v -race ./tests/... -timeout 60s -run 'E2E'
+          echo "✅ E2E tests passed"
+      
+      - name: Generate coverage report
+        run: |
+          go test -coverprofile=coverage.out ./...
+          echo "✅ Coverage generated"
+      
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.out
+          flags: backend
+          fail_ci_if_error: false
+
+  # ===== STAGE 4: DEVELOP REVIEW (merge to develop) =====
+  develop-review:
+    name: "4️⃣ Develop Review"
+    runs-on: ubuntu-latest
+    needs: [lint, build, test]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    steps:
+      - name: "✅ Ready to merge to develop"
+        run: echo "All tests passed! Ready for develop branch."
+
+  # ===== STAGE 5: PRODUCTION (main only) =====
+  production:
+    name: "5️⃣ Production Build"
+    runs-on: ubuntu-latest
+    needs: [lint, build, test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
+        with:
+          go-version: '1.21'
+          cache: false
+      
+      - name: Download dependencies
+        run: go mod download
+      
+      - name: Build production binary
+        run: CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o app .
+      
+      - name: Build Docker image
+        run: docker build -t inbackend:latest -t inbackend:${{ github.sha }} .
+      
+      - name: Security scan with Trivy
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image inbackend:latest || true
+      
+      - name: "✅ Production ready"
+        run: echo "Production build complete and ready for deployment"
