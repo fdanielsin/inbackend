@@ -11,30 +11,14 @@ services:
       - ENV=${ENV:-development}
     volumes:
       - .:/app
+      - app_data:/root
     command: go run main.go
     networks:
       - innetwork
-
-  # Optional: PostgreSQL database for future use
-  postgres:
-    image: postgres:16-alpine
-    container_name: inbackend-db
-    environment:
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-      POSTGRES_DB: ${DB_NAME:-inbackend}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - innetwork
-    profiles:
-      - with-db
 
 networks:
   innetwork:
     driver: bridge
 
 volumes:
-  postgres_data:
+  app_data:
