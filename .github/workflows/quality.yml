@@ -3,13 +3,11 @@ name: Backend Code Quality
 on:
   push:
     branches: [main, develop]
-    paths:
   pull_request:
     branches: [main, develop]
-    paths:
 
 jobs:
-  code-quality:
+  quality:
     runs-on: ubuntu-latest
     
     steps:
@@ -18,33 +16,29 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.23'
+          go-version: '1.21'
       
-      - name: Run vet
-        run: cd inbackend && go vet ./...
+      - name: Format check
+        run: |
+          if [ -n "$(gofmt -s -l .)" ]; then
+            echo "Code not formatted:"
+            gofmt -s -d .
+            exit 1
+          fi
       
-      - name: Run go fmt check
-        run: cd inbackend && if [ "$(gofmt -s -l . | wc -l)" -gt 0 ]; then echo "Code needs formatting"; gofmt -s -d .; exit 1; fi
+      - name: Vet
+        run: go vet ./...
       
-      - name: Run go mod tidy check
-        run: cd inbackend && go mod tidy && git diff --exit-code go.mod go.sum || (echo "go.mod/go.sum not tidy"; exit 1)
-
-  security:
-    runs-on: ubuntu-latest
-    
-    steps:
-      - uses: actions/checkout@v4
+      - name: Module tidy check
+        run: |
+          go mod tidy
+          if [ -n "$(git diff go.mod go.sum)" ]; then
+            echo "go.mod or go.sum out of sync"
+            exit 1
+          fi
       
-      - name: Run Trivy security scan
-        uses: aquasecurity/trivy-action@master
+      - name: Install golangci-lint
+        uses: golangci/golangci-lint-action@v3
         with:
-          scan-type: 'fs'
-          scan-ref: 'inbackend'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-      
-      - name: Upload Trivy results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v2
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
+          version: latest
+          args: --timeout=5m

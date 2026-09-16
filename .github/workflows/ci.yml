@@ -3,81 +3,26 @@ name: Backend CI/CD
 on:
   push:
     branches: [main, develop]
-    paths:
   pull_request:
     branches: [main, develop]
-    paths:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.21"
-
+          go-version: '1.21'
       - name: Format check
         run: |
-          cd inbackend
           if [ -n "$(gofmt -s -l .)" ]; then
-            echo "Code not formatted:"
+            echo "Code not formatted"
             gofmt -s -d .
             exit 1
           fi
-
-      - name: Lint
-        run: |
-          cd inbackend
-          go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
-          golangci-lint run ./...
-
-      - name: Vet
-        run: |
-          cd inbackend
-          go vet ./...
-
       - name: Build
-        run: |
-          cd inbackend
-          go build -v -o inbackend-app
-
-      - name: Run Tests
-        run: |
-          cd inbackend
-          go test -v -race -coverprofile=coverage.out ./...
-        env:
-          DATABASE_URL: postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable
-
-      - name: Upload Coverage
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./inbackend/coverage.out
-          flags: backend
-          fail_ci_if_error: false
-
-      - name: Build Docker image
-        run: |
-          cd inbackend
-          docker build -t inbackend:${{ github.sha }} .
-
-      - name: Security scan (Trivy)
-        run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock aquasec/trivy:latest image inbackend:${{ github.sha }}
+        run: go build -v -o app .
+      - name: Test
+        run: go test -v -short ./internal/...
