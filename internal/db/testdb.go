@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -55,10 +56,22 @@ func StartTestContainer(ctx context.Context) (*TestDB, error) {
 }
 
 func (t *TestDB) Stop(ctx context.Context) error {
-	return t.Container.Terminate(ctx)
+	if t.Container != nil {
+		return t.Container.Terminate(ctx)
+	}
+	return nil
 }
 
 func SetupTestDB(ctx context.Context) (*TestDB, error) {
+	// Check if DATABASE_URL is set (used by GitHub Actions service)
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
+		return &TestDB{
+			Container: nil, // No container to stop
+			DSN:       dbURL,
+		}, nil
+	}
+
+	// Otherwise, use Testcontainers
 	testDB, err := StartTestContainer(ctx)
 	if err != nil {
 		return nil, err
