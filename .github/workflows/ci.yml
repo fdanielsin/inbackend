@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -52,7 +52,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -73,7 +73,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -91,7 +91,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -129,7 +129,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -169,7 +169,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -209,7 +209,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - uses: actions/setup-go@v4
+      - uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
           cache: false
@@ -233,7 +233,7 @@ jobs:
           fi
       
       - name: "Upload to Codecov"
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage.out
           flags: backend
