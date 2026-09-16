@@ -4,8 +4,6 @@ on:
   pull_request:
     branches: [main, develop]
     paths:
-      - 'inbackend/**'
-      - '.github/workflows/pr.yml'
 
 jobs:
   lint-and-format:

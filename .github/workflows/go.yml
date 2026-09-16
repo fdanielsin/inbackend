@@ -3,13 +3,8 @@ name: Backend Go CI/CD
 on:
   push:
     branches: [main, develop]
-    paths:
-      - 'inbackend/**'
-      - '.github/workflows/go.yml'
   pull_request:
     branches: [main, develop]
-    paths:
-      - 'inbackend/**'
 
 jobs:
   build:
@@ -71,7 +66,6 @@ jobs:
         uses: golangci/golangci-lint-action@v3
         with:
           version: latest
-          working-directory: inbackend
           args: --timeout=5m
 
   docker:
