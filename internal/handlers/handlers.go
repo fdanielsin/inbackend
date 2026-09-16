@@ -159,3 +159,30 @@ func (h *Handler) DeleteTask(c echo.Context) error {
 		Message: "Task deleted",
 	})
 }
+
+func (h *Handler) GetStats(c echo.Context) error {
+	var userCount int64
+	var taskCount int64
+
+	if result := h.DB.Model(&models.User{}).Count(&userCount); result.Error != nil {
+		return c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   result.Error.Error(),
+		})
+	}
+
+	if result := h.DB.Model(&models.Task{}).Count(&taskCount); result.Error != nil {
+		return c.JSON(http.StatusInternalServerError, models.APIResponse{
+			Success: false,
+			Error:   result.Error.Error(),
+		})
+	}
+
+	return c.JSON(http.StatusOK, models.APIResponse{
+		Success: true,
+		Data: map[string]interface{}{
+			"users": userCount,
+			"tasks": taskCount,
+		},
+	})
+}
