@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+echo "🔍 Running pre-commit checks (backend)..."
+
+# Format check
+if [ -n "$(gofmt -s -l .)" ]; then
+  echo "❌ Code not formatted. Running gofmt..."
+  gofmt -s -w .
+  echo "✅ Formatted. Please stage changes and commit again."
+  exit 1
+fi
+
+# Vet check
+echo "🔎 Running go vet..."
+go vet ./...
+
+echo "✅ Pre-commit checks passed"
+exit 0

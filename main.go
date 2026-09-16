@@ -46,6 +46,7 @@ func main() {
 	e.POST("/api/v1/tasks", h.CreateTask)
 	e.PUT("/api/v1/tasks/:id", h.UpdateTask)
 	e.DELETE("/api/v1/tasks/:id", h.DeleteTask)
+	e.GET("/api/v1/stats", h.GetStats)
 
 	port := os.Getenv("PORT")
 	if port == "" {

@@ -24,6 +24,10 @@ func TestE2EUserWorkflow(t *testing.T) {
 	database, testDB := setupTestDB(t, ctx)
 	defer testDB.Stop(ctx)
 
+	// Clean up existing data
+	database.Exec("DELETE FROM tasks")
+	database.Exec("DELETE FROM users")
+
 	h := &handlers.Handler{DB: database}
 	e := echo.New()
 
@@ -54,7 +58,7 @@ func TestE2EUserWorkflow(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rec.Code)
 
 	// 3. Get specific user
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/users/:id", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/users/1", nil)
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetParamNames("id")
@@ -83,7 +87,7 @@ func TestE2EUserWorkflow(t *testing.T) {
 	assert.Equal(t, http.StatusCreated, rec.Code)
 
 	// 5. Get user's tasks
-	req = httptest.NewRequest(http.MethodGet, "/api/v1/users/:id/tasks", nil)
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/users/1/tasks", nil)
 	rec = httptest.NewRecorder()
 	c = e.NewContext(req, rec)
 	c.SetParamNames("id")
