@@ -24,6 +24,10 @@ func TestE2EUserWorkflow(t *testing.T) {
 	database, testDB := setupTestDB(t, ctx)
 	defer testDB.Stop(ctx)
 
+	// Clean up existing data
+	database.Exec("DELETE FROM tasks")
+	database.Exec("DELETE FROM users")
+
 	h := &handlers.Handler{DB: database}
 	e := echo.New()
 
