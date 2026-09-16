@@ -99,7 +99,7 @@ jobs:
       - name: "Check for vulnerable dependencies"
         run: |
           go install github.com/sonatype-nexus-community/nancy@latest
-          go list -json -m all | nancy sleuth || echo "⚠️  Dependencies checked (non-blocking)"
+          go list -json -m all | nancy sleuth || true
           echo "✅ Security check completed"
 
   # ========== STAGE 5: INTEGRATION TESTS ==========
