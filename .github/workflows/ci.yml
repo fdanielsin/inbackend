@@ -1,4 +1,4 @@
-name: CI/CD Pipeline
+name: CI/CD Pipeline (Phase 1-5: SQLite)
 
 on:
   push:
@@ -13,7 +13,7 @@ env:
 jobs:
   # ========== STAGE 1: LINT & FORMAT ==========
   lint:
-    name: "1️⃣ Lint & Format"
+    name: "Lint & Format"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -46,7 +46,7 @@ jobs:
 
   # ========== STAGE 2: BUILD ==========
   build:
-    name: "2️⃣ Build"
+    name: "Build"
     runs-on: ubuntu-latest
     needs: [lint]
     steps:
@@ -67,7 +67,7 @@ jobs:
 
   # ========== STAGE 3: UNIT TESTS ==========
   unit-tests:
-    name: "3️⃣ Unit Tests"
+    name: "Unit Tests"
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -80,12 +80,12 @@ jobs:
       
       - name: "Run unit tests"
         run: |
-          go test -v -race -short ./internal/... -timeout 30s
+          go test -v -race -short ./tests/units/... -timeout 30s
           echo "✅ Unit tests passed"
 
   # ========== STAGE 4: SECURITY CHECK ==========
   security:
-    name: "4️⃣ Security Check"
+    name: "Security Check"
     runs-on: ubuntu-latest
     needs: [build]
     steps:
@@ -102,30 +102,12 @@ jobs:
           go list -json -m all | nancy sleuth || true
           echo "✅ Security check completed"
 
-  # ========== STAGE 5: INTEGRATION TESTS ==========
+  # ========== STAGE 5: INTEGRATION TESTS (SQLite) ==========
   integration-tests:
-    name: "5️⃣ Integration Tests"
+    name: "Integration Tests"
     runs-on: ubuntu-latest
     needs: [unit-tests, security]
     
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    
-    env:
-      DATABASE_URL: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
-    
     steps:
       - uses: actions/checkout@v4
       
@@ -137,35 +119,17 @@ jobs:
       - name: "Download dependencies"
         run: go mod download
       
-      - name: "Run integration tests"
+      - name: "Run integration tests (SQLite)"
         run: |
-          go test -v -race ./tests/... -timeout 60s -run '!E2E'
+          go test -v -race ./tests/integration/... -timeout 60s
           echo "✅ Integration tests passed"
 
-  # ========== STAGE 6: E2E TESTS ==========
+  # ========== STAGE 6: E2E TESTS (SQLite) ==========
   e2e-tests:
-    name: "6️⃣ E2E Tests"
+    name: "E2E Tests"
     runs-on: ubuntu-latest
     needs: [integration-tests]
     
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    
-    env:
-      DATABASE_URL: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
-    
     steps:
       - uses: actions/checkout@v4
       
@@ -177,34 +141,16 @@ jobs:
       - name: "Download dependencies"
         run: go mod download
       
-      - name: "Run E2E tests"
+      - name: "Run E2E tests (SQLite)"
         run: |
-          go test -v -race ./tests/... -timeout 60s -run 'E2E'
+          go test -v -race ./tests/e2e/... -timeout 60s
           echo "✅ E2E tests passed"
 
   # ========== STAGE 7: COVERAGE CHECK ==========
   coverage:
-    name: "7️⃣ Coverage Check"
+    name: "Coverage Check"
     runs-on: ubuntu-latest
     needs: [e2e-tests]
-    
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-    
-    env:
-      DATABASE_URL: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
     
     steps:
       - uses: actions/checkout@v4
@@ -219,7 +165,7 @@ jobs:
       
       - name: "Generate coverage report"
         run: |
-          go test -coverprofile=coverage.out -covermode=atomic ./...
+          go test -coverprofile=coverage.out -covermode=atomic ./tests/...
           go tool cover -func=coverage.out | tail -1
       
       - name: "Check coverage threshold"
@@ -227,7 +173,8 @@ jobs:
           COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
           echo "Coverage: ${COVERAGE}%"
           if (( $(echo "$COVERAGE < ${{ env.COVERAGE_THRESHOLD }}" | bc -l) )); then
-            echo "⚠️  Coverage ${COVERAGE}% is below threshold of ${{ env.COVERAGE_THRESHOLD }}% (non-blocking)"
+            echo "❌ Coverage ${COVERAGE}% is below threshold of ${{ env.COVERAGE_THRESHOLD }}%"
+            exit 1
           else
             echo "✅ Coverage check passed (${COVERAGE}%)"
           fi
@@ -241,7 +188,7 @@ jobs:
 
   # ========== FINAL: SUMMARY ==========
   summary:
-    name: "✅ All Checks Passed"
+    name: "All Checks Passed"
     runs-on: ubuntu-latest
     needs: [lint, build, unit-tests, security, integration-tests, e2e-tests, coverage]
     if: always()

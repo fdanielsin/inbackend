@@ -17,11 +17,11 @@ Cette documentation est la source de référence pour le backend Go.
 
 ## Infrastructure & Développement
 
-- **CI/CD Pipeline** : [`CI_CD_PIPELINE.md`](../CI_CD_PIPELINE.md) — 7-stages complet
+- **CI/CD Pipeline** : [`CI_CD_PIPELINE.md`](./CI_CD_PIPELINE.md) — 7-stages opérationnel
+- **CI/CD Phases** : [`CI_CD_PHASES.md`](./CI_CD_PHASES.md) — Évolution: Phase 1-5 (SQLite) → Phase 6+ (PostgreSQL)
 - **Commandes locales** : Voir [`Makefile`](../Makefile)
   - `make test` : tous les tests
   - `make test-unit` : tests unitaires
-  - `make docker-compose up` : PostgreSQL pour intégration
   - `make lint` / `make fmt` : qualité code
 
 ## Références globales
