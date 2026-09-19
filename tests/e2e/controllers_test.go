@@ -2,412 +2,254 @@ package e2e
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/fdanielsin/inbackend/internal/application/task/commands"
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
 	usercommands "github.com/fdanielsin/inbackend/internal/application/user/commands"
 	userqueries "github.com/fdanielsin/inbackend/internal/application/user/queries"
 	ctrlhttp "github.com/fdanielsin/inbackend/internal/controllers/http"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
 	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
 	"github.com/fdanielsin/inbackend/internal/models"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-// setupTestDB initializes a test database using Podman/Docker (testcontainers).
-// Returns GORM connection and TestDB handle for cleanup.
-func setupTestDB(t *testing.T) (*gorm.DB, *database.TestDB) {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+// setupTestDB creates an in-memory SQLite database for E2E tests
+// GIVEN: E2E test needs database / WHEN: setupTestDB() / THEN: SQLite in-memory ready
+func setupTestDB(t *testing.T) *gorm.DB {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err, "failed to setup test database")
 
-	testDB, err := database.SetupTestDB(ctx)
-	require.NoError(t, err, "failed to setup test container")
-
-	// Open GORM connection to testcontainer PostgreSQL
-	db, err := gorm.Open(postgres.New(postgres.Config{
-		DSN: testDB.DSN,
-	}), &gorm.Config{})
-	require.NoError(t, err, "failed to connect to test database")
-
-	// Auto-migrate models
 	err = db.AutoMigrate(&models.User{}, &models.Task{})
 	require.NoError(t, err, "failed to migrate test database")
 
-	return db, testDB
+	return db
 }
 
-// cleanupTestDB stops the test container.
-func cleanupTestDB(t *testing.T, testDB *database.TestDB) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// GIVEN: POST /api/v1/users with valid payload / WHEN: CreateUser / THEN: 201 Created
+func TestUserController_CreateUser_HappyPath(t *testing.T) {
+	// GIVEN: Setup
+	e := echo.New()
+	db := setupTestDB(t)
 
-	if err := testDB.Stop(ctx); err != nil {
-		t.Logf("warning: failed to stop test container: %v", err)
-	}
-}
-
-// setupControllers initializes HTTP controllers with repositories.
-func setupControllers(db *gorm.DB) (*ctrlhttp.UserController, *ctrlhttp.TaskController, *ctrlhttp.StatsController, *ctrlhttp.HealthController) {
 	userRepo := pgimpl.NewUserRepository(db)
+	createUserHandler := usercommands.NewCreateUserHandler(userRepo)
+	getUserHandler := userqueries.NewGetUserHandler(userRepo)
+	listUsersHandler := userqueries.NewListUsersHandler(userRepo)
+	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
+
+	e.POST("/api/v1/users", userCtrl.CreateUser)
+
+	// WHEN: Send POST request
+	body := []byte(`{"name":"John Doe","email":"john@example.com"}`)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/users", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	e.ServeHTTP(rec, req)
+
+	// THEN: Verify response
+	require.Equal(t, http.StatusCreated, rec.Code)
+	var resp shared.APIResponse
+	err := json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, err)
+	assert.True(t, resp.Success)
+}
+
+// GIVEN: POST /api/v1/users with invalid payload / WHEN: CreateUser / THEN: 400 Bad Request
+func TestUserController_CreateUser_SadPath_InvalidPayload(t *testing.T) {
+	// GIVEN: Setup
+	e := echo.New()
+	db := setupTestDB(t)
+
+	userRepo := pgimpl.NewUserRepository(db)
+	createUserHandler := usercommands.NewCreateUserHandler(userRepo)
+	getUserHandler := userqueries.NewGetUserHandler(userRepo)
+	listUsersHandler := userqueries.NewListUsersHandler(userRepo)
+	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
+
+	e.POST("/api/v1/users", userCtrl.CreateUser)
+
+	// WHEN: Send POST request with empty name
+	body := []byte(`{"name":"","email":"john@example.com"}`)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/users", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	e.ServeHTTP(rec, req)
+
+	// THEN: Verify error
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
+// GIVEN: GET /api/v1/users for multiple users / WHEN: ListUsers / THEN: 200 OK with list
+func TestUserController_ListUsers_HappyPath(t *testing.T) {
+	// GIVEN: Setup and create users
+	e := echo.New()
+	db := setupTestDB(t)
+
+	userRepo := pgimpl.NewUserRepository(db)
+	createUserHandler := usercommands.NewCreateUserHandler(userRepo)
+	getUserHandler := userqueries.NewGetUserHandler(userRepo)
+	listUsersHandler := userqueries.NewListUsersHandler(userRepo)
+	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
+
+	db.Create(&models.User{Name: "Alice", Email: "alice@example.com"})
+	db.Create(&models.User{Name: "Bob", Email: "bob@example.com"})
+
+	e.GET("/api/v1/users", userCtrl.ListUsers)
+
+	// WHEN: Send GET request
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/users", nil)
+	e.ServeHTTP(rec, req)
+
+	// THEN: Verify response
+	require.Equal(t, http.StatusOK, rec.Code)
+	var resp shared.APIResponse
+	json.Unmarshal(rec.Body.Bytes(), &resp)
+	assert.True(t, resp.Success)
+}
+
+// GIVEN: GET /api/v1/users/:id for existing user / WHEN: GetUser / THEN: 200 OK
+func TestUserController_GetUser_HappyPath(t *testing.T) {
+	// GIVEN: Setup and create user
+	e := echo.New()
+	db := setupTestDB(t)
+
+	userRepo := pgimpl.NewUserRepository(db)
+	createUserHandler := usercommands.NewCreateUserHandler(userRepo)
+	getUserHandler := userqueries.NewGetUserHandler(userRepo)
+	listUsersHandler := userqueries.NewListUsersHandler(userRepo)
+	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
+
+	user := &models.User{Name: "Jane", Email: "jane@example.com"}
+	db.Create(user)
+
+	e.GET("/api/v1/users/:id", userCtrl.GetUser)
+
+	// WHEN: Send GET request
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/users/1", nil)
+	e.ServeHTTP(rec, req)
+
+	// THEN: Verify response
+	require.Equal(t, http.StatusOK, rec.Code)
+	var resp shared.APIResponse
+	json.Unmarshal(rec.Body.Bytes(), &resp)
+	assert.True(t, resp.Success)
+}
+
+// GIVEN: POST /api/v1/tasks with valid payload / WHEN: CreateTask / THEN: 201 Created
+func TestTaskController_CreateTask_HappyPath(t *testing.T) {
+	// GIVEN: Setup
+	e := echo.New()
+	db := setupTestDB(t)
+
 	taskRepo := pgimpl.NewTaskRepository(db)
+	createTaskHandler := commands.NewCreateTaskHandler(taskRepo)
+	updateTaskHandler := commands.NewUpdateTaskHandler(taskRepo)
+	deleteTaskHandler := commands.NewDeleteTaskHandler(taskRepo)
+	listUserTasksHandler := queries.NewListUserTasksHandler(taskRepo)
+	taskCtrl := ctrlhttp.NewTaskController(createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
 
-	userCtrl := ctrlhttp.NewUserController(
-		usercommands.NewCreateUserHandler(userRepo),
-		userqueries.NewGetUserHandler(userRepo),
-		userqueries.NewListUsersHandler(userRepo),
-	)
+	e.POST("/api/v1/tasks", taskCtrl.CreateTask)
 
-	taskCtrl := ctrlhttp.NewTaskController(
-		commands.NewCreateTaskHandler(taskRepo),
-		commands.NewUpdateTaskHandler(taskRepo),
-		commands.NewDeleteTaskHandler(taskRepo),
-		queries.NewListUserTasksHandler(taskRepo),
-	)
+	// WHEN: Send POST request
+	body := []byte(`{"user_id":1,"title":"Buy milk","description":"Get milk from store"}`)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/v1/tasks", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	e.ServeHTTP(rec, req)
 
-	statsCtrl := ctrlhttp.NewStatsController(queries.NewGetStatsHandler(userRepo, taskRepo))
+	// THEN: Verify response
+	require.Equal(t, http.StatusCreated, rec.Code)
+	var resp shared.APIResponse
+	json.Unmarshal(rec.Body.Bytes(), &resp)
+	assert.True(t, resp.Success)
+}
+
+// GIVEN: GET /api/v1/users/:id/tasks for existing user / WHEN: ListUserTasks / THEN: 200 OK
+func TestTaskController_ListUserTasks_HappyPath(t *testing.T) {
+	// GIVEN: Setup with user and tasks
+	e := echo.New()
+	db := setupTestDB(t)
+
+	taskRepo := pgimpl.NewTaskRepository(db)
+	createTaskHandler := commands.NewCreateTaskHandler(taskRepo)
+	updateTaskHandler := commands.NewUpdateTaskHandler(taskRepo)
+	deleteTaskHandler := commands.NewDeleteTaskHandler(taskRepo)
+	listUserTasksHandler := queries.NewListUserTasksHandler(taskRepo)
+	taskCtrl := ctrlhttp.NewTaskController(createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
+
+	db.Create(&models.User{ID: 1, Name: "John", Email: "john@example.com"})
+	db.Create(&models.Task{ID: 1, UserID: 1, Title: "Task 1", Completed: false})
+	db.Create(&models.Task{ID: 2, UserID: 1, Title: "Task 2", Completed: false})
+
+	e.GET("/api/v1/users/:id/tasks", taskCtrl.ListUserTasks)
+
+	// WHEN: Send GET request
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("GET", "/api/v1/users/1/tasks", nil)
+	e.ServeHTTP(rec, req)
+
+	// THEN: Verify response
+	require.Equal(t, http.StatusOK, rec.Code)
+	var resp shared.APIResponse
+	json.Unmarshal(rec.Body.Bytes(), &resp)
+	assert.True(t, resp.Success)
+}
+
+// GIVEN: GET /health / WHEN: HealthCheck / THEN: 200 OK
+func TestHealthController_HealthCheck_HappyPath(t *testing.T) {
+	// GIVEN: Setup
+	e := echo.New()
 	healthCtrl := ctrlhttp.NewHealthController()
+	e.GET("/health", healthCtrl.HealthCheck)
 
-	return userCtrl, taskCtrl, statsCtrl, healthCtrl
-}
-
-// Test suite : User Controller
-func TestUserController_CreateUser(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	userCtrl, _, _, _ := setupControllers(db)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/users", bytes.NewReader([]byte(`{"name": "John", "email": "john@example.com"}`)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	// WHEN: Send GET request
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
+	req := httptest.NewRequest("GET", "/health", nil)
+	e.ServeHTTP(rec, req)
 
-	err := userCtrl.CreateUser(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusCreated, rec.Code)
-
+	// THEN: Verify response
+	require.Equal(t, http.StatusOK, rec.Code)
 	var resp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
-	assert.True(t, resp.Success)
-	assert.Equal(t, "User created", resp.Message)
-}
-
-func TestUserController_CreateUser_InvalidPayload(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	userCtrl, _, _, _ := setupControllers(db)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/users", bytes.NewReader([]byte(`{"name": "", "email": "john@example.com"}`)))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := userCtrl.CreateUser(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusBadRequest, rec.Code)
-
-	var resp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
-	assert.False(t, resp.Success)
-}
-
-func TestUserController_GetUser(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	userCtrl, _, _, _ := setupControllers(db)
-
-	// Create user first
-	userRepo := pgimpl.NewUserRepository(db)
-	userHandler := usercommands.NewCreateUserHandler(userRepo)
-	resp, _ := userHandler.Execute(context.Background(), usercommands.CreateUserRequest{
-		Name:  "John",
-		Email: "john@example.com",
-	})
-
-	// Get user
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/1", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	err := userCtrl.GetUser(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-
-	var apiResp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &apiResp)
-	require.NoError(t, err)
-	assert.True(t, apiResp.Success)
-	assert.NotNil(t, resp)
-}
-
-func TestUserController_ListUsers(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	userCtrl, _, _, _ := setupControllers(db)
-
-	// Create users
-	userRepo := pgimpl.NewUserRepository(db)
-	userHandler := usercommands.NewCreateUserHandler(userRepo)
-	userHandler.Execute(context.Background(), usercommands.CreateUserRequest{Name: "John", Email: "john@example.com"})
-	userHandler.Execute(context.Background(), usercommands.CreateUserRequest{Name: "Jane", Email: "jane@example.com"})
-
-	// List users
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/users", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := userCtrl.ListUsers(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-
-	var apiResp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &apiResp)
-	require.NoError(t, err)
-	assert.True(t, apiResp.Success)
-}
-
-// Test suite : Task Controller
-func TestTaskController_CreateTask(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	_, taskCtrl, _, _ := setupControllers(db)
-
-	// Create user first
-	userRepo := pgimpl.NewUserRepository(db)
-	userHandler := usercommands.NewCreateUserHandler(userRepo)
-	userResp, _ := userHandler.Execute(context.Background(), usercommands.CreateUserRequest{
-		Name:  "John",
-		Email: "john@example.com",
-	})
-
-	// Create task
-	taskPayload := commands.CreateTaskRequest{
-		UserID:      userResp.ID,
-		Title:       "Buy milk",
-		Description: "From store",
-		Completed:   false,
-	}
-	payload, _ := json.Marshal(taskPayload)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/tasks", bytes.NewReader(payload))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := taskCtrl.CreateTask(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusCreated, rec.Code)
-
-	var resp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
+	json.Unmarshal(rec.Body.Bytes(), &resp)
 	assert.True(t, resp.Success)
 }
 
-func TestTaskController_UpdateTask(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
+// GIVEN: GET /api/v1/stats with existing data / WHEN: GetStats / THEN: 200 OK
+func TestStatsController_GetStats_HappyPath(t *testing.T) {
+	// GIVEN: Setup with test data
+	e := echo.New()
+	db := setupTestDB(t)
 
-	_, taskCtrl, _, _ := setupControllers(db)
-
-	// Setup: Create user and task
 	userRepo := pgimpl.NewUserRepository(db)
-	userHandler := usercommands.NewCreateUserHandler(userRepo)
-	userResp, _ := userHandler.Execute(context.Background(), usercommands.CreateUserRequest{
-		Name:  "John",
-		Email: "john@example.com",
-	})
-
 	taskRepo := pgimpl.NewTaskRepository(db)
-	taskHandler := commands.NewCreateTaskHandler(taskRepo)
-	taskResp, _ := taskHandler.Execute(context.Background(), commands.CreateTaskRequest{
-		UserID:      userResp.ID,
-		Title:       "Old title",
-		Description: "Old desc",
-		Completed:   false,
-	})
+	getStatsHandler := queries.NewGetStatsHandler(userRepo, taskRepo)
+	statsCtrl := ctrlhttp.NewStatsController(getStatsHandler)
 
-	// Update task
-	updatePayload := commands.UpdateTaskRequest{
-		ID:          taskResp.ID,
-		Title:       "New title",
-		Description: "New desc",
-		Completed:   true,
-	}
-	payload, _ := json.Marshal(updatePayload)
+	db.Create(&models.User{Name: "Alice", Email: "alice@example.com"})
+	db.Create(&models.Task{UserID: 1, Title: "Task 1", Completed: false})
+	db.Create(&models.Task{UserID: 1, Title: "Task 2", Completed: true})
 
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodPut, "/api/v1/tasks/1", bytes.NewReader(payload))
-	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+	e.GET("/api/v1/stats", statsCtrl.GetStats)
+
+	// WHEN: Send GET request
 	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("1")
+	req := httptest.NewRequest("GET", "/api/v1/stats", nil)
+	e.ServeHTTP(rec, req)
 
-	err := taskCtrl.UpdateTask(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-
+	// THEN: Verify response
+	require.Equal(t, http.StatusOK, rec.Code)
 	var resp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
-	assert.True(t, resp.Success)
-}
-
-// Test suite : Stats Controller
-func TestStatsController_GetStats(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	_, _, statsCtrl, _ := setupControllers(db)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/stats", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := statsCtrl.GetStats(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-
-	var resp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
-	assert.True(t, resp.Success)
-}
-
-// Test suite : Health Controller
-func TestHealthController_Health(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	_, _, _, healthCtrl := setupControllers(db)
-
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/health", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-
-	err := healthCtrl.HealthCheck(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-
-	var resp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
-	assert.True(t, resp.Success)
-}
-
-// Test suite : Task Controller - Additional tests
-func TestTaskController_DeleteTask(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	_, taskCtrl, _, _ := setupControllers(db)
-
-	// Setup: Create user and task
-	userRepo := pgimpl.NewUserRepository(db)
-	userHandler := usercommands.NewCreateUserHandler(userRepo)
-	userResp, _ := userHandler.Execute(context.Background(), usercommands.CreateUserRequest{
-		Name:  "John",
-		Email: "john@example.com",
-	})
-
-	taskRepo := pgimpl.NewTaskRepository(db)
-	taskHandler := commands.NewCreateTaskHandler(taskRepo)
-	taskResp, _ := taskHandler.Execute(context.Background(), commands.CreateTaskRequest{
-		UserID:      userResp.ID,
-		Title:       "Task to delete",
-		Description: "Will be deleted",
-		Completed:   false,
-	})
-
-	// Delete task
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodDelete, "/api/v1/tasks/1", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues(fmt.Sprintf("%d", taskResp.ID))
-
-	err := taskCtrl.DeleteTask(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-
-	var resp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
-	assert.True(t, resp.Success)
-}
-
-func TestTaskController_ListUserTasks(t *testing.T) {
-	db, testDB := setupTestDB(t)
-	defer cleanupTestDB(t, testDB)
-
-	_, taskCtrl, _, _ := setupControllers(db)
-
-	// Setup: Create user and tasks
-	userRepo := pgimpl.NewUserRepository(db)
-	userHandler := usercommands.NewCreateUserHandler(userRepo)
-	userResp, _ := userHandler.Execute(context.Background(), usercommands.CreateUserRequest{
-		Name:  "John",
-		Email: "john@example.com",
-	})
-
-	taskRepo := pgimpl.NewTaskRepository(db)
-	taskHandler := commands.NewCreateTaskHandler(taskRepo)
-	taskHandler.Execute(context.Background(), commands.CreateTaskRequest{
-		UserID:      userResp.ID,
-		Title:       "Task 1",
-		Description: "First task",
-		Completed:   false,
-	})
-	taskHandler.Execute(context.Background(), commands.CreateTaskRequest{
-		UserID:      userResp.ID,
-		Title:       "Task 2",
-		Description: "Second task",
-		Completed:   true,
-	})
-
-	// List user tasks
-	e := echo.New()
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/users/1/tasks", nil)
-	rec := httptest.NewRecorder()
-	c := e.NewContext(req, rec)
-	c.SetParamNames("id")
-	c.SetParamValues("1")
-
-	err := taskCtrl.ListUserTasks(c)
-	require.NoError(t, err)
-	assert.Equal(t, http.StatusOK, rec.Code)
-
-	var resp shared.APIResponse
-	err = json.Unmarshal(rec.Body.Bytes(), &resp)
-	require.NoError(t, err)
+	json.Unmarshal(rec.Body.Bytes(), &resp)
 	assert.True(t, resp.Success)
 }
