@@ -11,6 +11,8 @@ Cette documentation est la source de référence pour le backend Go.
   - [ADR 0001: Clean Architecture Backend](./decisions/0001-backend-architecture.md)
   - [ADR 0002: Code Cleanup & Governance](./decisions/0002-code-cleanup.md)
   - [ADR 0004: Test Strategy (Unit/Integration/E2E)](./decisions/0004-test-strategy.md)
+  - [ADR 0005: Dependency Injection Pattern](./decisions/0005-dependency-injection.md)
+  - [ADR 0006: Git Workflow & CI/CD Pipeline](./decisions/0006-git-workflow-and-cicd.md)
 - [Spécifications](./specs/) — Spécifications fonctionnelles
 
 ## Infrastructure & Développement
