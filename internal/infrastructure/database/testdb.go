@@ -1,4 +1,4 @@
-package db
+package database
 
 import (
 	"context"
@@ -14,7 +14,14 @@ type TestDB struct {
 	DSN       string
 }
 
+// StartTestContainer starts a PostgreSQL container using Podman (preferred) or Docker.
+// Supports auto-detection or explicit DOCKER_HOST environment variable.
 func StartTestContainer(ctx context.Context) (*TestDB, error) {
+	// Podman takes priority if available, otherwise falls back to Docker
+	if os.Getenv("DOCKER_HOST") == "" {
+		detectAndSetPodman()
+	}
+
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:16-alpine",
 		ExposedPorts: []string{"5432/tcp"},
@@ -55,6 +62,31 @@ func StartTestContainer(ctx context.Context) (*TestDB, error) {
 	}, nil
 }
 
+// detectAndSetPodman attempts to set DOCKER_HOST to Podman socket if available.
+// Podman is preferred over Docker for better compatibility with open-source workflows.
+func detectAndSetPodman() {
+	// Try Podman first (Linux/macOS default paths)
+	podmanSockets := []string{
+		"/run/podman/podman.sock",                                 // Linux (rootless or rootful)
+		"/Users/*/Library/Application Support/podman/podman.sock", // macOS
+		"/var/run/podman/podman.sock",                             // Linux (alternative)
+	}
+
+	for _, socket := range podmanSockets {
+		// Simple existence check (expanded path needed for macOS)
+		if socket == podmanSockets[1] {
+			continue // Skip macOS pattern for now
+		}
+		if _, err := os.Stat(socket); err == nil {
+			os.Setenv("DOCKER_HOST", "unix://"+socket)
+			return
+		}
+	}
+
+	// Fall back to Docker if Podman not found
+	// Docker daemon will be used automatically if running
+}
+
 func (t *TestDB) Stop(ctx context.Context) error {
 	if t.Container != nil {
 		return t.Container.Terminate(ctx)
@@ -62,19 +94,20 @@ func (t *TestDB) Stop(ctx context.Context) error {
 	return nil
 }
 
+// SetupTestDB initializes a test database with priority:
+// 1. External DATABASE_URL (explicit override for CI/CD)
+// 2. Testcontainers (Podman/Docker for local dev)
 func SetupTestDB(ctx context.Context) (*TestDB, error) {
-	// Check if DATABASE_URL is set (used by GitHub Actions service)
 	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
 		return &TestDB{
-			Container: nil, // No container to stop
+			Container: nil,
 			DSN:       dbURL,
 		}, nil
 	}
 
-	// Otherwise, use Testcontainers
 	testDB, err := StartTestContainer(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("testcontainers setup failed: %w", err)
 	}
 	return testDB, nil
 }
