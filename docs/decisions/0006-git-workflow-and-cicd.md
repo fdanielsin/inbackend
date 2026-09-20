@@ -118,26 +118,44 @@ Closes #123
 | 1 | Lint & Format | `gofmt`, `go vet`, `go mod tidy` | ~5s | Enforces code style |
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
-| 4 | Security | `nancy sleuth` (or `go list -json -m all \| nancy sleuth -stdin`)  | ~20s | Detects vulnerable dependencies |
-| 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 60s` | ~60s | SQLite (or PostgreSQL in future) |
-| 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 60s` | ~30s | SQLite (or PostgreSQL in future) |
-| 7 | Coverage Report | `go test -coverprofile=coverage.out ./tests/...` | ~20s | Threshold ≥80% |
+| 4 | Security | `nancy sleuth` | ~20s | Detects vulnerable dependencies |
+| 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 60s` | ~90s | PostgreSQL via Testcontainers (Phase 6+) |
+| 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 60s` | ~60s | PostgreSQL via Testcontainers (Phase 6+) |
+| 7 | Coverage Report | `go test -coverprofile=coverage.out ./tests/...` | ~30s | Threshold ≥80% |
 
-**Total time:** ~3-4 minutes
+**Total time:** ~4-5 minutes (Phase 6+)
 
 ---
 
 ### 4. Local Development vs CI/CD Testing Strategy
 
-#### Local Development (Developer's Machine)
-
-**Requirement:** Must work without PostgreSQL.
+#### Phase 1-5: SQLite (Legacy)
 
 **Approach:** Use SQLite in-memory for unit, integration, and E2E tests.
 
-**Why:**
-- Zero setup friction (no Docker/Podman required for basic validation)
-- Fast feedback loop (tests finish in seconds)
+**Rationale:**
+- Zero setup friction (no Docker/Podman required)
+- Fast feedback loop (tests finish in ~500ms)
+- Sufficient for 95% of logic bugs
+
+#### Phase 6+: PostgreSQL via Testcontainers (Current)
+
+**Requirement:** Local tests should validate real database behavior.
+
+**Approach:** Use Testcontainers to spin up PostgreSQL container per test run.
+
+**Rationale:**
+- Validates PostgreSQL-specific features (constraints, JSONB, transactions)
+- Tests schema migrations against real database
+- CI/CD uses same setup: PostgreSQL via service container
+- Catches edge cases that SQLite misses (e.g., prepared statement differences)
+
+**Trade-offs:**
+- ⚠️ Slower local tests (~10-15 seconds per test run vs ~500ms with SQLite)
+- ✅ Production-parity testing (PostgreSQL everywhere)
+- ✅ CI/CD matches local dev (no surprise failures)
+
+**Local Development (Testcontainers Required):**
 - Identical test patterns and assertions across all tiers
 - Catches 95%+ of logic errors before CI/CD
 
