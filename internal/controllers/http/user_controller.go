@@ -7,7 +7,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/application/user/commands"
 	"github.com/fdanielsin/inbackend/internal/application/user/queries"
-	"github.com/fdanielsin/inbackend/internal/logger"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v4"
 )
@@ -51,7 +51,7 @@ func (uc *UserController) CreateUser(c echo.Context) error {
 			return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 		}
 		uc.log.Error("Error creating user", slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(err.Error()))
+		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
 	return c.JSON(http.StatusCreated, shared.SuccessResponse(resp, "User created"))
@@ -75,7 +75,7 @@ func (uc *UserController) GetUser(c echo.Context) error {
 			return c.JSON(http.StatusNotFound, shared.ErrorResponse("User not found"))
 		}
 		uc.log.Error("Error fetching user", slog.Int64("id", int64(id)), slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(err.Error()))
+		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))
@@ -88,7 +88,7 @@ func (uc *UserController) ListUsers(c echo.Context) error {
 	resp, err := uc.listUsersHandler.Execute(c.Request().Context(), queries.ListUsersRequest{})
 	if err != nil {
 		uc.log.Error("Error listing users", slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(err.Error()))
+		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))

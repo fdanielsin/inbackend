@@ -1,6 +1,6 @@
 # ADR 0004 : Stratégie de tests par catégories (Unit, Integration, E2E)
 
-- **Statut** : accepté
+- **Statut** : accepted
 - **Périmètre** : `inbackend`
 - **Date** : 2026-09-20
 

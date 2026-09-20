@@ -1,6 +1,6 @@
 # ADR 0005 : Pattern d'Injection de Dépendances (main.go)
 
-- **Statut** : accepté
+- **Statut** : accepted
 - **Périmètre** : `inbackend`
 - **Date** : 2026-09-20
 

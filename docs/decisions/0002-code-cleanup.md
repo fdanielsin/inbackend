@@ -1,6 +1,6 @@
 # ADR 0002 : Cleanup legacy code & documentation governance
 
-- **Statut** : accepté
+- **Statut** : accepted
 - **Périmètre** : `inbackend`
 - **Date** : 2026-09-20
 

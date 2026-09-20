@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 
-	"github.com/fdanielsin/inbackend/internal/models"
+	persistencepg "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
 )
 
 func InitDB(dsn string, logger *zap.Logger) (*gorm.DB, error) {
@@ -20,7 +20,7 @@ func InitDB(dsn string, logger *zap.Logger) (*gorm.DB, error) {
 		return nil, err
 	}
 
-	err = db.AutoMigrate(&models.User{}, &models.Task{})
+	err = db.AutoMigrate(&persistencepg.UserModel{}, &persistencepg.TaskModel{})
 	if err != nil {
 		logger.Error("Failed to migrate database", zap.Error(err))
 		return nil, err

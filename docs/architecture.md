@@ -37,6 +37,7 @@ inbackend/
     │   └── http/
     ├── infrastructure/
     │   ├── persistence/postgres/
+    │   │   └── models.go
     │   ├── http/
     │   ├── config/
     │   └── logger/
@@ -71,7 +72,8 @@ distribué.
 
 Les controllers HTTP décodent les requêtes, construisent une command ou une
 query, appellent l'application et construisent la réponse HTTP. Ils ne doivent
-pas accéder directement à GORM.
+pas accéder directement à GORM. Les détails techniques sont journalisés côté
+serveur; les réponses 500 n'exposent qu'un message générique.
 
 ### Infrastructure
 

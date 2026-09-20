@@ -80,7 +80,7 @@ jobs:
       
       - name: "Run unit tests"
         run: |
-          go test -v -race -short ./internal/... -timeout 30s
+          go test -v -race -short ./tests/units/... -timeout 30s
           echo "✅ Unit tests passed"
 
   # ========== STAGE 4: SECURITY CHECK ==========
@@ -139,7 +139,7 @@ jobs:
       
       - name: "Run integration tests"
         run: |
-          go test -v -race ./tests/... -timeout 60s -run '!E2E'
+          go test -v -race ./tests/integration/... -timeout 60s
           echo "✅ Integration tests passed"
 
   # ========== STAGE 6: E2E TESTS ==========
@@ -179,7 +179,7 @@ jobs:
       
       - name: "Run E2E tests"
         run: |
-          go test -v -race ./tests/... -timeout 60s -run 'E2E'
+          go test -v -race ./tests/e2e/... -timeout 60s
           echo "✅ E2E tests passed"
 
   # ========== STAGE 7: COVERAGE CHECK ==========

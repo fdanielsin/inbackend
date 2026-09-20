@@ -2,10 +2,30 @@
 
 ## Unreleased
 
+### Remise en conformité — 2026-09-20
+
+- **api**: Ajouté la spécification OpenAPI 3.1 des routes, payloads, réponses
+  et erreurs HTTP existants.
+- **specs**: Documenté les comportements fonctionnels, le modèle de données,
+  la baseline non fonctionnelle et la stratégie de tests.
+- **architecture**: Déplacé les modèles GORM dans l'infrastructure PostgreSQL
+  et conservé les réponses HTTP dans `internal/shared`.
+- **errors**: Utilisé `errors.Is` pour les erreurs domaine et masqué les
+  détails techniques dans les réponses HTTP 500.
+- **tests**: Ajouté la couverture du mapping d'erreurs et corrigé le job CI des
+  tests unitaires pour cibler `tests/units`; les tests PostgreSQL indiquent
+  explicitement l'absence de provider local au lieu d'échouer sans diagnostic.
+- **ci**: Corrigé les jobs d'intégration et E2E pour cibler leurs packages
+  réels; supprimé le filtre E2E qui pouvait réussir sans exécuter de test.
+- **tooling**: `make test` couvre maintenant tous les packages Go, pas seulement
+  le dossier `tests/`.
+- **tooling**: Aligné `make lint` sur `gofmt` et `go vet`, sans dépendance
+  implicite à `golangci-lint`.
+
 ### Phase 6 — Architecture Restructuring & Logging slog [2026-09-20]
 
 - **infrastructure**: Moved `internal/db` to `internal/infrastructure/database/` for proper Clean Architecture alignment.
-- **logger**: Added slog integration with zap delegation via `internal/logger/slog_handler.go`.
+- **logger**: Added slog integration with zap delegation via `internal/infrastructure/logger/slog_handler.go`.
 - **logger**: InitLogger() now initializes both zap and slog, with slog as default.
 - **controllers**: Added structured slog logging to all 4 HTTP controllers (UserController, TaskController, StatsController, HealthController).
 - **infrastructure**: Added structured slog logging to UserRepository for persistence operations.

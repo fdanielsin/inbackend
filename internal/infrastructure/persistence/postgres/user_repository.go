@@ -2,11 +2,11 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/fdanielsin/inbackend/internal/domain/user"
-	"github.com/fdanielsin/inbackend/internal/logger"
-	"github.com/fdanielsin/inbackend/internal/models"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"gorm.io/gorm"
 )
 
@@ -29,7 +29,7 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error)
 	r.log.Debug("Creating user", slog.String("email", u.Email), slog.String("name", u.Name))
 
 	// Mapper l'entité domaine vers le modèle GORM
-	gormUser := &models.User{
+	gormUser := &UserModel{
 		Name:  u.Name,
 		Email: u.Email,
 	}
@@ -49,11 +49,11 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error)
 func (r *UserRepository) GetByID(ctx context.Context, id uint) (*user.User, error) {
 	r.log.Debug("Fetching user by ID", slog.Int64("id", int64(id)))
 
-	var gormUser models.User
+	var gormUser UserModel
 	result := r.db.WithContext(ctx).First(&gormUser, id)
 
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			r.log.Info("User not found", slog.Int64("id", int64(id)))
 			return nil, user.ErrUserNotFound
 		}
@@ -71,11 +71,11 @@ func (r *UserRepository) GetByID(ctx context.Context, id uint) (*user.User, erro
 
 // GetByEmail récupère un utilisateur par son email.
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.User, error) {
-	var gormUser models.User
+	var gormUser UserModel
 	result := r.db.WithContext(ctx).Where("email = ?", email).First(&gormUser)
 
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, user.ErrUserNotFound
 		}
 		return nil, result.Error
@@ -90,7 +90,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.Us
 
 // List récupère tous les utilisateurs.
 func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
-	var gormUsers []models.User
+	var gormUsers []UserModel
 	result := r.db.WithContext(ctx).Find(&gormUsers)
 
 	if result.Error != nil {
@@ -112,6 +112,6 @@ func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
 
 // Delete supprime un utilisateur.
 func (r *UserRepository) Delete(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&models.User{}, id)
+	result := r.db.WithContext(ctx).Delete(&UserModel{}, id)
 	return result.Error
 }

@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
-	"github.com/fdanielsin/inbackend/internal/logger"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v4"
 )
@@ -31,7 +31,7 @@ func (sc *StatsController) GetStats(c echo.Context) error {
 	resp, err := sc.getStatsHandler.Execute(c.Request().Context(), queries.GetStatsRequest{})
 	if err != nil {
 		sc.log.Error("Error fetching statistics", slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(err.Error()))
+		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))
