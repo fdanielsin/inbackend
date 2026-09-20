@@ -71,22 +71,21 @@ pas une preuve de préparation production tant que PostgreSQL n'a pas été test
   de validation PostgreSQL réussie utilise
   `TESTCONTAINERS_RYUK_DISABLED=true`.
 
-## Points non résolus
+## Validation CI distante
 
-- Les anciennes et nouvelles responsabilités doivent être vérifiées pour
-  confirmer qu'il ne reste aucun doublon inutile.
-- La CI distante reste à vérifier sur la branche publiée; aucun push n'a été
-  effectué depuis cet environnement.
+- Le run GitHub Actions `35479583554` est terminé avec succès.
+- Les jobs lint, build, sécurité, unit, intégration PostgreSQL, E2E, couverture
+  et résumé sont tous verts.
+- GitHub signale uniquement les avertissements de migration Node.js 20 des
+  actions tierces, sans échec de validation.
 
 Ces points sont des constats d'audit, pas des corrections déjà réalisées.
 
 ## Prochaine mission
 
-Réaliser une remise en conformité avant d'ajouter une nouvelle fonctionnalité :
-
-1. publier la branche selon l'autorisation du propriétaire ;
-2. vérifier le résultat CI des jobs integration et E2E corrigés ;
-3. ne commencer une nouvelle fonctionnalité qu'après cette validation.
+La remise en conformité et sa validation CI sont terminées. Avant une nouvelle
+fonctionnalité, conserver la validation PostgreSQL dans CI et créer une
+décision documentée si l'architecture doit évoluer.
 
 ## Documentation à lire
 
