@@ -4,8 +4,13 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/fdanielsin/inbackend/internal/db"
-	"github.com/fdanielsin/inbackend/internal/handlers"
+	"github.com/fdanielsin/inbackend/internal/application/task/commands"
+	"github.com/fdanielsin/inbackend/internal/application/task/queries"
+	usercommands "github.com/fdanielsin/inbackend/internal/application/user/commands"
+	userqueries "github.com/fdanielsin/inbackend/internal/application/user/queries"
+	ctrlhttp "github.com/fdanielsin/inbackend/internal/controllers/http"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
 	"github.com/fdanielsin/inbackend/internal/logger"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -21,11 +26,33 @@ func main() {
 		log.Fatal("DATABASE_URL not set")
 	}
 
-	database, err := db.InitDB(dsn, log)
+	database, err := database.InitDB(dsn, log)
 	if err != nil {
 		log.Fatal("Failed to initialize database", zap.Error(err))
 	}
 
+	// Initialiser les repositories PostgreSQL
+	userRepo := postgres.NewUserRepository(database)
+	taskRepo := postgres.NewTaskRepository(database)
+
+	// Initialiser les handlers (commands et queries)
+	createUserHandler := usercommands.NewCreateUserHandler(userRepo)
+	getUserHandler := userqueries.NewGetUserHandler(userRepo)
+	listUsersHandler := userqueries.NewListUsersHandler(userRepo)
+
+	createTaskHandler := commands.NewCreateTaskHandler(taskRepo)
+	updateTaskHandler := commands.NewUpdateTaskHandler(taskRepo)
+	deleteTaskHandler := commands.NewDeleteTaskHandler(taskRepo)
+	listUserTasksHandler := queries.NewListUserTasksHandler(taskRepo)
+	getStatsHandler := queries.NewGetStatsHandler(userRepo, taskRepo)
+
+	// Initialiser les controllers
+	healthCtrl := ctrlhttp.NewHealthController()
+	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
+	taskCtrl := ctrlhttp.NewTaskController(createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
+	statsCtrl := ctrlhttp.NewStatsController(getStatsHandler)
+
+	// Configurer Echo
 	e := echo.New()
 
 	e.Use(middleware.Logger())
@@ -36,17 +63,16 @@ func main() {
 		AllowHeaders: []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 	}))
 
-	h := &handlers.Handler{DB: database}
-
-	e.GET("/health", h.HealthCheck)
-	e.GET("/api/v1/users", h.GetUsers)
-	e.POST("/api/v1/users", h.CreateUser)
-	e.GET("/api/v1/users/:id", h.GetUserByID)
-	e.GET("/api/v1/users/:id/tasks", h.GetUserTasks)
-	e.POST("/api/v1/tasks", h.CreateTask)
-	e.PUT("/api/v1/tasks/:id", h.UpdateTask)
-	e.DELETE("/api/v1/tasks/:id", h.DeleteTask)
-	e.GET("/api/v1/stats", h.GetStats)
+	// Enregistrer les routes
+	e.GET("/health", healthCtrl.HealthCheck)
+	e.GET("/api/v1/users", userCtrl.ListUsers)
+	e.POST("/api/v1/users", userCtrl.CreateUser)
+	e.GET("/api/v1/users/:id", userCtrl.GetUser)
+	e.GET("/api/v1/users/:id/tasks", taskCtrl.ListUserTasks)
+	e.POST("/api/v1/tasks", taskCtrl.CreateTask)
+	e.PUT("/api/v1/tasks/:id", taskCtrl.UpdateTask)
+	e.DELETE("/api/v1/tasks/:id", taskCtrl.DeleteTask)
+	e.GET("/api/v1/stats", statsCtrl.GetStats)
 
 	port := os.Getenv("PORT")
 	if port == "" {

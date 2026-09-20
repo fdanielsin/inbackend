@@ -7,9 +7,16 @@ Professional Go + Echo + PostgreSQL REST API with comprehensive testing.
 ```
 inbackend/
 ├── main.go                 # Entry point, server setup
+├── docs/                   # Project architecture and workflow documentation
+├── CHANGELOG.md            # Concise project history
 ├── internal/
+│   ├── domain/             # Business domain entities and interfaces
+│   │   └── user/           # User domain (entity, errors, repository)
+│   ├── application/        # Use cases (CQRS commands and queries) [Phase 2]
+│   ├── controllers/        # HTTP controllers [Phase 4]
+│   ├── infrastructure/     # Implementation details (DB, external services) [Phase 3]
 │   ├── db/                 # GORM migrations, DB initialization
-│   ├── handlers/           # HTTP handlers (CRUD operations)
+│   ├── handlers/           # HTTP handlers (legacy, being refactored)
 │   ├── models/             # Data structures (User, Task)
 │   └── logger/             # Zap logger setup
 ├── tests/                  # Unit, integration, E2E tests
@@ -41,9 +48,10 @@ inbackend/
 ## 📋 Requirements
 
 - Go 1.21+
-- PostgreSQL 14+ (or Docker)
+- PostgreSQL 14+ (or Docker/Podman)
 - Make
-- Optional: Docker or Podman for containerized tests
+- **Docker or Podman** (required for Testcontainers integration tests)
+  - Podman is preferred (open-source, rootless-by-default, better compatibility)
 
 ## 🚀 Quick Start
 
@@ -95,27 +103,30 @@ Server runs at `http://localhost:8080`
 ## 🔌 API Endpoints
 
 ### Users
-- `POST /users` - Create user
+- `GET /api/v1/users` - List users
+- `POST /api/v1/users` - Create user
   ```json
   {"name": "John", "email": "john@example.com"}
   ```
-- `GET /users` - List users
-- `GET /users/:id` - Get user
-- `PUT /users/:id` - Update user
-- `DELETE /users/:id` - Delete user
+- `GET /api/v1/users/:id` - Get user
+- `GET /api/v1/users/:id/tasks` - List tasks for a user
 
 ### Tasks
-- `POST /tasks` - Create task
+- `POST /api/v1/tasks` - Create task
   ```json
   {"user_id": 1, "title": "Task", "description": "...", "completed": false}
   ```
-- `GET /tasks?user_id=1` - List tasks for user
-- `GET /tasks/:id` - Get task
-- `PUT /tasks/:id` - Update task
-- `DELETE /tasks/:id` - Delete task
+- `PUT /api/v1/tasks/:id` - Update task
+- `DELETE /api/v1/tasks/:id` - Delete task
+- `GET /api/v1/stats` - Get aggregate statistics
 
 ### Health
 - `GET /health` - Server status
+
+## Documentation
+
+- [Backend documentation](./docs/README.md)
+- [Global workspace context](../docs/README.md)
 
 ## 🔐 Environment Variables
 
@@ -210,7 +221,7 @@ Runs on every push:
 
 Frontend (Svelte) API calls:
 ```typescript
-const response = await fetch('http://localhost:8080/users');
+const response = await fetch('http://localhost:8080/api/v1/users');
 ```
 
 Frontend Repo: https://github.com/fdanielsin/infrontend
