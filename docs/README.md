@@ -13,6 +13,7 @@ Cette documentation est la source de référence pour le backend Go.
   - [ADR 0004: Test Strategy (Unit/Integration/E2E)](./decisions/0004-test-strategy.md)
   - [ADR 0005: Dependency Injection Pattern](./decisions/0005-dependency-injection.md)
   - [ADR 0006: Git Workflow & CI/CD Pipeline](./decisions/0006-git-workflow-and-cicd.md)
+  - [ADR 0007: Single Active Workflow File](./decisions/0007-single-active-workflow.md)
 - [Spécifications](./specs/) — Spécifications fonctionnelles
 
 ## Infrastructure & Développement
