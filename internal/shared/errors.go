@@ -1,6 +1,8 @@
 package shared
 
 import (
+	"errors"
+
 	"github.com/fdanielsin/inbackend/internal/domain/task"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
 )
@@ -11,34 +13,36 @@ func MapErrorToMessage(err error) string {
 		return ""
 	}
 
-	switch err {
-	case user.ErrUserNotFound:
+	switch {
+	case errors.Is(err, user.ErrUserNotFound):
 		return "User not found"
-	case user.ErrUserNameEmpty:
+	case errors.Is(err, user.ErrUserNameEmpty):
 		return "User name cannot be empty"
-	case user.ErrUserEmailEmpty:
+	case errors.Is(err, user.ErrUserEmailEmpty):
 		return "User email cannot be empty"
-	case task.ErrTaskNotFound:
+	case errors.Is(err, task.ErrTaskNotFound):
 		return "Task not found"
-	case task.ErrTaskTitleEmpty:
+	case errors.Is(err, task.ErrTaskTitleEmpty):
 		return "Task title cannot be empty"
-	case task.ErrTaskUserIDInvalid:
+	case errors.Is(err, task.ErrTaskUserIDInvalid):
 		return "Task user_id cannot be empty"
 	default:
-		return err.Error()
+		return "Internal server error"
 	}
 }
 
 // IsNotFoundError retourne true si l'erreur est une erreur "not found".
 func IsNotFoundError(err error) bool {
-	return err == user.ErrUserNotFound || err == task.ErrTaskNotFound
+	return errors.Is(err, user.ErrUserNotFound) || errors.Is(err, task.ErrTaskNotFound)
 }
 
 // IsValidationError retourne true si l'erreur est une erreur de validation.
 func IsValidationError(err error) bool {
-	switch err {
-	case user.ErrUserNameEmpty, user.ErrUserEmailEmpty,
-		task.ErrTaskTitleEmpty, task.ErrTaskUserIDInvalid:
+	switch {
+	case errors.Is(err, user.ErrUserNameEmpty),
+		errors.Is(err, user.ErrUserEmailEmpty),
+		errors.Is(err, task.ErrTaskTitleEmpty),
+		errors.Is(err, task.ErrTaskUserIDInvalid):
 		return true
 	default:
 		return false

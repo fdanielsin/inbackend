@@ -13,7 +13,6 @@ import (
 	userqueries "github.com/fdanielsin/inbackend/internal/application/user/queries"
 	ctrlhttp "github.com/fdanielsin/inbackend/internal/controllers/http"
 	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
-	"github.com/fdanielsin/inbackend/internal/models"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +27,7 @@ func setupTestDB(t *testing.T) *gorm.DB {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err, "failed to setup test database")
 
-	err = db.AutoMigrate(&models.User{}, &models.Task{})
+	err = db.AutoMigrate(&pgimpl.UserModel{}, &pgimpl.TaskModel{})
 	require.NoError(t, err, "failed to migrate test database")
 
 	return db
@@ -100,8 +99,8 @@ func TestUserController_ListUsers_HappyPath(t *testing.T) {
 	listUsersHandler := userqueries.NewListUsersHandler(userRepo)
 	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
 
-	db.Create(&models.User{Name: "Alice", Email: "alice@example.com"})
-	db.Create(&models.User{Name: "Bob", Email: "bob@example.com"})
+	db.Create(&pgimpl.UserModel{Name: "Alice", Email: "alice@example.com"})
+	db.Create(&pgimpl.UserModel{Name: "Bob", Email: "bob@example.com"})
 
 	e.GET("/api/v1/users", userCtrl.ListUsers)
 
@@ -129,7 +128,7 @@ func TestUserController_GetUser_HappyPath(t *testing.T) {
 	listUsersHandler := userqueries.NewListUsersHandler(userRepo)
 	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
 
-	user := &models.User{Name: "Jane", Email: "jane@example.com"}
+	user := &pgimpl.UserModel{Name: "Jane", Email: "jane@example.com"}
 	db.Create(user)
 
 	e.GET("/api/v1/users/:id", userCtrl.GetUser)
@@ -188,9 +187,9 @@ func TestTaskController_ListUserTasks_HappyPath(t *testing.T) {
 	listUserTasksHandler := queries.NewListUserTasksHandler(taskRepo)
 	taskCtrl := ctrlhttp.NewTaskController(createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
 
-	db.Create(&models.User{ID: 1, Name: "John", Email: "john@example.com"})
-	db.Create(&models.Task{ID: 1, UserID: 1, Title: "Task 1", Completed: false})
-	db.Create(&models.Task{ID: 2, UserID: 1, Title: "Task 2", Completed: false})
+	db.Create(&pgimpl.UserModel{ID: 1, Name: "John", Email: "john@example.com"})
+	db.Create(&pgimpl.TaskModel{ID: 1, UserID: 1, Title: "Task 1", Completed: false})
+	db.Create(&pgimpl.TaskModel{ID: 2, UserID: 1, Title: "Task 2", Completed: false})
 
 	e.GET("/api/v1/users/:id/tasks", taskCtrl.ListUserTasks)
 
@@ -236,9 +235,9 @@ func TestStatsController_GetStats_HappyPath(t *testing.T) {
 	getStatsHandler := queries.NewGetStatsHandler(userRepo, taskRepo)
 	statsCtrl := ctrlhttp.NewStatsController(getStatsHandler)
 
-	db.Create(&models.User{Name: "Alice", Email: "alice@example.com"})
-	db.Create(&models.Task{UserID: 1, Title: "Task 1", Completed: false})
-	db.Create(&models.Task{UserID: 1, Title: "Task 2", Completed: true})
+	db.Create(&pgimpl.UserModel{Name: "Alice", Email: "alice@example.com"})
+	db.Create(&pgimpl.TaskModel{UserID: 1, Title: "Task 1", Completed: false})
+	db.Create(&pgimpl.TaskModel{UserID: 1, Title: "Task 2", Completed: true})
 
 	e.GET("/api/v1/stats", statsCtrl.GetStats)
 

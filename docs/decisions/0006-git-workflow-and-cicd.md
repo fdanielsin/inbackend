@@ -1,7 +1,7 @@
 # ADR 0006: Git Workflow, Commit Conventions, CI/CD Pipeline, and Governance
 
 **Date:** 2026-09-20  
-**Status:** ACCEPTED  
+**Status:** accepted
 **Scope:** Git branching, commit conventions, CI/CD pipeline, workflow file governance, documentation audit
 
 ---
@@ -119,9 +119,9 @@ Closes #123
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
 | 4 | Security | `nancy sleuth` | ~20s | Detects vulnerable dependencies |
-| 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 60s` | ~90s | PostgreSQL via Testcontainers (Phase 6+) |
-| 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 60s` | ~60s | PostgreSQL via Testcontainers (Phase 6+) |
-| 7 | Coverage Report | `go test -coverprofile=coverage.out ./tests/...` | ~30s | Threshold ≥80% |
+| 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 60s` | ~90s | PostgreSQL via Testcontainers |
+| 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 60s` | ~60s | SQLite in-memory, HTTP contract coverage |
+| 7 | Coverage Report | `go test -coverprofile=coverage.out ./...` | ~30s | Threshold reported, non-blocking |
 
 **Total time:** ~4-5 minutes (Phase 6+)
 
@@ -138,9 +138,10 @@ Closes #123
 - Fast feedback loop (tests finish in ~500ms)
 - Sufficient for 95% of logic bugs
 
-#### Phase 6+: PostgreSQL via Testcontainers (Current)
+#### PostgreSQL integration validation (Current)
 
-**Requirement:** Local tests should validate real database behavior.
+**Requirement:** Integration tests must validate real PostgreSQL behavior when a
+Docker or Podman provider is available.
 
 **Approach:** Use Testcontainers to spin up PostgreSQL container per test run.
 
@@ -155,28 +156,29 @@ Closes #123
 - ✅ Production-parity testing (PostgreSQL everywhere)
 - ✅ CI/CD matches local dev (no surprise failures)
 
-**Local Development (Testcontainers Required):**
-- Identical test patterns and assertions across all tiers
-- Catches 95%+ of logic errors before CI/CD
+**Local Development:**
+- Unit and E2E tests remain runnable without a container provider.
+- PostgreSQL integration tests are skipped with an explicit reason when no
+  provider is available and remain blocking when a provider is available.
 
 **Local commands:**
 ```bash
-make fmt          # Format & vet
-make test-unit    # Unit tests (4/4 pass)
-make test-int     # Integration tests with SQLite (8/8 pass)
-make test-e2e     # E2E tests with SQLite (8/8 pass)
-make test         # All tests (20/20 pass)
+make fmt              # Format & tidy modules
+make test-unit        # Unit tests
+make test-integration # PostgreSQL integration tests
+make test-e2e         # HTTP E2E tests with SQLite
+make test             # All packages; PostgreSQL tests require a provider
 ```
 
 ---
 
 #### CI/CD Pipeline (GitHub Actions)
 
-**Future Phase:** PostgreSQL in integration/E2E tests.
+The integration job executes `tests/integration` against the PostgreSQL service
+provided by the runner. The E2E job executes `tests/e2e` directly; those tests
+use SQLite in-memory by design and do not require the PostgreSQL service.
 
-**Current Phase:** SQLite (mirrors local development).
-
-**Why SQLite locally, then PostgreSQL in CI:**
+**Historical rationale for the earlier SQLite transition:**
 - **Local:** SQLite eliminates setup complexity, enables fast iteration
 - **CI/CD:** PostgreSQL (via Testcontainers or service container) validates real database behavior
   - Tests schema migrations
@@ -184,7 +186,7 @@ make test         # All tests (20/20 pass)
   - Catches prepared statement bugs that SQLite doesn't catch
 - **Trade-off:** Accept that local SQLite tests may miss some PostgreSQL edge cases; CI/CD catches them before merge
 
-**Timeline:**
+**Historical timeline:**
 - Phase 1-5 (current): SQLite everywhere (local + CI/CD)
 - Phase 6 (future): Testcontainers in CI/CD for PostgreSQL validation
 - Local development: remains SQLite (no Podman required)
@@ -266,7 +268,7 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 - [x] Branching strategy documented
 - [x] Commit convention enforced (no Co-authored-by)
 - [x] CI/CD pipeline: 7 stages, all passing
-- [x] Local validation: `make test` passes (20/20)
+- [x] Local validation: `make test` passes when a container provider is available
 - [x] Branch protection rules configured (GitHub)
 - [x] .gitignore updated (exclude `coverage.out` if needed)
 - [ ] Pre-commit hook (optional, `.git/hooks/pre-commit`)

@@ -1,6 +1,6 @@
 # ADR 0001 : architecture du backend Go
 
-- **Statut** : accepté
+- **Statut** : accepted
 - **Périmètre** : `inbackend`
 - **Date** : 2026-09-19
 

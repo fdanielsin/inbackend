@@ -4,25 +4,20 @@ Cette documentation est la source de référence pour le backend Go.
 
 ## Documents principaux
 
-- [Architecture](./architecture.md) — Couches, patterns, diagrammes
-- [État de reprise pour les agents](./handoff.md) — Phases 1-6, status actuel
-- [Roadmap](./roadmap.md) — Phases complétées et futures
-- [Décisions (ADR)](./decisions/) — Décisions architecturales
-  - [ADR 0001: Clean Architecture Backend](./decisions/0001-backend-architecture.md)
-  - [ADR 0002: Code Cleanup & Governance](./decisions/0002-code-cleanup.md)
-  - [ADR 0004: Test Strategy (Unit/Integration/E2E)](./decisions/0004-test-strategy.md)
-  - [ADR 0005: Dependency Injection Pattern](./decisions/0005-dependency-injection.md)
-  - [ADR 0006: Git Workflow, CI/CD, & Governance](./decisions/0006-git-workflow-and-cicd.md)
-- [Spécifications](./specs/) — Spécifications fonctionnelles
+- [Architecture](./architecture.md)
+- [État de reprise pour les agents](./handoff.md)
+- [Roadmap](./roadmap.md)
+- [Décisions](./decisions/)
+  - [ADR 0001 — Architecture](./decisions/0001-backend-architecture.md)
+  - [ADR 0002 — Cleanup et gouvernance](./decisions/0002-code-cleanup.md)
+  - [ADR 0004 — Stratégie de tests](./decisions/0004-test-strategy.md)
+  - [ADR 0005 — Injection de dépendances](./decisions/0005-dependency-injection.md)
+  - [ADR 0006 — Workflow et CI](./decisions/0006-git-workflow-and-cicd.md)
+- [Spécifications](./specs/)
+  - [API OpenAPI 3.1](./specs/api/openapi.yaml)
 
-## Infrastructure & Développement
-
-- **CI/CD Pipeline** : [`CI_CD_PIPELINE.md`](./CI_CD_PIPELINE.md) — 7-stages opérationnel
-- **CI/CD Phases** : [`CI_CD_PHASES.md`](./CI_CD_PHASES.md) — Évolution: Phase 1-5 (SQLite) → Phase 6+ (PostgreSQL)
-- **Commandes locales** : Voir [`Makefile`](../Makefile)
-  - `make test` : tous les tests
-  - `make test-unit` : tests unitaires
-  - `make lint` / `make fmt` : qualité code
+Les fichiers de CI et les commandes du projet restent à leur emplacement
+réel. Ne pas considérer un lien comme valide sans vérifier que la cible existe.
 
 ## Références globales
 
@@ -37,10 +32,5 @@ Cette documentation est la source de référence pour le backend Go.
   documentée.
 - Toute décision spécifique au backend va dans `decisions/`.
 - Les notes temporaires ne doivent pas être ajoutées à ce dossier.
-
-## Fichiers obsolètes
-
-- `internal/handlers/handlers.go` — **LEGACY (non utilisé)**
-  - Contenait handlers monolithiques avant Clean Architecture
-  - Remplacé par controllers + application handlers (Phases 1-4)
-  - À supprimer lors de nettoyage futur
+- Les statuts du handoff et des ADR doivent être vérifiés dans le code, les
+  tests et Git avant d'être considérés comme acquis.

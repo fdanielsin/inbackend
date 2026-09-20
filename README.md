@@ -14,21 +14,18 @@ inbackend/
 │   │   └── user/           # User domain (entity, errors, repository)
 │   ├── application/        # Use cases (CQRS commands and queries) [Phase 2]
 │   ├── controllers/        # HTTP controllers [Phase 4]
-│   ├── infrastructure/     # Implementation details (DB, external services) [Phase 3]
-│   ├── db/                 # GORM migrations, DB initialization
-│   ├── handlers/           # HTTP handlers (legacy, being refactored)
-│   ├── models/             # Data structures (User, Task)
-│   └── logger/             # Zap logger setup
+│   ├── infrastructure/     # Database, persistence, logger, and technical details
+│   └── shared/              # HTTP responses and cross-cutting errors
 ├── tests/                  # Unit, integration, E2E tests
 ├── Makefile                # Development automation
-└── .github/workflows/      # CI/CD pipelines (go.yml, quality.yml)
+└── .github/workflows/      # CI/CD pipeline (ci.yml)
 ```
 
 ## 🔧 Stack
 
 - **Framework**: Echo (high-performance HTTP)
 - **Database**: PostgreSQL with GORM ORM
-- **Logging**: Zap structured logging
+- **Logging**: slog structured logging delegated to zap
 - **Testing**: Testcontainers, stdlib testing
 - **Security**: Trivy scanning in CI/CD
 - **Container**: Docker + Podman support
@@ -37,7 +34,7 @@ inbackend/
 
 - ✅ Full REST API (Users, Tasks CRUD)
 - ✅ PostgreSQL with GORM auto-migrations
-- ✅ Structured logging with Zap
+- ✅ Structured logging with slog delegated to Zap
 - ✅ CORS middleware configured
 - ✅ Comprehensive test suite (unit, integration, E2E)
 - ✅ Testcontainers for isolated database tests
@@ -47,7 +44,7 @@ inbackend/
 
 ## 📋 Requirements
 
-- Go 1.21+
+- Go 1.25+
 - PostgreSQL 14+ (or Docker/Podman)
 - Make
 - **Docker or Podman** (required for Testcontainers integration tests)
@@ -126,6 +123,7 @@ Server runs at `http://localhost:8080`
 ## Documentation
 
 - [Backend documentation](./docs/README.md)
+- [API documentation (OpenAPI 3.1)](./docs/specs/api/openapi.yaml)
 - [Global workspace context](../docs/README.md)
 
 ## 🔐 Environment Variables
@@ -201,7 +199,7 @@ export DATABASE_URL="postgres://user:pass@prod-db.example.com/appdb?sslmode=requ
 
 ## 🔄 GitHub Actions CI/CD
 
-### go.yml - Full Pipeline
+### ci.yml - Full Pipeline
 Runs on push to `main`/`develop`:
 - ✅ Build verification
 - ✅ Unit tests
@@ -210,7 +208,7 @@ Runs on push to `main`/`develop`:
 - ✅ Coverage report (upload to Codecov)
 - ✅ Docker image build
 
-### quality.yml - Code Quality
+The same `ci.yml` workflow also runs code quality checks:
 Runs on every push:
 - ✅ Format checks (gofmt)
 - ✅ Static analysis (go vet, go mod tidy)
@@ -228,8 +226,8 @@ Frontend Repo: https://github.com/fdanielsin/infrontend
 
 ## 🛠️ Development Notes
 
-- **GORM Auto-Migration**: Runs on startup, see `internal/db/db.go`
-- **Error Handling**: Unified `ApiResponse<T>` in `internal/models/models.go`
+- **GORM Auto-Migration**: Runs on startup, see `internal/infrastructure/database/init.go`
+- **Error Handling**: Unified `APIResponse` in `internal/shared/response.go`
 - **CORS**: Configured in `main.go`, adjust origins as needed
 - **Logging**: Development (pretty) vs Production (structured JSON)
 - **Testing**: Testcontainers spin up isolated PostgreSQL per test

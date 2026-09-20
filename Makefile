@@ -24,7 +24,7 @@ run:
 
 test:
 	@echo "🧪 Running all tests..."
-	go test -v -race -cover ./tests/...
+	go test -v -race -cover ./...
 
 test-unit:
 	@echo "🧪 Running unit tests..."
@@ -39,8 +39,9 @@ test-e2e:
 	go test -v ./tests/e2e/...
 
 lint:
-	@echo "🔍 Linting with golangci-lint..."
-	golangci-lint run ./...
+	@echo "🔍 Checking formatting and vet..."
+	@test -z "$$(gofmt -s -l .)" || (gofmt -s -d .; exit 1)
+	go vet ./...
 
 fmt:
 	@echo "✨ Formatting code..."

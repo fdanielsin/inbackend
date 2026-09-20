@@ -2,9 +2,9 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +21,7 @@ func NewTaskRepository(db *gorm.DB) *TaskRepository {
 // Create crée une nouvelle tâche et retourne l'ID généré.
 func (r *TaskRepository) Create(ctx context.Context, t *task.Task) (uint, error) {
 	// Mapper l'entité domaine vers le modèle GORM
-	gormTask := &models.Task{
+	gormTask := &TaskModel{
 		Title:       t.Title,
 		Description: t.Description,
 		UserID:      t.UserID,
@@ -39,11 +39,11 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Task) (uint, error)
 
 // GetByID récupère une tâche par son ID.
 func (r *TaskRepository) GetByID(ctx context.Context, id uint) (*task.Task, error) {
-	var gormTask models.Task
+	var gormTask TaskModel
 	result := r.db.WithContext(ctx).First(&gormTask, id)
 
 	if result.Error != nil {
-		if result.Error == gorm.ErrRecordNotFound {
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
 			return nil, task.ErrTaskNotFound
 		}
 		return nil, result.Error
@@ -61,7 +61,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint) (*task.Task, erro
 
 // ListByUserID récupère toutes les tâches d'un utilisateur.
 func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task.Task, error) {
-	var gormTasks []models.Task
+	var gormTasks []TaskModel
 	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&gormTasks)
 
 	if result.Error != nil {
@@ -85,7 +85,7 @@ func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task
 
 // Update met à jour une tâche existante.
 func (r *TaskRepository) Update(ctx context.Context, t *task.Task) error {
-	gormTask := &models.Task{
+	gormTask := &TaskModel{
 		ID:          t.ID,
 		Title:       t.Title,
 		Description: t.Description,
@@ -93,19 +93,19 @@ func (r *TaskRepository) Update(ctx context.Context, t *task.Task) error {
 		Completed:   t.Completed,
 	}
 
-	result := r.db.WithContext(ctx).Model(&models.Task{}).Where("id = ?", t.ID).Updates(gormTask)
+	result := r.db.WithContext(ctx).Model(&TaskModel{}).Where("id = ?", t.ID).Updates(gormTask)
 	return result.Error
 }
 
 // Delete supprime une tâche.
 func (r *TaskRepository) Delete(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&models.Task{}, id)
+	result := r.db.WithContext(ctx).Delete(&TaskModel{}, id)
 	return result.Error
 }
 
 // Count retourne le nombre total de tâches.
 func (r *TaskRepository) Count(ctx context.Context) (int64, error) {
 	var count int64
-	result := r.db.WithContext(ctx).Model(&models.Task{}).Count(&count)
+	result := r.db.WithContext(ctx).Model(&TaskModel{}).Count(&count)
 	return count, result.Error
 }

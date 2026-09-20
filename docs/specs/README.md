@@ -8,10 +8,15 @@ Ce dossier contient les exigences et contrats propres à `inbackend`.
 specs/
 ├── README.md
 ├── functional/
+│   └── users-and-tasks.md
 ├── api/
+│   └── openapi.yaml
 ├── data/
+│   └── persistence.md
 ├── non-functional/
+│   └── baseline.md
 └── testing/
+    └── strategy.md
 ```
 
 Les sous-dossiers seront créés avec leur contenu lorsqu'un besoin réel sera
@@ -44,3 +49,13 @@ inutiles.
 - Utiliser une ADR lorsqu'un changement de spécification impose une décision
   technique importante.
 - Mettre à jour les tests et le `handoff.md` lorsque le comportement change.
+
+## Documentation API
+
+La spécification HTTP canonique est [`api/openapi.yaml`](./api/openapi.yaml).
+Elle décrit uniquement les routes actuellement exposées par le backend et
+doit être mise à jour avec les controllers lorsqu'un contrat change.
+
+Les spécifications fonctionnelles, de données, non fonctionnelles et de test
+sont indexées ci-dessus et distinguent les comportements actuels des limites
+connues.

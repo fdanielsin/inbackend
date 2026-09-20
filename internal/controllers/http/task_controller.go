@@ -7,7 +7,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/application/task/commands"
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
-	"github.com/fdanielsin/inbackend/internal/logger"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v4"
 )
@@ -54,7 +54,7 @@ func (tc *TaskController) CreateTask(c echo.Context) error {
 			return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 		}
 		tc.log.Error("Error creating task", slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(err.Error()))
+		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
 	return c.JSON(http.StatusCreated, shared.SuccessResponse(resp, "Task created"))
@@ -89,7 +89,7 @@ func (tc *TaskController) UpdateTask(c echo.Context) error {
 			return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 		}
 		tc.log.Error("Error updating task", slog.Int64("id", int64(id)), slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(err.Error()))
+		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, "Task updated"))
@@ -109,7 +109,7 @@ func (tc *TaskController) DeleteTask(c echo.Context) error {
 	err = tc.deleteTaskHandler.Execute(c.Request().Context(), commands.DeleteTaskRequest{ID: uint(id)})
 	if err != nil {
 		tc.log.Error("Error deleting task", slog.Int64("id", int64(id)), slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(err.Error()))
+		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponseEmpty("Task deleted"))
@@ -129,7 +129,7 @@ func (tc *TaskController) ListUserTasks(c echo.Context) error {
 	resp, err := tc.listUserTasksHandler.Execute(c.Request().Context(), queries.ListUserTasksRequest{UserID: uint(id)})
 	if err != nil {
 		tc.log.Error("Error listing user tasks", slog.Int64("userID", int64(id)), slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(err.Error()))
+		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))
