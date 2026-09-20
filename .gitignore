@@ -1,40 +1,211 @@
+# ============================================================
 # Go
+# ============================================================
 *.o
 *.a
 *.so
-.DS_Store
-app
-dist/
-inbackend
+*.so.*
+*.dylib
 
-# Environment
+# Go build cache
+*.out
+
+# Go binaries
+/bin/
+/build/
+app
+inbackend
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go test & coverage
+coverage.out
+coverage.html
+*.prof
+*.test
+*.coverprofile
+
+# Go modules
+vendor/
+go.sum
+
+# Go IDEs
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# ============================================================
+# Environment & Configuration
+# ============================================================
 .env
 .env.local
+.env.*.local
+.env.prod
+.env.staging
+.env.test
 
-# IDE
+# ============================================================
+# IDEs & Editors
+# ============================================================
+
+# VS Code
 .vscode/
+*.code-workspace
+.history/
+
+# GoLand / IntelliJ IDEA
 .idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Vim
 *.swp
 *.swo
 *~
+.vim/
 
-# Logs
-*.log
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
 
-# Test & Coverage
-coverage.out
-*.prof
-*.test
+# Emacs
+*~
+\#*\#
+.\#*
 
-# Temporary
-TEST.txt
-*.tmp
-
-# OS
+# macOS
 .DS_Store
-Thumbs.db
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 
-# Build artifacts
-/bin/
-/build/
+# ============================================================
+# Windows
+# ============================================================
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.exe
+*.com
+*.bat
+*.cmd
+
+# ============================================================
+# Linux / Unix
+# ============================================================
+*.core
+core
+core.?
+core.??
+core.???
+core.????
+core.??*?
+core.???[0-9]*
+*.pid
+*.lock
+*.swp
+*.swo
+
+# ============================================================
+# Logs & Temporary Files
+# ============================================================
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.backup
+*~
+.~*
+
+# Test artifacts
+*.testlog
+test-results.xml
+junit.xml
+
+# ============================================================
+# Build & Distribution
+# ============================================================
+dist/
+releases/
+*.tar.gz
+*.zip
+*.tar
+*.tgz
+
+# Docker
+.dockerignore
+
+# ============================================================
+# Database & Cache
+# ============================================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.log-*
+
+# Redis
+dump.rdb
+appendonly.aof
+
+# ============================================================
+# Project-Specific (inbackend)
+# ============================================================
+
+# Session & state
+/session-state/
+session.log
+
+# Generated files
+*.generated.go
+mock_*.go
+*.pb.go
+
+# CLI tools
+*.prof
+pprof.out
+
+# Coverage
+coverage/
+.coverage/
+
+# ============================================================
+# Miscellaneous
+# ============================================================
+.gitkeep
+.gitattributes
+
+# Temporary test files
+TEST.txt
+test_*.txt
+tmp/
+temp/
+
+# macOS Finder
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux extended attributes
+*.xattr
+
+# Backup files
+*.backup
+*.bak
+*~
+
+# node_modules (if Go project also has Node tooling)
+node_modules/
+
 
