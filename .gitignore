@@ -5,6 +5,7 @@
 .DS_Store
 app
 dist/
+inbackend
 
 # Environment
 .env
@@ -19,5 +20,21 @@ dist/
 
 # Logs
 *.log
-inbackend
-app
+
+# Test & Coverage
+coverage.out
+*.prof
+*.test
+
+# Temporary
+TEST.txt
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+/bin/
+/build/
+
