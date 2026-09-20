@@ -1,33 +1,32 @@
-# ADR 0006: Git Workflow, Commit Conventions, and CI/CD Pipeline
+# ADR 0006: Git Workflow, Commit Conventions, CI/CD Pipeline, and Governance
 
 **Date:** 2026-09-20  
 **Status:** ACCEPTED  
-**Scope:** Git branching, commit conventions, CI/CD stages, test execution in CI/CD
+**Scope:** Git branching, commit conventions, CI/CD pipeline, workflow file governance, documentation audit
 
 ---
 
 ## Problem
 
-The backend project requires clear, enforced discipline for:
-- Git branching strategy
-- Commit message conventions
-- CI/CD pipeline stages and gating
-- Testing strategy in CI/CD vs local development
+The backend project requires clear, enforced discipline across three domains:
+1. **Git & Commits:** Branching strategy, commit message conventions, co-authored rules
+2. **CI/CD Pipeline:** 7-stage automated gating, testing strategy (SQLite vs PostgreSQL phases)
+3. **Governance:** Workflow file hygiene (single active file), documentation deduplication
 
-Without explicit decisions, developers may:
-- Create commits with unclear metadata (e.g., spurious co-authored-by trailers)
-- Push untested changes
-- Skip local validation before CI/CD
-- Misunderstand which tests run where (local vs CI, SQLite vs PostgreSQL)
+Without explicit decisions:
+- Developers create unclear commits with spurious metadata
+- Untested changes bypass local validation
+- Multiple workflow files create confusion ("which one runs?")
+- Documentation drift (duplicate files with diverging content)
 
 ---
 
 ## Constraints
 
-1. **Trustworthiness:** Lost trust is difficult to recover. CI/CD must gate all quality checks.
-2. **Local Efficiency:** Developers must be able to validate locally without PostgreSQL in simple cases.
-3. **CI Completeness:** CI/CD must catch real database issues (PostgreSQL in integration/E2E).
-4. **No Co-authored Attribution:** All commits must be sole attribution to actual developer.
+1. **Trustworthiness:** Lost trust is difficult to recover. All quality gates must be enforced consistently.
+2. **Local Efficiency:** Developers must validate locally without Docker/PostgreSQL for fast feedback.
+3. **CI Completeness:** CI/CD must gate all quality checks (lint, build, tests, security, coverage).
+4. **Documentation Integrity:** One source of truth per topic; no templates or duplicate files.
 
 ---
 
@@ -276,6 +275,50 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
   - **Mitigation:** PR merge protection enforces CI/CD pass
 - **Risk:** Accidental commits with `Co-authored-by`
   - **Mitigation:** Pre-commit hook can validate (add in future phase)
+
+---
+
+## Governance Rules
+
+### Single Active Workflow File
+
+**Rule:** Only ONE workflow file exists at any time.
+
+- ✅ `.github/workflows/ci.yml` — The active, current workflow
+- ❌ NO template files (e.g., `ci-phase6-postgresql.yml`)
+- ❌ NO future-state files (e.g., `ci-alternative.yml`)
+
+**Rationale:**
+- One file = no ambiguity about which workflow runs
+- Phase transitions are deliberate commits, not speculative code
+- No maintenance drift (single source of truth)
+
+**When transitioning to Phase 6+ (PostgreSQL):**
+1. Update `ci.yml` in place
+2. Commit with clear message: `ci: migrate from SQLite to PostgreSQL (Phase 6)`
+3. No template files created
+
+---
+
+### Documentation Audit & Deduplication
+
+**Rule:** One source of truth per topic (per `documentation-guide.md`).
+
+**Process:**
+1. Identify all documents
+2. Compare content for overlaps
+3. Determine canonical source per topic
+4. Remove duplicates, keep owner document
+5. Verify no docs have diverged
+
+**Example Applied (Session 2026-09-20):**
+- Identified: `CI_CD_PIPELINE.md` + `ADR 0006` both covered 7-stage pipeline
+- Decision: Remove `CI_CD_PIPELINE.md` (ADR is canonical for decisions)
+- Result: One document per topic, no maintenance divergence
+
+**Audit Cadence:**
+- At each major phase transition (estimated Phase 6+)
+- Check: no v1/v2/final files, all links work, ADRs coherent, handoff matches code
 
 ---
 
