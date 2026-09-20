@@ -1,5 +1,11 @@
 # Architecture du backend
 
+## Statut documentaire
+
+Cette page décrit l'architecture retenue et la structure attendue. La
+conformité effective doit être vérifiée dans le code, les tests et les
+commandes de validation ; elle n'est pas déduite de cette page.
+
 ## Objectif
 
 Réorganiser le backend Go selon une combinaison pragmatique de DDD, Clean

@@ -10,7 +10,8 @@ Lors d'un audit systématique du projet (Phases 1-6 post-completion), deux probl
 
 1. **Code legacy** : `internal/handlers/handlers.go` contenait des handlers monolithiques du code pré-Phase 1. Ce fichier a été complètement remplacé par les quatre couches (domain/application/controllers/infrastructure) et n'est plus utilisé nulle part (0 références).
 
-2. **Documentation invisible** : `CI_CD_PIPELINE.md` existait à la racine mais n'était pas indexé dans `docs/README.md`, le rendre invisible pour les nouveaux contributeurs.
+2. **Documentation invisible** : un ancien document CI n'était pas indexé et a
+   ensuite été supprimé pour éviter une seconde source de vérité.
 
 Ces problèmes violaient la gouvernance documentaire établie dans le workspace (une seule source de vérité, tout est indexé).
 
@@ -21,10 +22,10 @@ Ces problèmes violaient la gouvernance documentaire établie dans le workspace 
    - Dossier devient vide après suppression
    - Artifacts de code ancien
 
-2. **Indexer `CI_CD_PIPELINE.md` dans `docs/README.md`**
-   - Déplacer détails CI/CD vers document dédié
-   - Conserver `docs/README.md` concis (index + liens)
-   - Respecter principe "une seule source de vérité"
+2. **Conserver la CI dans sa source canonique**
+   - Le workflow réel reste dans `.github/workflows/ci.yml`
+   - Les décisions de workflow restent dans l'ADR dédiée
+   - Ne pas recréer `CI_CD_PIPELINE.md`
 
 3. **Appliquer gouvernance documentaire stricte**
    - README.md = index + liens (pas de contenu dupliqué)
@@ -52,18 +53,14 @@ Ces problèmes violaient la gouvernance documentaire établie dans le workspace 
 
 ## Validation
 
-- ✅ `go build .` : succès
-- ✅ `go test -v -short ./internal/...` : tous les tests passent
-- ✅ `gofmt -s -l .` : format OK
-- ✅ `go mod tidy` : modules OK
-- ✅ Grep `internal/handlers` : 0 références trouvées
-- ✅ Grep `handlers.Handler` : 0 références trouvées
+- Les validations historiques doivent être distinguées des validations
+  exécutées lors d'une reprise ultérieure.
+- L'absence actuelle de `internal/handlers/` est vérifiable dans l'arbre du
+  dépôt ; elle ne prouve pas à elle seule la conformité complète de la phase.
 
 ## Notes & Références
 
-- Audit systématique effectué : 51+ fichiers explorés ligne par ligne
-- Checklist exhaustive : domain/app/controllers/infrastructure/logger/models/shared/tests/docs
-- Anomalies trouvées : CI_CD_PIPELINE.md (invisible) + handlers.go (unused)
-- Corrections appliquées & validées en même session
+- Le détail de l'audit historique est conservé dans Git et dans le handoff,
+  mais ne constitue pas une preuve de l'état courant sans nouvelle vérification.
 
 Voir [`handoff.md`](../handoff.md) Phase 6.1 pour détails audit.

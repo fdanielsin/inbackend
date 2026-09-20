@@ -19,25 +19,31 @@ internal/infrastructure/
 Le CQRS applicatif est présent avec des `commands` et des `queries`. Les
 repositories PostgreSQL/GORM sont assemblés dans `main.go`.
 
-Les validations exécutées depuis `inbackend` pour cette remise en conformité
-sont :
+Les validations locales exécutées depuis `inbackend` et vérifiables dans cet
+état sont :
 
 ```text
-go test -race ./tests/units/... ./tests/e2e/... ./internal/... → réussi
-go vet ./...                                                   → réussi
-go build ./...                                                 → réussi
-make lint                                                      → réussi
-go test ./...                                                   → réussi (6 tests PostgreSQL ignorés sans provider)
-go test -count=1 -v ./tests/integration/persistence/...         → réussi (7 tests PostgreSQL ignorés sans provider)
-go test -count=1 -v ./tests/e2e/...                             → réussi (8 tests SQLite)
-go test -count=1 -v ./tests/e2e/... -run 'E2E'                  → aucun test exécuté (filtre CI corrigé)
-DOCKER_HOST=... TESTCONTAINERS_RYUK_DISABLED=true go test -count=1 -v ./tests/integration/persistence/... → 7 tests PostgreSQL réussis avec Podman
+make lint                                         → réussi (gofmt et go vet)
+make test                                         → réussi ; 7 tests PostgreSQL ignorés sans provider
+go test ./...                                     → réussi
+go vet ./...                                      → réussi
+go build ./...                                    → réussi
+go test -count=1 -v ./tests/integration/persistence/... → réussi ; 7 tests ignorés
+go test -count=1 -v ./tests/e2e/...               → réussi ; 8 tests exécutés
+TESTCONTAINERS_RYUK_DISABLED=true DOCKER_HOST=... go test -count=1 -v ./tests/integration/persistence/... → réussi ; 7 tests PostgreSQL exécutés
+TESTCONTAINERS_RYUK_DISABLED=true DOCKER_HOST=... go test -count=1 ./... → réussi avec PostgreSQL actif
 ```
 
 Les tests d'intégration PostgreSQL sont explicitement ignorés lorsque
 Testcontainers ne trouve aucun provider Docker/Podman local. Avec un provider
-disponible, ils restent bloquants en cas d'échec. Ces résultats ne constituent
-pas une preuve de préparation production tant que PostgreSQL n'a pas été testé.
+disponible, ils restent bloquants en cas d'échec. La validation avec Podman
+ci-dessus constitue une preuve locale d'exécution PostgreSQL, sans constituer
+à elle seule une preuve de préparation production.
+
+Une première exécution sans socket explicite a produit
+`rootless Docker not found, failed to create Docker provider`. La validation
+réussie a ensuite utilisé le socket Podman macOS explicite et
+`TESTCONTAINERS_RYUK_DISABLED=true`.
 
 ## Résultats de la remise en conformité
 
@@ -64,28 +70,49 @@ pas une preuve de préparation production tant que PostgreSQL n'a pas été test
 - `make test` couvre maintenant `./...`, y compris les packages internes.
 - Les références README à l'ancien chemin `internal/db` ont été corrigées.
 
-## Contourné temporairement
+## Contournement documenté
 
-- Ryuk doit être désactivé avec le socket Podman macOS utilisé localement, car
-  Testcontainers tente sinon de monter le socket comme un volume. La commande
-  de validation PostgreSQL réussie utilise
-  `TESTCONTAINERS_RYUK_DISABLED=true`.
+- Sans provider, les tests PostgreSQL sont ignorés explicitement.
+- Dans l'environnement validé, le socket Podman macOS doit être fourni via
+  `DOCKER_HOST` et `TESTCONTAINERS_RYUK_DISABLED=true` doit être activé.
 
 ## Validation CI distante
 
-- Le run GitHub Actions `35479583554` est terminé avec succès.
-- Les jobs lint, build, sécurité, unit, intégration PostgreSQL, E2E, couverture
-  et résumé sont tous verts.
-- GitHub signale uniquement les avertissements de migration Node.js 20 des
-  actions tierces, sans échec de validation.
+- L'API GitHub confirme que le run `35479583554` est `completed/success` pour
+  `chore/backend-compliance-audit`, commit `5a76cb3`.
+- Le run le plus récent observé est `35480322121`, également
+  `completed/success`, pour le commit `a44832c` actuellement en tête de la
+  branche.
+- Ces résultats valident les commits distants concernés ; le diff documentaire
+  local actuel reste non couvert par ces runs tant qu'il n'est pas committé.
 
-Ces points sont des constats d'audit, pas des corrections déjà réalisées.
+## Audit du workspace et de Git
+
+- Les seuls éléments à la racine sont `docs/`, `inbackend/` et `infrontend/`.
+  `README.md`, `scripts/`, `docker-compose.yml` et `.github/` sont absents de
+  la racine comme prévu.
+- `inbackend` et `infrontend` sont deux dépôts Git indépendants avec leurs
+  propres README et fichiers de projet. Aucun fichier frontend n'a été modifié.
+- Le backend est sur `chore/backend-compliance-audit`; les modifications
+  documentaires de cette reprise restent non committées.
+
+## Classification de l'état
+
+- **Corrigé et vérifié** : structure des couches, routes enregistrées,
+  documentation indexée, formatage, vet, build, tests unitaires, E2E et
+  PostgreSQL avec Podman, ainsi que les deux derniers runs CI distants observés.
+- **Contournement documenté** : détection automatique du socket Podman ;
+  la commande locale doit fournir `DOCKER_HOST` explicitement.
+- **Non résolu** : les limites documentées de relation GORM, migrations
+  versionnées, authentification et autorisation restent hors de cette mission.
+- **Hors périmètre** : nouvelle fonctionnalité, modification du frontend,
+  création de fichiers à la racine, commit ou push.
 
 ## Prochaine mission
 
-La remise en conformité et sa validation CI sont terminées. Avant une nouvelle
-fonctionnalité, conserver la validation PostgreSQL dans CI et créer une
-décision documentée si l'architecture doit évoluer.
+La conformité locale est vérifiée pour les commandes exécutées ci-dessus,
+y compris PostgreSQL avec Podman. Une nouvelle décision n'est nécessaire que
+si l'architecture ou le workflow change.
 
 ## Documentation à lire
 
@@ -131,5 +158,5 @@ Prochaine étape :
 
 ## Dernière mise à jour
 
-2026-09-20 — audit de conformité, correction des commandes CI et validation
-locale sans provider PostgreSQL.
+2026-09-20 — reprise documentaire et technique vérifiée ; CI distante et
+validation PostgreSQL locale avec Podman confirmées.

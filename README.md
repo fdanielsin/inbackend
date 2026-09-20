@@ -27,7 +27,7 @@ inbackend/
 - **Database**: PostgreSQL with GORM ORM
 - **Logging**: slog structured logging delegated to zap
 - **Testing**: Testcontainers, stdlib testing
-- **Security**: Trivy scanning in CI/CD
+- **Security**: Nancy dependency scanning in the backend CI/CD workflow
 - **Container**: Docker + Podman support
 
 ## ✨ Features
@@ -56,13 +56,23 @@ inbackend/
 
 **Option A: Docker (Recommended)**
 ```bash
-docker-compose up -d postgres
+docker run --name inbackend-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=testdb \
+  -p 5432:5432 \
+  -d postgres:15-alpine
 ```
 
 **Option B: Podman**
 ```bash
 podman machine start
-podman-compose up -d postgres
+podman run --name inbackend-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=testdb \
+  -p 5432:5432 \
+  -d postgres:15-alpine
 ```
 
 **Option C: Local PostgreSQL**
@@ -179,7 +189,7 @@ docker run \
 
 ### With Docker Compose
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
 ## 📦 Deployment
@@ -212,7 +222,7 @@ The same `ci.yml` workflow also runs code quality checks:
 Runs on every push:
 - ✅ Format checks (gofmt)
 - ✅ Static analysis (go vet, go mod tidy)
-- ✅ Security scanning (Trivy)
+- ✅ Dependency security scanning (Nancy)
 - ✅ Uploads results to GitHub Security tab
 
 ## 🔗 Frontend Integration
@@ -238,8 +248,7 @@ Frontend Repo: https://github.com/fdanielsin/infrontend
 ```bash
 # Verify database
 docker ps | grep postgres
-# Or start it
-docker-compose up -d postgres
+# Or start PostgreSQL using the database setup instructions above.
 ```
 
 ### "SSL error"

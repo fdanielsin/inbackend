@@ -23,9 +23,12 @@ Without explicit decisions:
 
 ## Constraints
 
-1. **Trustworthiness:** Lost trust is difficult to recover. All quality gates must be enforced consistently.
+1. **Trustworthiness:** Lost trust is difficult to recover. Required quality
+   checks must be enforced consistently.
 2. **Local Efficiency:** Developers must validate locally without Docker/PostgreSQL for fast feedback.
-3. **CI Completeness:** CI/CD must gate all quality checks (lint, build, tests, security, coverage).
+3. **CI Completeness:** CI/CD must expose all quality checks (lint, build,
+   tests, security, coverage) and clearly distinguish blocking from
+   informational jobs.
 4. **Documentation Integrity:** One source of truth per topic; no templates or duplicate files.
 
 ---
@@ -34,7 +37,7 @@ Without explicit decisions:
 
 ### 1. Git Branching Strategy
 
-**Trunk-Based Development with Feature Branches:**
+**Feature-branch workflow with `develop` and `main`:**
 
 ```
 main (production-ready)
@@ -48,7 +51,7 @@ bugfix/USER-[issue-id]-[short-name]   (e.g., bugfix/USER-456-fix-user-validation
 **Rules:**
 - Feature branches branch off `develop`
 - Merge to `develop` requires:
-  - ✅ All CI/CD stages pass
+  - ✅ All required CI jobs pass
   - ✅ Code review approved
   - ✅ No merge commits (rebase + fast-forward)
 - Merge to `main` requires:
@@ -60,7 +63,9 @@ bugfix/USER-[issue-id]-[short-name]   (e.g., bugfix/USER-456-fix-user-validation
 - Clear separation: `main` = production, `develop` = integration, feature branches = isolated work
 - Enables continuous integration (frequent, small merges)
 - Prevents "broken main" scenarios
-- Fits small team workflow (no GitHub Flow complexity needed yet)
+- The repository currently uses feature branches with separate integration and
+  release branches. The label "Gitflow" is not used here to avoid ambiguity
+  with the rejected full Gitflow model.
 
 ---
 
@@ -186,17 +191,18 @@ use SQLite in-memory by design and do not require the PostgreSQL service.
   - Catches prepared statement bugs that SQLite doesn't catch
 - **Trade-off:** Accept that local SQLite tests may miss some PostgreSQL edge cases; CI/CD catches them before merge
 
-**Historical timeline:**
-- Phase 1-5 (current): SQLite everywhere (local + CI/CD)
-- Phase 6 (future): Testcontainers in CI/CD for PostgreSQL validation
-- Local development: remains SQLite (no Podman required)
+**Historical note:**
+- Earlier phases used SQLite more broadly.
+- The current repository uses PostgreSQL for repository integration tests when a
+  provider is available, and SQLite in memory for E2E tests.
+- A skipped local PostgreSQL test is not evidence that the integration test ran.
 
 ---
 
 ### 5. Pull Request Gating
 
-**PR can only merge if:**
-1. ✅ All 7 CI/CD stages pass
+**PR can only merge if the hosting-service branch protection confirms:**
+1. ✅ The required CI jobs pass
 2. ✅ Code review approved (≥1 reviewer)
 3. ✅ Branch is up-to-date with `develop`
 4. ✅ No merge commits (rebase + fast-forward only)
@@ -208,7 +214,7 @@ use SQLite in-memory by design and do not require the PostgreSQL service.
 branches:
   - name: develop
     protection:
-      required_status_checks: [lint, build, unit, security, integration, e2e, coverage]
+      required_status_checks: [lint, build, unit, integration, e2e]
       required_reviews: 1
       require_branches_up_to_date: true
       allow_force_pushes: false
@@ -267,9 +273,9 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 
 - [x] Branching strategy documented
 - [x] Commit convention enforced (no Co-authored-by)
-- [x] CI/CD pipeline: 7 stages, all passing
-- [x] Local validation: `make test` passes when a container provider is available
-- [x] Branch protection rules configured (GitHub)
+- [x] CI/CD pipeline contains seven jobs plus a summary
+- [x] A successful remote run is independently verified for the current commit
+- [ ] Branch protection rules are independently verified in GitHub
 - [x] .gitignore updated (exclude `coverage.out` if needed)
 - [ ] Pre-commit hook (optional, `.git/hooks/pre-commit`)
 - [ ] GitHub issue templates (optional, prompt for `Closes #NNN`)
@@ -282,12 +288,13 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 - ✅ Clear accountability (single author per commit)
 - ✅ Reproducible builds and tests locally
 - ✅ Fast feedback (SQLite local tests < 1 second)
-- ✅ Strong CI gating (7 stages, cannot merge if any fail)
+- ✅ CI jobs provide lint, build, unit, integration and E2E validation
 - ✅ Predictable git history (conventional commits)
 - ✅ Team trust maintained (no spurious attribution)
 
 ### Negative
-- ⚠️ SQLite-only local tests may miss PostgreSQL edge cases (mitigated: CI/CD will catch)
+- ⚠️ SQLite E2E tests may miss PostgreSQL edge cases; integration tests cover
+  those cases only when PostgreSQL actually runs
 - ⚠️ 3-4 min CI/CD runtime (acceptable for team size; future optimization: parallel stages)
 
 ### Risks
@@ -313,10 +320,9 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 - Phase transitions are deliberate commits, not speculative code
 - No maintenance drift (single source of truth)
 
-**When transitioning to Phase 6+ (PostgreSQL):**
-1. Update `ci.yml` in place
-2. Commit with clear message: `ci: migrate from SQLite to PostgreSQL (Phase 6)`
-3. No template files created
+The current workflow is updated in place. A future database-strategy change
+must update this file and the workflow together; no template workflow should be
+created.
 
 ---
 
@@ -352,10 +358,11 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 
 ## Questions & Answers
 
-**Q: Why not use Testcontainers locally?**  
-A: SQLite is faster, requires no Docker/Podman setup, and enables rapid iteration. PostgreSQL validation happens in CI/CD (future phase).
+**Q: Why not use Testcontainers for every local test?**
+A: SQLite is faster for E2E feedback. PostgreSQL integration tests remain
+available locally when Docker or Podman is configured and are expected in CI.
 
-**Q: Why no merge commits?**  
+**Q: Why no merge commits?**
 A: Rebase keeps git history linear, easier to bisect, simpler to understand cause of regressions.
 
 **Q: What if I need to pair program?**  

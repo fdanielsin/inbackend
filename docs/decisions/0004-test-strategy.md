@@ -29,7 +29,7 @@ Structurer TOUS les tests autour de trois catégories :
 
 3. **E2E** (~500ms)  
    - Flux HTTP complet : controller → repo → DB
-   - Contre testcontainers (Podman/Docker)
+   - SQLite en mémoire pour les tests actuels
    - Location : `tests/e2e/`
 
 ### Structure des répertoires
@@ -94,7 +94,8 @@ func TestX_Y_Z(t *testing.T) {
 
 - Plus de fichiers (un par composant testé)
 - Fixtures partagées nécessitent coordination
-- Tests E2E nécessitent Podman/Docker
+- Les tests d'intégration PostgreSQL nécessitent Podman/Docker. Les tests E2E
+  actuels utilisent SQLite en mémoire.
 
 ## Alternatives rejetées
 
