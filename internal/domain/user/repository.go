@@ -16,7 +16,4 @@ type Repository interface {
 
 	// List récupère tous les utilisateurs.
 	List(ctx context.Context) ([]*User, error)
-
-	// Delete supprime un utilisateur.
-	Delete(ctx context.Context, id uint) error
 }

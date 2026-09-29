@@ -102,7 +102,10 @@ Closes #123
 ```
 
 **Critical Rule:**
-- ✅ NO `Co-authored-by` trailers in ANY commits
+- NO `Co-authored-by` trailers in ANY commits, for new commits going forward.
+  No CI check enforces this today ; 7 existing commits on `origin/develop`
+  (e.g. `66335a8`) contain the trailer. A history rewrite to remove them is
+  planned.
 - Each commit represents work by the actual author only
 - If pair programming: both developers have their own commits, or one takes attribution
 
@@ -116,19 +119,21 @@ Closes #123
 
 ### 3. CI/CD Pipeline: 7-Stage Gating
 
-**Pipeline Stages (must all pass before merge):**
+**Pipeline Stages (must all pass before merge, sauf l'étape 4 — voir note) :**
 
 | # | Stage | Command | Duration | Notes |
 |---|-------|---------|----------|-------|
 | 1 | Lint & Format | `gofmt`, `go vet`, `go mod tidy` | ~5s | Enforces code style |
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
-| 4 | Security | `nancy sleuth` | ~20s | Detects vulnerable dependencies |
+| 4 | Security | `nancy sleuth` | ~20s | Échoue actuellement (`401 Unauthorized` sur OSS Index) à chaque run ; l'erreur est masquée par `\|\| true` dans `ci.yml` et ne bloque jamais le job. Ne détecte donc aucune dépendance vulnérable en pratique. Suivi : `Q-05`. |
 | 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 60s` | ~90s | PostgreSQL via Testcontainers |
 | 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 60s` | ~60s | SQLite in-memory, HTTP contract coverage |
 | 7 | Coverage Report | `go test -coverprofile=coverage.out ./...` | ~30s | Threshold reported, non-blocking |
 
-**Total time:** ~4-5 minutes (Phase 6+)
+**Total time:** ~10-11 minutes, mesuré sur le run `develop` du 2026-09-29
+(22:02–22:13 UTC, `gh run view` sur le commit `d2fede3`). L'estimation
+précédente (~4-5 min) n'était plus à jour.
 
 ---
 
@@ -179,9 +184,12 @@ make test             # All packages; PostgreSQL tests require a provider
 
 #### CI/CD Pipeline (GitHub Actions)
 
-The integration job executes `tests/integration` against the PostgreSQL service
-provided by the runner. The E2E job executes `tests/e2e` directly; those tests
-use SQLite in-memory by design and do not require the PostgreSQL service.
+The integration job's workflow file also declares a `services: postgres` block
+and a `DATABASE_URL` env var, but `tests/integration/persistence/setup_test.go`
+never reads `DATABASE_URL`: it starts its own PostgreSQL container via
+Testcontainers instead, ignoring the runner's service container. The E2E job
+executes `tests/e2e` directly; those tests use SQLite in-memory by design and
+do not require PostgreSQL at all.
 
 **Historical rationale for the earlier SQLite transition:**
 - **Local:** SQLite eliminates setup complexity, enables fast iteration
@@ -272,12 +280,14 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 ## Implementation Checklist
 
 - [x] Branching strategy documented
-- [x] Commit convention enforced (no Co-authored-by)
+- [ ] Commit convention (no Co-authored-by) documented for new commits ;
+      non enforced by any check ; 7 existing commits on `origin/develop`
+      contain the trailer, history rewrite planned
 - [x] CI/CD pipeline contains seven jobs plus a summary
 - [x] A successful remote run is independently verified for the current commit
 - [ ] Branch protection rules are independently verified in GitHub
 - [x] .gitignore updated (exclude `coverage.out` if needed)
-- [ ] Pre-commit hook (optional, `.git/hooks/pre-commit`)
+- [x] Pre-commit/pre-push hooks exist (`.githooks/pre-commit`, `.githooks/pre-push`) ; activation locale non automatique, nécessite `git config core.hooksPath .githooks`
 - [ ] GitHub issue templates (optional, prompt for `Closes #NNN`)
 
 ---
@@ -295,7 +305,8 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 ### Negative
 - ⚠️ SQLite E2E tests may miss PostgreSQL edge cases; integration tests cover
   those cases only when PostgreSQL actually runs
-- ⚠️ 3-4 min CI/CD runtime (acceptable for team size; future optimization: parallel stages)
+- ⚠️ ~10-11 min CI/CD runtime mesuré (voir section 3) ; optimisation future
+  possible : parallélisation des étapes
 
 ### Risks
 - **Risk:** Developer ignores local validation, pushes broken code

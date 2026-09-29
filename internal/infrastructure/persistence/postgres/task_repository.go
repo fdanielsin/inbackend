@@ -20,7 +20,6 @@ func NewTaskRepository(db *gorm.DB) *TaskRepository {
 
 // Create crée une nouvelle tâche et retourne l'ID généré.
 func (r *TaskRepository) Create(ctx context.Context, t *task.Task) (uint, error) {
-	// Mapper l'entité domaine vers le modèle GORM
 	gormTask := &TaskModel{
 		Title:       t.Title,
 		Description: t.Description,
@@ -28,7 +27,6 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Task) (uint, error)
 		Completed:   t.Completed,
 	}
 
-	// Créer la tâche
 	result := r.db.WithContext(ctx).Create(gormTask)
 	if result.Error != nil {
 		return 0, result.Error
@@ -49,7 +47,6 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint) (*task.Task, erro
 		return nil, result.Error
 	}
 
-	// Mapper le modèle GORM vers l'entité domaine
 	return &task.Task{
 		ID:          gormTask.ID,
 		Title:       gormTask.Title,
@@ -68,7 +65,6 @@ func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task
 		return nil, result.Error
 	}
 
-	// Mapper les modèles GORM vers les entités domaine
 	tasks := make([]*task.Task, len(gormTasks))
 	for i, gt := range gormTasks {
 		tasks[i] = &task.Task{

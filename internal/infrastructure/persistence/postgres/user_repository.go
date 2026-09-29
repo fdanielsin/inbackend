@@ -28,13 +28,11 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error) {
 	r.log.Debug("Creating user", slog.String("email", u.Email), slog.String("name", u.Name))
 
-	// Mapper l'entité domaine vers le modèle GORM
 	gormUser := &UserModel{
 		Name:  u.Name,
 		Email: u.Email,
 	}
 
-	// Créer l'utilisateur
 	result := r.db.WithContext(ctx).Create(gormUser)
 	if result.Error != nil {
 		r.log.Error("Failed to create user", slog.String("error", result.Error.Error()))
@@ -61,7 +59,6 @@ func (r *UserRepository) GetByID(ctx context.Context, id uint) (*user.User, erro
 		return nil, result.Error
 	}
 
-	// Mapper le modèle GORM vers l'entité domaine
 	return &user.User{
 		ID:    gormUser.ID,
 		Name:  gormUser.Name,
@@ -97,7 +94,6 @@ func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
 		return nil, result.Error
 	}
 
-	// Mapper les modèles GORM vers les entités domaine
 	users := make([]*user.User, len(gormUsers))
 	for i, gu := range gormUsers {
 		users[i] = &user.User{
@@ -108,10 +104,4 @@ func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
 	}
 
 	return users, nil
-}
-
-// Delete supprime un utilisateur.
-func (r *UserRepository) Delete(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&UserModel{}, id)
-	return result.Error
 }
