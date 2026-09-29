@@ -161,7 +161,14 @@ paths:
       - $ref: '#/components/parameters/Id'
     put:
       tags: [Tasks]
-      summary: Mettre à jour une tâche
+      summary: Mettre à jour une tâche (mise à jour partielle)
+      description: |
+        Met à jour une tâche existante. Chaque propriété de `UpdateTaskRequest`
+        est optionnelle : une propriété absente du corps JSON n'est pas
+        modifiée. Une propriété présente avec une valeur, y compris une
+        valeur "vide" (`completed: false`, `description: ""`), est appliquée
+        telle quelle. `title`, si présent, ne peut pas être une chaîne vide
+        (voir `400`).
       operationId: updateTask
       requestBody:
         required: true
@@ -171,7 +178,7 @@ paths:
               $ref: '#/components/schemas/UpdateTaskRequest'
       responses:
         '200':
-          description: Tâche mise à jour
+          description: Tâche mise à jour ; la réponse reflète l'état réellement persisté.
           content:
             application/json:
               schema:
@@ -357,9 +364,16 @@ components:
           default: false
     UpdateTaskRequest:
       type: object
+      description: |
+        Toutes les propriétés sont optionnelles. Une propriété absente du
+        corps JSON laisse la valeur existante inchangée en base ; une
+        propriété présente est appliquée telle quelle, y compris une valeur
+        "vide" (`false`, `""`).
       properties:
         title:
           type: string
+          minLength: 1
+          description: Si fourni, ne peut pas être une chaîne vide (400 sinon).
         description:
           type: string
         completed:

@@ -62,6 +62,29 @@ réussie a ensuite utilisé le socket Podman macOS explicite et
 - Le logging `slog` délégué à `zap` est conservé comme choix explicite de la
   phase 6.
 
+## Correctif Q-01 — PUT /api/v1/tasks/{id} n'appliquait pas les valeurs falsy/vides
+
+- **Bug** : `UpdateTaskRequest` utilisait des champs Go non-pointeurs ; une clé
+  JSON absente était indiscernable d'une valeur explicite à zéro. Combiné à
+  `TaskRepository.Update`, qui passait un `struct` à `Updates()` (GORM ignore
+  silencieusement les champs à valeur zéro dans ce cas), un `PUT`
+  `{"completed":false}` ou `{"description":""}` ne persistait jamais le
+  changement, alors que la réponse HTTP (construite en mémoire) affichait la
+  valeur demandée comme si elle avait été enregistrée.
+- **Correction** : `UpdateTaskRequest` utilise désormais des pointeurs
+  (`*string`/`*bool`) ; seul un champ non-nil est appliqué. `title` explicite
+  vide renvoie `400` (`task.ErrTaskTitleEmpty`). `TaskRepository.Update`
+  utilise `Select("title", "description", "completed").Updates(...)` (jamais
+  `Save`, pour exclure tout risque d'upsert recréant une tâche supprimée
+  entre-temps) et renvoie `task.ErrTaskNotFound` (404) si `RowsAffected == 0`.
+- **Contrat** : `docs/specs/api/openapi.yaml` documente explicitement la
+  sémantique de mise à jour partielle de `PUT /api/v1/tasks/{id}` (champ
+  absent = non modifié) et ajoute `minLength: 1` sur `title`. La route reste
+  `PUT` (option retenue plutôt qu'un nouvel endpoint `PATCH`).
+- **Tests** : unitaires application dans
+  `tests/units/application/update_task_test.go` (logique de fusion/validation,
+  sans DB) ; régression e2e et intégration PostgreSQL ajoutées par `qa`.
+
 ## Corrections confirmées
 
 - Les jobs CI d'intégration et E2E ciblent désormais leurs packages respectifs.

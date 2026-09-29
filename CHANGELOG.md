@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+### Fix Q-01 — PUT /api/v1/tasks/{id} ignorait les valeurs falsy/vides
+
+- **fix**: `UpdateTaskRequest` passe en champs pointeurs (`*string`/`*bool`)
+  pour distinguer un champ absent d'un champ fourni à valeur zéro ;
+  `title` explicite vide renvoie désormais une erreur 400 au lieu d'être
+  silencieusement accepté.
+- **fix**: `TaskRepository.Update` utilise `Select(...).Updates(...)` pour
+  écrire `title`/`description`/`completed` même à valeur zéro, et renvoie
+  `404` (`task.ErrTaskNotFound`) si la tâche a été supprimée entre-temps
+  (`RowsAffected == 0`), au lieu d'un succès silencieux.
+- **docs**: `docs/specs/api/openapi.yaml` documente la sémantique de mise à
+  jour partielle de `PUT /api/v1/tasks/{id}` et ajoute `minLength: 1` sur
+  `title`.
+- **tests**: ajout de `tests/units/application/update_task_test.go`.
+
 ### Remise en conformité — 2026-09-20
 
 - **api**: Ajouté la spécification OpenAPI 3.1 des routes, payloads, réponses
