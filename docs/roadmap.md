@@ -66,6 +66,7 @@ QA) :
 | 6 | Docker | `Q-03` | À faire |
 | 7 | Documentation | `F-03` (frontend) | À faire |
 | 8 | Fonctionnalités | `FP-03`, `FP-01`, `FP-02`, `BP-02` (tri), `FP-04` | À faire |
+| — | Nettoyage backend (demande utilisateur, hors audit) | — | **Fait** : code mort retiré (`testdb.go`, `GetZap`/`ZapLog`, `zapLevelForSlog`, `Delete` de `user.Repository`), commentaires paraphrases retirés, `.env.example` aligné sur les variables réellement lues, écart `architecture.md` corrigé. Branche `chore/cleanup-backend` depuis `develop`. Aucun changement de comportement ni de contrat ; `make lint`/`go vet`/`go build`/`go test ./...` verts avant et après. |
 
 ## Règle de progression
 

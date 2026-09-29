@@ -35,13 +35,11 @@ func NewCreateTaskHandler(repo task.Repository) *CreateTaskHandler {
 
 // Execute exécute la commande CreateTask.
 func (h *CreateTaskHandler) Execute(ctx context.Context, req CreateTaskRequest) (*CreateTaskResponse, error) {
-	// Valider la requête au niveau du domaine
 	t, err := task.NewTask(0, req.UserID, req.Title, req.Description, req.Completed)
 	if err != nil {
 		return nil, err
 	}
 
-	// Persister
 	id, err := h.repo.Create(ctx, t)
 	if err != nil {
 		return nil, err

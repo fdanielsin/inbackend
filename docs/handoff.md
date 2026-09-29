@@ -85,6 +85,83 @@ réussie a ensuite utilisé le socket Podman macOS explicite et
   `tests/units/application/update_task_test.go` (logique de fusion/validation,
   sans DB) ; régression e2e et intégration PostgreSQL ajoutées par `qa`.
 
+## Nettoyage backend (demande utilisateur, hors plan d'audit)
+
+Branche `chore/cleanup-backend` depuis `develop` (`d2fede3`). Objectif :
+code écrit comme par un développeur senior (ADR 0001), sans changement de
+comportement ni de contrat.
+
+- **Supprimé** : `internal/infrastructure/database/testdb.go` (`Q-10`) — zéro
+  appelant vérifié par grep croisé dans tout le dépôt (y compris les tests) ;
+  liait `testcontainers-go` dans le binaire de production sans raison, car ce
+  n'était pas un fichier `_test.go`. `go mod tidy` exécuté après coup : aucun
+  changement de `go.mod`/`go.sum` (`testcontainers-go` reste requis par de
+  vrais fichiers de test ailleurs).
+- **Supprimé** : `GetZap()`/`ZapLog` (`internal/infrastructure/logger/logger.go`)
+  et `zapLevelForSlog()` (`slog_handler.go`) — zéro appelant vérifié.
+  `InitLogger()`, `GetSlog()`/`SlogLog` conservés intacts (utilisés partout).
+- **Supprimé** : `Delete` de l'interface `user.Repository` et de son
+  implémentation PostgreSQL — zéro appelant, aucune route `DELETE /users`,
+  absent du tableau CQRS d'`architecture.md`.
+- **Retiré** : une quinzaine de commentaires qui paraphrasaient la ligne
+  suivante, dans `create_user.go`, `create_task.go`, `update_task.go`,
+  `get_stats.go`, `user_repository.go`, `task_repository.go`. Conservés : tous
+  les commentaires godoc sur symboles exportés, et les blocs expliquant une
+  décision non évidente (dont ceux du lot Q-01).
+- **Corrigé** : `.env.example` ne liste plus que les variables réellement
+  lues par le code (`DATABASE_URL`, `PORT`, `ENV`, vérifié par grep sur
+  `os.Getenv`) ; `DATABASE_URL` ajoutée (obligatoire, absente du template
+  précédent) ; `DB_USER`/`DB_PASSWORD`/`DB_NAME`/`DB_HOST`/`DB_PORT`/
+  `CORS_ORIGIN`/`LOG_LEVEL` retirées (jamais lues nulle part).
+- **Corrigé** : `architecture.md`, `infrastructure/database/` ajouté à
+  l'arborescence documentée (existe dans le code, n'était pas documenté).
+- **Écart connu, conservé volontairement comme cible** (décision utilisateur ;
+  règle ajoutée à AGENTS.md : une section « cible » se garde, annotée) :
+  `architecture.md` documente aussi `domain/user/service.go`,
+  `domain/task/service.go`, `infrastructure/http/`, `infrastructure/config/`
+  et `shared/errors/`/`shared/pagination/`/`shared/response/` comme des
+  sous-dossiers, alors qu'aucun n'existe dans le code (`shared` a deux
+  fichiers plats `errors.go`/`response.go`, pas de `pagination`). Chacun
+  annoté « (cible, pas encore créé) » dans l'arbre. La section
+  « Infrastructure » a été réécrite en cohérence : Echo et le router ne sont
+  pas dans `infrastructure/` (Echo est utilisé par les controllers et
+  `main.go:56-75`) ; l'absence de package `config/` dédié est décrite comme un
+  fait, avec `config/`/`http/` comme cible.
+- **Corrigé** : ADR 0006 suite à la revue `qa` — le schéma de dépendances
+  (`infrastructure ──> application` était faux, corrigé en
+  `infrastructure ──> domain`), le tableau CQRS (`GetTaskStats` inexistant →
+  `GetStats` ; `HealthCheck` est un controller, pas une query), la case
+  « Pre-commit hook » (hooks `.githooks/` existants, activation locale non
+  automatique), l'étape « Security » (`nancy sleuth` échoue en 401 sur OSS
+  Index à chaque run, masqué par `\|\| true`, ne bloque jamais — vérifié sur
+  le run `36637119785`), la description de l'intégration CI (démarre son
+  propre conteneur Testcontainers, ignore `DATABASE_URL` et le service
+  `postgres` du runner), la durée du pipeline (`~10-11 min` mesurées,
+  remplace `~4-5 min`/`3-4 min`), et la case « Commit convention enforced »
+  (aucun contrôle ne l'impose, 7 commits existants sur `origin/develop`
+  contiennent `Co-authored-by`, réécriture d'historique prévue). Les règles
+  « No merge commits » elles-mêmes ne sont pas modifiées (choix utilisateur de
+  les suivre) ; aucune assertion factuelle « `develop` est linéaire » n'a été
+  trouvée ailleurs dans l'ADR ou ce handoff nécessitant une note sur les
+  merges `b28ee65`/`d2fede3`.
+- **Non touché dans ce lot** (décision explicite du lead) : `Dockerfile` —
+  renvoyé au lot 6 (`Q-03`), l'image ne se construit de toute façon pas avec
+  `golang:1.23` alors que `go.mod` demande `1.25` ; `docker-compose.yml` —
+  cassé (pas de `DATABASE_URL`, pas de service `postgres`), renvoyé au même
+  lot.
+- **`CHANGELOG.md`** réécrit au format Keep a Changelog 1.1.0 (`[Unreleased]`
+  + `[1.0.0] - 2026-09-17`, rubriques Added/Changed/Fixed/Removed, une ligne
+  par changement notable) suite à la nouvelle règle ajoutée à AGENTS.md.
+- **Vérifications** : `make lint`, `go vet ./...`, `go build ./...` PASS ;
+  `go test ./...` PASS (y compris `tests/integration/persistence` réel via
+  Docker) avant et après toutes ces modifications ; aucun test existant
+  modifié. Cette série de corrections est uniquement documentaire (aucun
+  fichier Go touché), revérification `go test` non nécessaire.
+- **Vérification `qa`** : verdict initial « bloqué, uniquement sur la doc »
+  (code accepté : même comportement HTTP sur 25 requêtes, mêmes 41 tests avant
+  et après, aucun appelant des symboles supprimés) ; corrections ci-dessus
+  faites en réponse, `qa` prévenue pour re-vérification.
+
 ## Corrections confirmées
 
 - Les jobs CI d'intégration et E2E ciblent désormais leurs packages respectifs.
@@ -181,5 +258,6 @@ Prochaine étape :
 
 ## Dernière mise à jour
 
-2026-09-20 — reprise documentaire et technique vérifiée ; CI distante et
-validation PostgreSQL locale avec Podman confirmées.
+2026-09-30 — nettoyage backend (code mort, commentaires, config morte, écarts
+de doc) sur `chore/cleanup-backend`, sans changement de comportement ni de
+contrat ; voir « Nettoyage backend » ci-dessus.
