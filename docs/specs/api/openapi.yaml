@@ -108,10 +108,13 @@ paths:
     get:
       tags: [Tasks]
       summary: Lister les tâches d'un utilisateur
+      description: |
+        Les tâches sont retournées triées par `id` croissant (ordre de
+        création), garanti par le serveur.
       operationId: listUserTasks
       responses:
         '200':
-          description: Liste des tâches
+          description: Liste des tâches, triée par `id` croissant.
           content:
             application/json:
               schema:

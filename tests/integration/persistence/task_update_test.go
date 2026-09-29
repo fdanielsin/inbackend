@@ -14,12 +14,14 @@ import (
 func TestTaskRepository_Update_PersistsCompletedFalse(t *testing.T) {
 	// GIVEN: A completed task stored in PostgreSQL.
 	ctx := context.Background()
-	repo := postgres.NewTaskRepository(setupTestDB(t))
-	id, err := repo.Create(ctx, &task.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: 1, Completed: true})
+	db := setupTestDB(t)
+	repo := postgres.NewTaskRepository(db)
+	ownerID := createTestUser(t, db, "owner@example.com")
+	id, err := repo.Create(ctx, &task.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: true})
 	require.NoError(t, err)
 
 	// WHEN: The task is updated with completed=false.
-	err = repo.Update(ctx, &task.Task{ID: id, Title: "Buy milk", Description: "Semi-skimmed", UserID: 1, Completed: false})
+	err = repo.Update(ctx, &task.Task{ID: id, Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: false})
 
 	// THEN: completed=false is persisted.
 	require.NoError(t, err)
@@ -34,12 +36,14 @@ func TestTaskRepository_Update_PersistsCompletedFalse(t *testing.T) {
 func TestTaskRepository_Update_PersistsEmptyDescription(t *testing.T) {
 	// GIVEN: A task with a description stored in PostgreSQL.
 	ctx := context.Background()
-	repo := postgres.NewTaskRepository(setupTestDB(t))
-	id, err := repo.Create(ctx, &task.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: 1, Completed: true})
+	db := setupTestDB(t)
+	repo := postgres.NewTaskRepository(db)
+	ownerID := createTestUser(t, db, "owner@example.com")
+	id, err := repo.Create(ctx, &task.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: true})
 	require.NoError(t, err)
 
 	// WHEN: The task is updated with an empty description.
-	err = repo.Update(ctx, &task.Task{ID: id, Title: "Buy milk", Description: "", UserID: 1, Completed: true})
+	err = repo.Update(ctx, &task.Task{ID: id, Title: "Buy milk", Description: "", UserID: ownerID, Completed: true})
 
 	// THEN: The empty description is persisted and the other fields are unchanged.
 	require.NoError(t, err)
