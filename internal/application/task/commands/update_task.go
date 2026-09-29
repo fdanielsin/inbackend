@@ -7,11 +7,15 @@ import (
 )
 
 // UpdateTaskRequest est le DTO de la commande UpdateTask.
+//
+// Title, Description et Completed sont des pointeurs pour distinguer un champ
+// absent du corps JSON (nil, non modifié) d'un champ présent avec une valeur
+// "vide" (chaîne vide, false) qui doit être appliquée telle quelle.
 type UpdateTaskRequest struct {
-	ID          uint   `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Completed   bool   `json:"completed"`
+	ID          uint    `json:"id"`
+	Title       *string `json:"title"`
+	Description *string `json:"description"`
+	Completed   *bool   `json:"completed"`
 }
 
 // UpdateTaskResponse est la réponse de la commande UpdateTask.
@@ -40,10 +44,20 @@ func (h *UpdateTaskHandler) Execute(ctx context.Context, req UpdateTaskRequest) 
 		return nil, err
 	}
 
-	// Mettre à jour les propriétés
-	t.Title = req.Title
-	t.Description = req.Description
-	t.Completed = req.Completed
+	// Mettre à jour uniquement les propriétés fournies dans la requête.
+	// Un champ absent (pointeur nil) laisse la valeur existante inchangée.
+	if req.Title != nil {
+		if *req.Title == "" {
+			return nil, task.ErrTaskTitleEmpty
+		}
+		t.Title = *req.Title
+	}
+	if req.Description != nil {
+		t.Description = *req.Description
+	}
+	if req.Completed != nil {
+		t.Completed = *req.Completed
+	}
 
 	// Persister
 	if err := h.repo.Update(ctx, t); err != nil {

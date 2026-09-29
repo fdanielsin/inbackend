@@ -84,17 +84,34 @@ func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task
 }
 
 // Update met à jour une tâche existante.
+//
+// Select() force l'écriture de title/description/completed même à leur
+// valeur zéro (chaîne vide, false) : sans lui, GORM ignorerait silencieusement
+// ces champs dans la clause UPDATE lorsqu'on lui passe un struct.
+// UserID n'est volontairement pas dans la liste Select : ce chemin ne doit
+// jamais réattribuer une tâche à un autre utilisateur.
+//
+// RowsAffected == 0 signifie que l'ID ne correspond à aucune ligne (tâche
+// déjà supprimée, y compris via une suppression concurrente entre GetByID et
+// cet appel) ; on le traite comme "non trouvée" plutôt que comme un succès
+// silencieux.
 func (r *TaskRepository) Update(ctx context.Context, t *task.Task) error {
-	gormTask := &TaskModel{
-		ID:          t.ID,
-		Title:       t.Title,
-		Description: t.Description,
-		UserID:      t.UserID,
-		Completed:   t.Completed,
+	result := r.db.WithContext(ctx).
+		Model(&TaskModel{}).
+		Where("id = ?", t.ID).
+		Select("title", "description", "completed").
+		Updates(TaskModel{
+			Title:       t.Title,
+			Description: t.Description,
+			Completed:   t.Completed,
+		})
+	if result.Error != nil {
+		return result.Error
 	}
-
-	result := r.db.WithContext(ctx).Model(&TaskModel{}).Where("id = ?", t.ID).Updates(gormTask)
-	return result.Error
+	if result.RowsAffected == 0 {
+		return task.ErrTaskNotFound
+	}
+	return nil
 }
 
 // Delete supprime une tâche.
