@@ -8,7 +8,7 @@ help:
 	@echo "  make test-unit       - Run unit tests"
 	@echo "  make test-integration - Run integration tests with testcontainers"
 	@echo "  make test-e2e        - Run E2E tests"
-	@echo "  make lint            - Run golangci-lint"
+	@echo "  make lint            - Check formatting (gofmt) and run go vet"
 	@echo "  make fmt             - Format code"
 	@echo "  make clean           - Remove build artifacts"
 	@echo "  make docker-build    - Build Docker image with Podman"
