@@ -7,39 +7,34 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 ### Added
 
 - Spécification OpenAPI 3.1 du contrat HTTP (`docs/specs/api/openapi.yaml`).
-- Suite de tests unitaires, d'intégration (PostgreSQL via Testcontainers) et
-  end-to-end (SQLite).
+- Tests de régression pour `Q-01` (unitaires, e2e, intégration PostgreSQL).
 
 ### Changed
 
 - Backend restructuré en couches domain/application/infrastructure/controllers
-  (Clean Architecture / DDD), CQRS applicatif pour les utilisateurs et les
-  tâches.
+  (DDD/Clean Architecture), CQRS applicatif introduit.
 - Logging migré vers `slog` (délégué à `zap`), réponses HTTP standardisées.
-- Documentation d'architecture et ADR 0006 alignées sur l'état réel du code
-  (structure des packages, comportement de la CI, hooks Git, durée mesurée du
-  pipeline).
+- Tests réorganisés en unit/integration/e2e (ADR 0004).
+- Documentation d'architecture et ADR 0006 alignées sur l'état réel du code.
 
 ### Fixed
 
-- `Q-01` (PR [inbackend#3](https://github.com/fdanielsin/inbackend/pull/3)) :
-  `PUT /api/v1/tasks/{id}` applique correctement les mises à jour partielles —
-  les valeurs `false`/`""` explicites sont persistées, un `title` vide est
-  rejeté (400), une tâche disparue entre-temps renvoie 404 au lieu d'un succès
-  silencieux.
+- `Q-01` : `PUT /api/v1/tasks/{id}` persiste les mises à jour partielles
+  ([#3](https://github.com/fdanielsin/inbackend/pull/3)).
 - Jobs CI d'intégration et E2E ciblent désormais leurs packages réels.
+- `B-06` : l'aide `make help` décrit la vraie cible `lint` (gofmt + go vet).
 
 ### Removed
 
-- `Q-10` : code mort retiré (`internal/infrastructure/database/testdb.go`,
-  `GetZap`/`ZapLog`, `zapLevelForSlog`, méthode `Delete` inutilisée sur
-  `user.Repository`).
-- Configuration obsolète : `.env.example` n'expose plus que les variables
-  réellement lues ; dépendance implicite à `golangci-lint` retirée de
-  `make lint`.
+- `Q-10` : code mort retiré.
+- Configuration obsolète : `.env.example` nettoyé (variables réellement lues
+  uniquement).
 
 ## [1.0.0] - 2026-09-17
 
 ### Added
 
 - Endpoint de statistiques agrégées.
+
+[Unreleased]: https://github.com/fdanielsin/inbackend/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/fdanielsin/inbackend/releases/tag/v1.0.0
