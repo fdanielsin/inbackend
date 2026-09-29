@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // ZapHandler implémente slog.Handler en déléguant vers zap.
@@ -81,21 +80,5 @@ func zapFieldFromAttr(a slog.Attr) zap.Field {
 		return zap.Time(a.Key, a.Value.Time())
 	default:
 		return zap.Any(a.Key, a.Value.Any())
-	}
-}
-
-// ZapLevelForSlog retourne le niveau zap correspondant au niveau slog.
-func zapLevelForSlog(level slog.Level) zapcore.Level {
-	switch level {
-	case slog.LevelDebug:
-		return zapcore.DebugLevel
-	case slog.LevelInfo:
-		return zapcore.InfoLevel
-	case slog.LevelWarn:
-		return zapcore.WarnLevel
-	case slog.LevelError:
-		return zapcore.ErrorLevel
-	default:
-		return zapcore.InfoLevel
 	}
 }

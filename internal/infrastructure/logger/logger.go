@@ -9,10 +9,7 @@ import (
 )
 
 // Global logger instances
-var (
-	ZapLog  *zap.Logger
-	SlogLog *slog.Logger
-)
+var SlogLog *slog.Logger
 
 // InitLogger initialise les deux loggers : zap et slog.
 // slog délègue vers zap en arrière-plan.
@@ -32,9 +29,6 @@ func InitLogger() *zap.Logger {
 		os.Exit(1)
 	}
 
-	// Stocker globalement
-	ZapLog = zapLogger
-
 	// Créer le handler slog qui délègue vers zap
 	handler := NewZapHandler(zapLogger)
 
@@ -52,13 +46,4 @@ func GetSlog() *slog.Logger {
 		return slog.Default()
 	}
 	return SlogLog
-}
-
-// GetZap retourne l'instance globale du logger zap.
-func GetZap() *zap.Logger {
-	if ZapLog == nil {
-		// Fallback si GetZap est appelé avant InitLogger
-		ZapLog, _ = zap.NewDevelopment()
-	}
-	return ZapLog
 }

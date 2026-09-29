@@ -31,13 +31,11 @@ func NewCreateUserHandler(repo user.Repository) *CreateUserHandler {
 
 // Execute exécute la commande CreateUser.
 func (h *CreateUserHandler) Execute(ctx context.Context, req CreateUserRequest) (*CreateUserResponse, error) {
-	// Valider la requête au niveau du domaine
 	u, err := user.NewUser(0, req.Name, req.Email)
 	if err != nil {
 		return nil, err
 	}
 
-	// Persister
 	id, err := h.repo.Create(ctx, u)
 	if err != nil {
 		return nil, err
