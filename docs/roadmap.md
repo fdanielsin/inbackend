@@ -40,27 +40,32 @@
 
 ## Phase 5 — validation
 
-- **Statut : CI corrigée; intégration PostgreSQL ignorée localement sans Docker/Podman**
+- **Statut : CI corrigée ; intégration PostgreSQL exécutée avec succès via
+  Docker/Podman pour le lot 1 (2026-09-29, voir Plan de lots) ; sans provider,
+  elle reste ignorée explicitement, jamais réussie par défaut.**
 - Adapter les tests unitaires.
 - Conserver et corriger les tests d'intégration.
 - Exécuter les tests end-to-end.
 - Exécuter `go test ./...` depuis `inbackend`.
 - Vérifier le formatage et le build.
 
-La validation PostgreSQL réelle reste la prochaine étape obligatoire dans un
-environnement disposant d'un provider.
+## Plan de lots (backend)
 
-## Étape obligatoire avant la suite
+Suite à l'audit croisé du 2026-09-29 (voir `docs/roadmap.md` à la racine pour
+le détail des identifiants et le plan complet, y compris les lots frontend et
+QA) :
 
-Réaliser une remise en conformité de l'implémentation existante avant toute
-nouvelle fonctionnalité :
-
-- vérifier les écarts entre le code et l'architecture ;
-- confirmer ou supprimer les doublons techniques ;
-- clarifier les modèles métier, persistance et API ;
-- clarifier le logging et la gestion des erreurs ;
-- vérifier la stratégie de tests ;
-- mettre à jour le handoff avec des faits vérifiés.
+| Lot | Objet | Constats backend | État |
+| --- | --- | --- | --- |
+| 0 | CI verte | — | Fait : `develop` à `66335a8`, run CI `36632944817` vert. |
+| 1 | `PUT /api/v1/tasks/{id}` ignorait les valeurs falsy/vides | `Q-01` | **Corrigé** : PR [inbackend#3](https://github.com/fdanielsin/inbackend/pull/3) mergée dans `develop` (`b28ee65`), CI verte. |
+| 2 | Erreurs lisibles | `B-03`, `B-04` (+ `F-01`, `F-02` côté frontend) | À faire |
+| 3 | Tests honnêtes | `Q-06`, `Q-07`, `Q-12`, `Q-09`, `Q-10` | À faire |
+| 4 | Schéma (migrations versionnées d'abord) | `B-05`, puis `B-02`, `B-07`, `B-08` | À faire |
+| 5 | Portes CI | `Q-04`, `Q-05`, `Q-13`, `Q-11`, `B-06` | À faire |
+| 6 | Docker | `Q-03` | À faire |
+| 7 | Documentation | `F-03` (frontend) | À faire |
+| 8 | Fonctionnalités | `FP-03`, `FP-01`, `FP-02`, `BP-02` (tri), `FP-04` | À faire |
 
 ## Règle de progression
 
