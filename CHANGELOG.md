@@ -19,6 +19,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Fixed
 
+- `Q-12` : `GET /api/v1/users/{id}/tasks` retourne les tâches triées par
+  `id` croissant.
 - `Q-01` : `PUT /api/v1/tasks/{id}` persiste les mises à jour partielles
   ([#3](https://github.com/fdanielsin/inbackend/pull/3)).
 - Jobs CI d'intégration et E2E ciblent désormais leurs packages réels.

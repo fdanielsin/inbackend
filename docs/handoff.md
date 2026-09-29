@@ -62,6 +62,17 @@ réussie a ensuite utilisé le socket Podman macOS explicite et
 - Le logging `slog` délégué à `zap` est conservé comme choix explicite de la
   phase 6.
 
+## Correctif Q-12 — Ordre des tâches non garanti
+
+`TaskRepository.ListByUserID` (`internal/infrastructure/persistence/postgres/task_repository.go`)
+ne triait pas explicitement ses résultats ; l'ordre retourné par
+`GET /api/v1/users/{id}/tasks` n'était pas garanti par SQL. Ajout de
+`.Order("id ASC")` ; contrat `openapi.yaml` mis à jour en premier pour
+documenter le tri par `id` croissant. Décision utilisateur : ce lot ne
+touche que les tâches. `UserRepository.List` (même absence d'`ORDER BY`)
+n'est pas traité ici — c'est une question fonctionnelle distincte, non
+tranchée, à traiter séparément si besoin.
+
 ## Correctif Q-01 — PUT /api/v1/tasks/{id} n'appliquait pas les valeurs falsy/vides
 
 - **Bug** : `UpdateTaskRequest` utilisait des champs Go non-pointeurs ; une clé
