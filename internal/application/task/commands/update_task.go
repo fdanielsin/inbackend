@@ -38,7 +38,6 @@ func NewUpdateTaskHandler(repo task.Repository) *UpdateTaskHandler {
 
 // Execute exécute la commande UpdateTask.
 func (h *UpdateTaskHandler) Execute(ctx context.Context, req UpdateTaskRequest) (*UpdateTaskResponse, error) {
-	// Récupérer la tâche existante
 	t, err := h.repo.GetByID(ctx, req.ID)
 	if err != nil {
 		return nil, err
@@ -59,7 +58,6 @@ func (h *UpdateTaskHandler) Execute(ctx context.Context, req UpdateTaskRequest) 
 		t.Completed = *req.Completed
 	}
 
-	// Persister
 	if err := h.repo.Update(ctx, t); err != nil {
 		return nil, err
 	}

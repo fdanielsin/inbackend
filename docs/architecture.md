@@ -33,29 +33,37 @@ inbackend/
     │   │   ├── entity.go
     │   │   ├── errors.go
     │   │   ├── repository.go
-    │   │   └── service.go
+    │   │   └── service.go       (cible, pas encore créé)
     │   └── task/
     │       ├── entity.go
     │       ├── errors.go
     │       ├── repository.go
-    │       └── service.go
+    │       └── service.go       (cible, pas encore créé)
     ├── controllers/
     │   └── http/
     ├── infrastructure/
     │   ├── persistence/postgres/
     │   │   └── models.go
-    │   ├── http/
-    │   ├── config/
+    │   ├── database/
+    │   ├── http/    (cible, pas encore créé)
+    │   ├── config/  (cible, pas encore créé)
     │   └── logger/
     └── shared/
-        ├── errors/
-        ├── pagination/
-        └── response/
+        ├── errors/              (cible, pas encore créé)
+        ├── pagination/          (cible, pas encore créé)
+        └── response/            (cible, pas encore créé)
 ```
 
-Les fichiers `service.go` et les packages de `shared` ne doivent contenir que
-des responsabilités réelles. Ils ne sont pas créés pour remplir une structure
-théorique.
+Aucun fichier `service.go` n'existe aujourd'hui dans `domain/user` ni
+`domain/task` : la logique métier des entités suffit pour l'instant (voir
+`entity.go`). Un `service.go` n'est ajouté que si une règle métier réelle ne
+trouve sa place ni dans l'entité ni dans un cas d'usage applicatif — jamais
+pour remplir une structure théorique.
+
+`shared` est aujourd'hui composé de deux fichiers plats,
+`internal/shared/errors.go` et `internal/shared/response.go` ; il n'y a pas
+encore de `pagination`. Le découpage en sous-dossiers ci-dessus est la cible
+si `shared` grossit au point de le justifier, pas l'état actuel.
 
 ## Responsabilités
 
@@ -83,8 +91,16 @@ serveur; les réponses 500 n'exposent qu'un message générique.
 
 ### Infrastructure
 
-L'infrastructure implémente les ports du domaine et contient PostgreSQL, GORM,
-Echo, le router, la configuration et le logger.
+L'infrastructure implémente les ports du domaine et contient aujourd'hui
+PostgreSQL, GORM et le logger. Elle n'utilise pas Echo et ne contient pas le
+router : Echo est utilisé directement par les controllers
+(`internal/controllers/http`) et par `main.go`, où le router est assemblé
+(`main.go:56-75`). Un package `infrastructure/http/` qui engloberait Echo et
+le routage est une cible (voir Structure cible), pas l'état actuel. Il
+n'existe pas non plus de package de configuration dédié : les variables
+d'environnement (`DATABASE_URL`, `PORT`, `ENV`) sont lues directement dans
+`main.go` et `internal/infrastructure/logger` ; un package `config/` est la
+cible.
 
 ### Shared
 
@@ -95,20 +111,24 @@ devenir un dossier de helpers génériques.
 ## Direction des dépendances
 
 ```text
-controllers ────────┐
-infrastructure ─────┼──> application ───> domain
-                    │
+controllers ──> application ──> domain
+infrastructure ────────────────> domain
+controllers ────────────────────> infrastructure/logger
 ```
 
-Le domaine définit les contrats. L'infrastructure fournit les implémentations.
-`main.go` assemble les dépendances.
+Le domaine définit les contrats. L'infrastructure fournit les implémentations
+(persistance, logger) et ne dépend que du domaine. `main.go` assemble les
+dépendances.
 
 ## CQRS retenu
 
 | Type | Exemples |
 | --- | --- |
 | Commands | `CreateUser`, `CreateTask`, `UpdateTask`, `DeleteTask` |
-| Queries | `GetUser`, `ListUsers`, `ListUserTasks`, `GetTaskStats`, `HealthCheck` |
+| Queries | `GetUser`, `ListUsers`, `ListUserTasks`, `GetStats` |
+
+`GET /health` (`HealthController.HealthCheck`) est un controller sans command
+ni query associée : il ne passe pas par la couche application.
 
 ## Éléments explicitement exclus
 
