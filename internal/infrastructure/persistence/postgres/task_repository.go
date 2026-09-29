@@ -59,7 +59,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint) (*task.Task, erro
 // ListByUserID récupère toutes les tâches d'un utilisateur.
 func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task.Task, error) {
 	var gormTasks []TaskModel
-	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Find(&gormTasks)
+	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("id ASC").Find(&gormTasks)
 
 	if result.Error != nil {
 		return nil, result.Error
