@@ -127,6 +127,7 @@ Closes #123
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
 | 4 | Security | `make vuln` (govulncheck) | ~20s | Bloquant : échoue si une vulnérabilité est atteignable par le code. Remplace `nancy` (`Q-05`). |
+| 4b | Docker | `docker compose build`, `docker compose up -d --wait`, `curl -f /health`, `docker compose down -v` | ~1-2 min | Bloquant : l'image se construit et la pile démarre avec PostgreSQL (`Q-03`) |
 | 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 60s` | ~90s | PostgreSQL via Testcontainers |
 | 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 60s` | ~60s | SQLite in-memory, HTTP contract coverage |
 | 7 | Coverage Report | `go test -coverprofile=coverage.out ./...` | ~30s | Threshold reported, non-blocking |
@@ -135,15 +136,15 @@ Closes #123
 `govulncheck` (v1.8.0) et `@redocly/cli` (v2.55.0, config
 `docs/specs/api/redocly.yaml` et `.redocly.lint-ignore.yaml`) sont épinglés dans le `Makefile` et lancés avec
 `go run ...@version` / `npx`, à l'identique en local et en CI. Une dépendance
-d'outil Go (`go get -tool`) a été écartée : elle passait la directive `go` de
-`go.mod` à 1.26 et faisait monter des dépendances de production (`x/crypto`,
-`x/net`, `protobuf`, `otel`). Les jobs Lint et Security utilisent donc
-Go 1.26 (`GO_TOOLS_VERSION`), les jobs Build et tests restent sur la version
-de `go.mod`. Chaque règle désactivée l'est avec sa justification dans le
-fichier de configuration.
+d'outil Go (`go get -tool`) a été écartée : elle faisait monter des
+dépendances de production (`x/crypto`, `x/net`, `protobuf`, `otel`). Chaque
+règle désactivée l'est avec sa justification dans le fichier de configuration.
 
-**Angle mort connu :** govulncheck ne voit pas encore la stdlib réellement
-utilisée (build en Go 1.25.0, scan en 1.26) ; corrigé par le lot Go 1.26.
+**Version de Go (`Q-03`) :** `go.mod` porte `go 1.26.0` et `toolchain go1.26.8`,
+pour la sécurité : govulncheck signale 25 vulnérabilités atteignables de la
+stdlib en 1.25.0, 16 en 1.26.0 et 0 en 1.26.8. Tous les jobs
+(`go-version-file: go.mod`) et le Dockerfile utilisent cette seule version, et
+govulncheck analyse la stdlib réellement embarquée.
 
 **Total time:** ~10-11 minutes, mesuré sur le run `develop` du 2026-09-29
 (22:02–22:13 UTC, `gh run view` sur le commit `d2fede3`). L'estimation

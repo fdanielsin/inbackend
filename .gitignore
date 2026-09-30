@@ -143,8 +143,6 @@ releases/
 *.tar
 *.tgz
 
-# Docker
-.dockerignore
 
 # ============================================================
 # Database & Cache

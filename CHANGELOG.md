@@ -4,6 +4,10 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Security
+
+- Go 1.26.8 : corrige les vulnérabilités atteignables de la stdlib 1.25.0 (`Q-03`).
+
 ### Added
 
 - Spécification OpenAPI 3.1 du contrat HTTP (`docs/specs/api/openapi.yaml`).
@@ -13,6 +17,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- `Q-03` : CI, une seule version de Go (celle de `go.mod`).
+- `Q-03` : CI, nouveau job `docker` bloquant (image, pile compose, `/health`).
 - Backend restructuré en couches domain/application/infrastructure/controllers
   (DDD/Clean Architecture), CQRS applicatif introduit.
 - Logging migré vers `slog` (délégué à `zap`), réponses HTTP standardisées.
@@ -25,6 +31,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Fixed
 
+- `Q-03` : l'image Docker se construit et `docker compose up` démarre PostgreSQL et le backend.
 - `Q-05` : le scan de vulnérabilités de la CI bloque (govulncheck remplace `nancy`).
 - `Q-12` : `GET /api/v1/users/{id}/tasks` retourne les tâches triées par
   `id` croissant.

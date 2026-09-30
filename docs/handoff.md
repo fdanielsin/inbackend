@@ -155,11 +155,8 @@ comportement ni de contrat.
   les suivre) ; aucune assertion factuelle « `develop` est linéaire » n'a été
   trouvée ailleurs dans l'ADR ou ce handoff nécessitant une note sur les
   merges `b28ee65`/`d2fede3`.
-- **Non touché dans ce lot** (décision explicite du lead) : `Dockerfile` —
-  renvoyé au lot 6 (`Q-03`), l'image ne se construit de toute façon pas avec
-  `golang:1.23` alors que `go.mod` demande `1.25` ; `docker-compose.yml` —
-  cassé (pas de `DATABASE_URL`, pas de service `postgres`), renvoyé au même
-  lot.
+- **`Dockerfile` et `docker-compose.yml`** : traités par le lot Go 1.26 +
+  Docker (`Q-03`), voir « Go 1.26 et Docker ».
 - **`CHANGELOG.md`** réécrit au format Keep a Changelog 1.1.0 (`[Unreleased]`
   + `[1.0.0] - 2026-09-17`, rubriques Added/Changed/Fixed/Removed, une ligne
   par changement notable) suite à la nouvelle règle ajoutée à AGENTS.md.
@@ -184,8 +181,8 @@ comportement ni de contrat.
 - **Pourquoi `go run ...@version` et pas `go get -tool`** : la dépendance
   d'outil faisait passer `go.mod` à `go 1.26.0` et montait des dépendances de
   production par résolution MVS (`x/crypto`, `x/net`, `protobuf`, `otel`) ;
-  `go.mod` et `go.sum` restent donc inchangés. Les jobs CI Lint et Security
-  passent en Go 1.26, les autres restent sur 1.25.0.
+  `go.sum` reste donc inchangé. Tous les jobs CI utilisent la version de
+  `go.mod` (lot Go 1.26 + Docker).
 - **Exclusions justifiées dans la config** : `misspell` non activé (faux
   positifs sur le français), `noctx` limité à `httptest.NewRequest` dans les
   `_test.go` (les ids uint sont journalisés avec `slog.Uint64`, sans exclusion
@@ -207,8 +204,25 @@ comportement ni de contrat.
   correspondent aux controllers.
 - **Non couvert** : les hooks `.githooks/` restent sur `gofmt` et `go vet`
   (contrôle rapide, sous-ensemble de `make lint`).
-- **Angle mort connu** : govulncheck ne voit pas encore la stdlib réellement
-  utilisée (build en Go 1.25.0, scan en 1.26) ; corrigé par le lot Go 1.26.
+
+## Go 1.26 et Docker (Q-03)
+
+Branche `fix/Q03-go126-docker`.
+
+- **Go** : `go 1.26.0` + `toolchain go1.26.8` dans `go.mod`, version unique pour
+  tous les jobs CI (`go-version-file: go.mod`) et le Dockerfile.
+  Motif sécurité : govulncheck sur le build en Go 1.25.0 signale 25
+  vulnérabilités stdlib atteignables ; 0 avec 1.26.8 (`go 1.26.0` seul en
+  laisserait 16, d'où la ligne `toolchain`). `go.sum` inchangé.
+- **Image** : `golang:1.26.8-alpine` puis `alpine:3.24.2`, `CGO_ENABLED=0`,
+  `-trimpath -ldflags="-s -w"`, utilisateur non root (uid 10001), ~36 MB.
+- **Compose** : PostgreSQL 16 avec healthcheck, `DATABASE_URL` construite avec
+  des identifiants de développement, backend derrière `service_healthy`, healthcheck
+  HTTP sur `/health`. `.dockerignore` versionné (retiré du `.gitignore`).
+- **CI** : job `docker` bloquant (build, `compose up -d --wait`, `/health`,
+  logs si échec, `down -v`).
+- **Non couvert** : Podman/`make docker-run` non testés ; le job CI `docker`
+  n'a pas encore tourné sur GitHub (vérifié seulement en local avec Docker).
 
 ## Corrections confirmées
 

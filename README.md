@@ -38,13 +38,13 @@ inbackend/
 - ✅ CORS middleware configured
 - ✅ Comprehensive test suite (unit, integration, E2E)
 - ✅ Testcontainers for isolated database tests
-- ✅ Multi-stage Docker builds (24MB)
+- ✅ Multi-stage Docker build (image ~36 MB, non-root user, static binary)
 - ✅ GitHub Actions CI/CD pipelines
 - ✅ Code quality & security scanning
 
 ## 📋 Requirements
 
-- Go 1.25+
+- Go 1.26.8 (`go.mod` pins the toolchain; Go downloads it automatically)
 - PostgreSQL 14+ (or Docker/Podman)
 - Make
 - **Docker or Podman** (required for Testcontainers integration tests)
@@ -183,7 +183,7 @@ docker build -t inbackend:latest .
 ### Run Container
 ```bash
 docker run \
-  -e DATABASE_URL="postgres://db:5432/testdb" \
+  -e DATABASE_URL="postgres://user:password@host:5432/dbname?sslmode=disable" \
   -e PORT=8080 \
   -p 8080:8080 \
   inbackend:latest
@@ -191,14 +191,21 @@ docker run \
 
 ### With Docker Compose
 ```bash
-docker compose up --build
+docker compose up --build --wait   # PostgreSQL 16 + backend, waits for healthchecks
+curl http://localhost:8080/health
+docker compose down -v             # stops and deletes the database volume
 ```
+
+Compose uses development-only credentials (`inbackend`/`inbackend`), overridable
+with `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` and `PORT`. The CI
+`docker` job runs this same sequence. Compose is tested with Docker only; the
+Podman path (`make docker-run`) is not tested.
 
 ## 📦 Deployment
 
 ### Standalone Binary
 ```bash
-CGO_ENABLED=1 go build -o app .
+CGO_ENABLED=0 go build -o app .
 DATABASE_URL=... ./app
 ```
 

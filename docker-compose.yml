@@ -1,24 +1,35 @@
-version: '3.9'
-
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-inbackend}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-inbackend}
+      POSTGRES_DB: ${POSTGRES_DB:-inbackend}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   backend:
     build: .
-    container_name: inbackend
     ports:
       - "${PORT:-8080}:8080"
     environment:
-      - PORT=8080
-      - ENV=${ENV:-development}
-    volumes:
-      - .:/app
-      - app_data:/root
-    command: go run main.go
-    networks:
-      - innetwork
-
-networks:
-  innetwork:
-    driver: bridge
+      PORT: "8080"
+      ENV: ${ENV:-development}
+      DATABASE_URL: postgres://${POSTGRES_USER:-inbackend}:${POSTGRES_PASSWORD:-inbackend}@postgres:5432/${POSTGRES_DB:-inbackend}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:8080/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
 volumes:
-  app_data:
+  postgres_data:

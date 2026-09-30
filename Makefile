@@ -23,7 +23,7 @@ help:
 
 build:
 	@echo "📦 Building..."
-	CGO_ENABLED=1 go build -o app .
+	CGO_ENABLED=0 go build -o app .
 
 run:
 	@echo "🚀 Starting server..."

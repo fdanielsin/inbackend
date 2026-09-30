@@ -1,0 +1,12 @@
+.git
+.github
+.githooks
+.worktrees
+tmp
+tests
+docs
+.env*
+*.md
+app
+Dockerfile
+docker-compose.yml

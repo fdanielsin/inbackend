@@ -7,9 +7,6 @@ on:
     branches: [main, develop]
 
 env:
-  GO_VERSION: "1.25.0"
-  # golangci-lint et govulncheck sont compilés par `go run` et exigent Go 1.26.
-  GO_TOOLS_VERSION: "1.26"
   NODE_VERSION: "22"
   COVERAGE_THRESHOLD: 80
 
@@ -23,7 +20,7 @@ jobs:
       
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_TOOLS_VERSION }}
+          go-version-file: go.mod
           cache: false
 
       - uses: actions/setup-node@v5
@@ -55,7 +52,7 @@ jobs:
       
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           cache: false
       
       - name: "Download dependencies"
@@ -76,7 +73,7 @@ jobs:
       
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           cache: false
       
       - name: "Run unit tests"
@@ -94,11 +91,36 @@ jobs:
       
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_TOOLS_VERSION }}
+          go-version-file: go.mod
           cache: false
 
       - name: "Check for vulnerable dependencies"
         run: make vuln
+
+  # ========== STAGE 4b: DOCKER ==========
+  docker:
+    name: "🐳 Docker"
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: "Build image"
+        run: docker compose build
+
+      - name: "Start stack"
+        run: docker compose up -d --wait
+
+      - name: "Check /health"
+        run: curl --fail --silent --show-error http://localhost:8080/health
+
+      - name: "Show logs on failure"
+        if: failure()
+        run: docker compose logs
+
+      - name: "Stop stack"
+        if: always()
+        run: docker compose down -v
 
   # ========== STAGE 5: INTEGRATION TESTS ==========
   integration-tests:
@@ -129,7 +151,7 @@ jobs:
       
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           cache: false
       
       - name: "Download dependencies"
@@ -169,7 +191,7 @@ jobs:
       
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           cache: false
       
       - name: "Download dependencies"
@@ -209,7 +231,7 @@ jobs:
       
       - uses: actions/setup-go@v6
         with:
-          go-version: ${{ env.GO_VERSION }}
+          go-version-file: go.mod
           cache: false
       
       - name: "Download dependencies"
@@ -241,7 +263,7 @@ jobs:
   summary:
     name: "✅ All Checks Passed"
     runs-on: ubuntu-latest
-    needs: [lint, build, unit-tests, security, integration-tests, e2e-tests, coverage]
+    needs: [lint, build, unit-tests, security, docker, integration-tests, e2e-tests, coverage]
     if: always()
     steps:
       - name: "Verify all jobs passed"
@@ -250,6 +272,7 @@ jobs:
              [ "${{ needs.build.result }}" != "success" ] || \
              [ "${{ needs.unit-tests.result }}" != "success" ] || \
              [ "${{ needs.security.result }}" != "success" ] || \
+             [ "${{ needs.docker.result }}" != "success" ] || \
              [ "${{ needs.integration-tests.result }}" != "success" ] || \
              [ "${{ needs.e2e-tests.result }}" != "success" ] || \
              [ "${{ needs.coverage.result }}" != "success" ]; then

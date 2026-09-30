@@ -1,17 +1,20 @@
-FROM golang:1.23-alpine AS builder
+FROM golang:1.26.8-alpine AS builder
 
 WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o app .
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /server .
 
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates sqlite-libs
-WORKDIR /root/
+FROM alpine:3.24.2
 
-COPY --from=builder /app/app .
+RUN apk --no-cache add ca-certificates \
+    && adduser -D -u 10001 app
+
+COPY --from=builder /server /usr/local/bin/server
+
+USER app
 EXPOSE 8080
 
-CMD ["./app"]
+CMD ["server"]
