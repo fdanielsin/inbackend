@@ -89,6 +89,19 @@ func TestCreateTask_RejectsInvalidPayloads(t *testing.T) {
 	}
 }
 
+// GIVEN no user with this id / WHEN POST /api/v1/tasks for it / THEN 404 USER_NOT_FOUND and nothing stored (B-02)
+func TestCreateTask_UnknownUserIsNotFound(t *testing.T) {
+	s := newTestServer(t)
+	s.createUser("Owner", "owner@example.com")
+
+	for _, userID := range []string{"999", "4294967295"} {
+		r := s.do(http.MethodPost, "/api/v1/tasks", `{"user_id":`+userID+`,"title":"Orphan"}`)
+
+		requireError(t, r, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+	}
+	assert.Zero(t, s.countRows(&pgimpl.TaskModel{}), "no orphan task may be stored")
+}
+
 // GIVEN tasks of two users / WHEN GET /api/v1/users/{id}/tasks / THEN only this user's tasks, by ascending id
 func TestListUserTasks_OnlyThisUserInIDOrder(t *testing.T) {
 	s := newTestServer(t)

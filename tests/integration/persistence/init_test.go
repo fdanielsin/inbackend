@@ -9,12 +9,11 @@ import (
 	"go.uber.org/zap"
 )
 
-// GIVEN an empty database / WHEN InitDB (application startup) / THEN both tables are created
-func TestInitDB_CreatesSchema(t *testing.T) {
-	admin := pg.Open(t)
-	require.NoError(t, admin.Exec("DROP TABLE IF EXISTS task_models, user_models").Error)
+// GIVEN an empty database / WHEN InitDB (application startup) / THEN every migration is applied before the connection is returned
+func TestInitDB_MigratesAnEmptyDatabase(t *testing.T) {
+	dsn := pg.NewEmptyDatabase(t)
 
-	db, err := database.InitDB(pg.DSN, zap.NewNop())
+	db, err := database.InitDB(dsn, zap.NewNop())
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
@@ -23,7 +22,9 @@ func TestInitDB_CreatesSchema(t *testing.T) {
 	for _, table := range []string{"user_models", "task_models"} {
 		assert.True(t, db.Migrator().HasTable(table), "table %s must exist after startup", table)
 	}
-	assert.True(t, db.Migrator().HasIndex("user_models", "idx_user_models_email"), "unique email index must exist")
+	assert.Equal(t, migrationState{Version: latestMigration}, readMigrationState(t, db))
+	assert.True(t, hasIndex(t, db, "idx_user_models_email_lower"), "unique lower(email) index must exist")
+	assert.True(t, hasConstraint(t, db, "fk_task_models_user"), "task owner foreign key must exist")
 }
 
 // GIVEN an unreachable database / WHEN InitDB / THEN an error is returned instead of a usable connection

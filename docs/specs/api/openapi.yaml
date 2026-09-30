@@ -141,6 +141,10 @@ paths:
     post:
       tags: [Tasks]
       summary: Créer une tâche
+      description: |
+        Répond `404` `USER_NOT_FOUND` si `user_id` ne correspond à aucun
+        utilisateur : une tâche appartient toujours à un utilisateur existant
+        (clé étrangère en base).
       operationId: createTask
       requestBody:
         required: true
@@ -163,6 +167,8 @@ paths:
                         $ref: '#/components/schemas/Task'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/v1/tasks/{id}:

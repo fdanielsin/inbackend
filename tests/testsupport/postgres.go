@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
-	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
 	_ "github.com/jackc/pgx/v5/stdlib" // pgx driver used by the container readiness check
 	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
@@ -18,6 +19,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 // Postgres is one PostgreSQL container, started once per test package from TestMain.
@@ -98,8 +100,13 @@ func (p *Postgres) Require(t testing.TB) {
 func (p *Postgres) Open(t testing.TB) *gorm.DB {
 	t.Helper()
 	p.Require(t)
+	return OpenDSN(t, p.DSN)
+}
 
-	db, err := gorm.Open(postgres.Open(p.DSN), &gorm.Config{})
+// OpenDSN opens a connection to the given database, closed at the end of the test.
+func OpenDSN(t testing.TB, dsn string) *gorm.DB {
+	t.Helper()
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: gormlogger.Discard})
 	require.NoError(t, err, "failed to connect to PostgreSQL")
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
@@ -107,12 +114,31 @@ func (p *Postgres) Open(t testing.TB) *gorm.DB {
 	return db
 }
 
-// NewDB opens a connection to a migrated schema with empty tables and ids restarting at 1.
+// NewDB opens a connection to the schema of the production migrations, with
+// empty tables and ids restarting at 1.
 func (p *Postgres) NewDB(t testing.TB) *gorm.DB {
 	t.Helper()
-	db := p.Open(t)
-
-	require.NoError(t, db.AutoMigrate(&pgimpl.UserModel{}, &pgimpl.TaskModel{}), "failed to migrate database")
+	p.Require(t)
+	require.NoError(t, database.Migrate(p.DSN), "failed to migrate database")
+	db := OpenDSN(t, p.DSN)
 	require.NoError(t, db.Exec("TRUNCATE TABLE task_models, user_models RESTART IDENTITY").Error, "failed to reset tables")
 	return db
+}
+
+var emptyDatabases atomic.Int64
+
+// NewEmptyDatabase creates a database without any table in the container and
+// returns its DSN; it is dropped at the end of the test. Each migration test
+// gets its own, since a refused migration leaves its database dirty.
+func (p *Postgres) NewEmptyDatabase(t testing.TB) string {
+	t.Helper()
+	admin := p.Open(t)
+	name := fmt.Sprintf("qa_empty_%d", emptyDatabases.Add(1))
+	require.NoError(t, admin.Exec("DROP DATABASE IF EXISTS "+name+" WITH (FORCE)").Error)
+	require.NoError(t, admin.Exec("CREATE DATABASE "+name).Error)
+	t.Cleanup(func() { _ = admin.Exec("DROP DATABASE IF EXISTS " + name + " WITH (FORCE)").Error })
+
+	dsn := strings.Replace(p.DSN, "/testdb?", "/"+name+"?", 1)
+	require.NotEqual(t, p.DSN, dsn, "unexpected DSN format")
+	return dsn
 }

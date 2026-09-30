@@ -1,9 +1,12 @@
-.PHONY: help build run test test-unit test-integration test-e2e mutate lint lint-api lint-ci fmt vuln clean docker-build docker-run
+.PHONY: help build run test test-unit test-integration test-e2e mutate migrate-up migrate-down migrate-force migrate-new lint lint-api lint-ci fmt vuln clean docker-build docker-run
 
 # Outils épinglés, lancés avec `go run` pour ne pas modifier go.mod (ADR 0006).
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 GOVULNCHECK := go run golang.org/x/vuln/cmd/govulncheck@v1.8.0
 ACTIONLINT := go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+MIGRATE := go run -tags pgx5 github.com/golang-migrate/migrate/v4/cmd/migrate@v4.20.1
+MIGRATIONS_DIR := internal/infrastructure/database/migrations
+MIGRATE_DATABASE_URL = $(patsubst postgres://%,pgx5://%,$(patsubst postgresql://%,pgx5://%,$(DATABASE_URL)))
 GREMLINS := go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0
 MUTATION_BASE ?= develop
 REDOCLY := npx --yes @redocly/cli@2.55.0
@@ -16,6 +19,10 @@ help:
 	@echo "  make test-unit       - Run unit tests"
 	@echo "  make test-integration - Run integration tests with testcontainers"
 	@echo "  make test-e2e        - Run E2E tests (requires Docker or Podman)"
+	@echo "  make migrate-up      - Apply pending migrations (requires DATABASE_URL)"
+	@echo "  make migrate-down    - Revert the last migration (requires DATABASE_URL)"
+	@echo "  make migrate-force version=N - Clear the dirty flag after a failed migration (N = last version fully applied)"
+	@echo "  make migrate-new name=xxx - Create the next up/down migration files"
 	@echo "  make mutate          - Mutation testing on the diff against MUTATION_BASE (default develop), not run in CI"
 	@echo "  make lint            - Run golangci-lint and check formatting (gofumpt, goimports)"
 	@echo "  make lint-api        - Lint the OpenAPI contract with Redocly (requires Node)"
@@ -53,6 +60,22 @@ test-e2e:
 mutate:
 	@echo "🧬 Mutation testing on the diff against $(MUTATION_BASE)..."
 	$(GREMLINS) unleash --integration --coverpkg=./internal/... -D $(MUTATION_BASE)
+
+migrate-up:
+	@echo "⬆️ Applying migrations..."
+	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" up
+
+migrate-down:
+	@echo "⬇️ Reverting the last migration..."
+	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" down 1
+
+migrate-force:
+	@test -n "$(version)" || (echo "usage: make migrate-force version=N" && exit 1)
+	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" force $(version)
+
+migrate-new:
+	@test -n "$(name)" || (echo "usage: make migrate-new name=add_something" && exit 1)
+	$(MIGRATE) create -ext sql -dir $(MIGRATIONS_DIR) -seq -digits 6 $(name)
 
 lint:
 	@echo "🔍 Linting and checking formatting..."

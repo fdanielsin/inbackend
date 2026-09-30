@@ -6,13 +6,16 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
-
-	persistencepg "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
 )
 
-// InitDB ouvre la connexion PostgreSQL et applique les migrations automatiques.
+// InitDB applique les migrations en attente, puis ouvre la connexion PostgreSQL.
 func InitDB(dsn string, logger *zap.Logger) (*gorm.DB, error) {
 	logger.Info("Initializing PostgreSQL database")
+
+	if err := Migrate(dsn); err != nil {
+		logger.Error("Failed to migrate database", zap.Error(err))
+		return nil, err
+	}
 
 	// Silent : le logger GORM imprime les requêtes avec leurs valeurs (emails, noms) et le
 	// texte brut des erreurs PostgreSQL ; les erreurs sont journalisées par les controllers
@@ -22,12 +25,6 @@ func InitDB(dsn string, logger *zap.Logger) (*gorm.DB, error) {
 	})
 	if err != nil {
 		logger.Error("Failed to connect to database", zap.Error(err))
-		return nil, err
-	}
-
-	err = db.AutoMigrate(&persistencepg.UserModel{}, &persistencepg.TaskModel{})
-	if err != nil {
-		logger.Error("Failed to migrate database", zap.Error(err))
 		return nil, err
 	}
 

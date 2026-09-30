@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/user"
 	"gorm.io/gorm"
 )
 
@@ -29,6 +30,9 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Task) (uint, error)
 
 	result := r.db.WithContext(ctx).Create(gormTask)
 	if result.Error != nil {
+		if isConstraintViolation(result.Error, pgForeignKeyViolation, taskUserForeignKey) {
+			return 0, user.ErrUserNotFound
+		}
 		return 0, result.Error
 	}
 

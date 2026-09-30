@@ -320,9 +320,24 @@ Branche `test/lot3-backend` (worktree `inbackend/.worktrees/lot3-backend`).
   `error_code` et l'id. Logger injecté dans les tests par `slog.SetDefault`.
 - Tests de contrat : kin-openapi v0.149.0, helper `tests/testsupport/contract.go`.
 - `make mutate` : mutation (gremlins) sur le diff, hors CI.
-- À faire au lot des migrations : `isUniqueViolation` doit aussi vérifier le nom
-  de la contrainte (`idx_user_models_email` : GORM nomme les tables `user_models` et `task_models`, la migration initiale doit les reproduire) ; index unique sur `lower(email)` et
-  migration qui refuse, sans rien supprimer, s'il existe des doublons par casse.
+
+## Lot 5 : migrations (branche `feat/lot5-migrations`)
+
+- golang-migrate (ADR 0007) : SQL embarqué dans
+  `internal/infrastructure/database/migrations/`, appliqué au démarrage par
+  `database.Migrate` ; `database.MigrateTo(dsn, version)` sert aux tests ;
+  `make migrate-up/down/force/new`. `AutoMigrate` retiré.
+- 000001 = schéma de l'ancien AutoMigrate (tables `user_models`/`task_models`,
+  comparé par `pg_dump` : identique hors `schema_migrations`). 000002 = emails
+  (refuse sur doublons par casse, normalise, index unique sur `lower(email)`).
+  000003 = clé étrangère et index sur `task_models.user_id` (refuse sur
+  orphelins). Les refus ne donnent que des nombres.
+- `DATABASE_URL` : URL `postgres://` obligatoire (format `clé=valeur` refusé au
+  démarrage : « DATABASE_URL must be a postgres:// URL », valeur jamais affichée).
+- Création de tâche pour un utilisateur inexistant : 404 `USER_NOT_FOUND`
+  (violation 23503 de `fk_task_models_user`, sans SELECT préalable).
+- Un échec laisse la base « dirty » : `make migrate-force version=N` (N = dernière
+  version entièrement appliquée), indiqué dans l'erreur.
 
 ## Prochaine mission
 
@@ -374,7 +389,7 @@ Prochaine étape :
 
 ## Dernière mise à jour
 
-2026-10-01 : lot 4 erreurs et contrat (voir « Lot 4 »).
+2026-10-01 : lot 5 migrations (voir « Lot 5 »), après le lot 4 erreurs et contrat.
 2026-09-30 — outillage lint sur `chore/lint-tooling` (golangci-lint, govulncheck,
 Redocly), sans changement de comportement ; voir « Outillage lint » ci-dessus.
 Le nettoyage backend précédent est détaillé dans « Nettoyage backend ».

@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
+	"github.com/fdanielsin/inbackend/tests/testsupport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -127,4 +129,57 @@ func TestStartup_ServesHealthOnConfiguredPort(t *testing.T) {
 		return true
 	}, 20*time.Second, 100*time.Millisecond, "the server never answered on %s", url)
 	assert.Equal(t, http.StatusOK, status)
+}
+
+// GIVEN a database whose data blocks a migration (two emails equal once lower-cased) / WHEN the server starts
+// THEN it exits with code 1, explains how to recover, and prints no email
+func TestStartup_RefusedMigration_ExitsWithCode1(t *testing.T) {
+	pg.Require(t)
+	dsn := pg.NewEmptyDatabase(t)
+	require.NoError(t, database.MigrateTo(dsn, 1))
+	db := testsupport.OpenDSN(t, dsn)
+	require.NoError(t, db.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'dup.person@x.io'), ('Ada2', 'DUP.PERSON@X.IO')").Error)
+
+	code, out := runUntilExit(t, buildServer(t), serverEnv("DATABASE_URL="+dsn, "PORT="+freePort(t)))
+
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "cannot normalize emails")
+	assert.Contains(t, out, "make migrate-force version=1")
+	assert.NotContains(t, strings.ToLower(out), "dup.person@x.io")
+}
+
+// GIVEN a DATABASE_URL that is not a postgres:// URL / WHEN the server starts
+// THEN it exits with code 1 before connecting, and never prints the value
+func TestStartup_NonURLDatabaseSetting_ExitsWithCode1(t *testing.T) {
+	bin := buildServer(t)
+	for _, setting := range []string{"host=localhost password=secretpw dbname=x", "postgres:/secretpw", "POSTGRES://u:secretpw@127.0.0.1:1/x"} {
+		code, out := runUntilExit(t, bin, serverEnv("DATABASE_URL="+setting))
+
+		assert.Equal(t, 1, code, setting)
+		assert.Contains(t, out, "DATABASE_URL must be a postgres:// URL", setting)
+		assert.NotContains(t, out, "secretpw", setting)
+	}
+}
+
+// GIVEN a postgresql:// DATABASE_URL / WHEN the server starts / THEN it migrates and serves /health
+func TestStartup_AcceptsPostgresqlScheme(t *testing.T) {
+	pg.Require(t)
+	port := freePort(t)
+	dsn := "postgresql://" + strings.TrimPrefix(pg.NewEmptyDatabase(t), "postgres://")
+	cmd := exec.CommandContext(t.Context(), buildServer(t)) //nolint:gosec // G204: runs the binary built by buildServer
+	cmd.Env = serverEnv("DATABASE_URL="+dsn, "PORT="+port)
+	require.NoError(t, cmd.Start())
+	t.Cleanup(func() {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+	})
+
+	require.Eventually(t, func() bool {
+		resp, err := http.Get("http://127.0.0.1:" + port + "/health") //nolint:noctx // polling a local test server
+		if err != nil {
+			return false
+		}
+		_ = resp.Body.Close()
+		return resp.StatusCode == http.StatusOK
+	}, 20*time.Second, 100*time.Millisecond)
 }

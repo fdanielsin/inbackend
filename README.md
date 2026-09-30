@@ -34,7 +34,7 @@ inbackend/
 ## ✨ Features
 
 - ✅ Full REST API (Users, Tasks CRUD)
-- ✅ PostgreSQL with GORM auto-migrations
+- ✅ PostgreSQL with versioned migrations (golang-migrate, ADR 0007)
 - ✅ Structured logging with slog delegated to Zap
 - ✅ CORS middleware configured
 - ✅ Comprehensive test suite (unit, integration, E2E)
@@ -247,7 +247,7 @@ Frontend Repo: https://github.com/fdanielsin/infrontend
 
 ## 🛠️ Development Notes
 
-- **GORM Auto-Migration**: Runs on startup, see `internal/infrastructure/database/init.go`
+- **Migrations**: versioned SQL in `internal/infrastructure/database/migrations/`, applied on startup (ADR 0007); `make migrate-new name=...` creates the next one
 - **Error Handling**: Unified `APIResponse` in `internal/shared/response.go`; every error carries a stable `error_code`, all mapped in one table in `internal/shared/errors.go` (codes listed in `docs/specs/api/openapi.yaml`)
 - **CORS**: Configured in `internal/app/router.go`, adjust origins as needed
 - **Logging**: Development (pretty) vs Production (structured JSON)
@@ -263,7 +263,7 @@ docker ps | grep postgres
 ```
 
 ### "SSL error"
-Add `?sslmode=disable` to DATABASE_URL for local dev.
+Add `?sslmode=disable` to DATABASE_URL for local dev. `DATABASE_URL` must be a `postgres://` or `postgresql://` URL (the key=value format is refused at startup).
 
 ### Tests timeout
 Increase timeout:

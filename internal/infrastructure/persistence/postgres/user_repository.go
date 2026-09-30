@@ -5,7 +5,6 @@ import (
 	"errors"
 
 	"github.com/fdanielsin/inbackend/internal/domain/user"
-	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
@@ -30,7 +29,7 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error)
 
 	result := r.db.WithContext(ctx).Create(gormUser)
 	if result.Error != nil {
-		if isUniqueViolation(result.Error) {
+		if isConstraintViolation(result.Error, pgUniqueViolation, uniqueEmailIndex) {
 			return 0, user.ErrUserEmailTaken
 		}
 		return 0, result.Error
@@ -103,14 +102,4 @@ func (r *UserRepository) Count(ctx context.Context) (int64, error) {
 	var count int64
 	result := r.db.WithContext(ctx).Model(&UserModel{}).Count(&count)
 	return count, result.Error
-}
-
-const pgUniqueViolation = "23505"
-
-// isUniqueViolation détecte la violation de la seule contrainte d'unicité
-// utilisateur (l'email). Le test de la base, plutôt qu'un SELECT préalable,
-// reste correct sous requêtes concurrentes.
-func isUniqueViolation(err error) bool {
-	var pgErr *pgconn.PgError
-	return errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation
 }

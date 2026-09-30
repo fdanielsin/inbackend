@@ -45,7 +45,7 @@ inbackend/
     ├── infrastructure/
     │   ├── persistence/postgres/
     │   │   └── models.go
-    │   ├── database/
+    │   ├── database/             (connexion, migrations SQL embarquées : ADR 0007)
     │   ├── http/    (cible, pas encore créé)
     │   ├── config/  (cible, pas encore créé)
     │   └── logger/

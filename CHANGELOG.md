@@ -11,6 +11,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Migrations versionnées golang-migrate (`make migrate-up/down/force/new`, ADR 0007) ; `AutoMigrate` retiré (`B-05`).
+- `B-02` : clé étrangère `task_models.user_id` -> `user_models.id` ; créer une tâche pour un utilisateur inexistant répond 404 `USER_NOT_FOUND`.
 - Champ `error_code` (code stable, enum dans le contrat) dans toute réponse d'erreur ; une seule table erreur → statut/code/message (lot 4).
 - `make mutate` : tests de mutation (gremlins) sur le diff, hors CI.
 - Spécification OpenAPI 3.1 du contrat HTTP (`docs/specs/api/openapi.yaml`).
@@ -21,6 +23,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- `DATABASE_URL` doit être une URL `postgres://` (le format `clé=valeur` est refusé au démarrage avec un message clair) ; `.env.example` mis à jour.
+- Emails existants normalisés en minuscules et unicité insensible à la casse en base ; le démarrage échoue avec un message clair s'il existe des doublons par casse ou des tâches orphelines (rien n'est supprimé).
 - `B-03` : créer un utilisateur avec un email déjà pris répond 409 `EMAIL_TAKEN` au lieu de 500 (comparaison sur l'email normalisé).
 - Emails normalisés à la création (espaces retirés, minuscules) et format minimal validé (un `@`, domaine à deux labels non vides, ni espace ni caractère de contrôle) (400 `VALIDATION_FAILED`).
 - `B-04` : supprimer une tâche absente répond 404 `TASK_NOT_FOUND` au lieu de 200.
