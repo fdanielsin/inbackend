@@ -1,3 +1,4 @@
+// Package postgres implémente les ports de persistance avec GORM et PostgreSQL.
 package postgres
 
 // UserModel is the GORM model used to persist users.

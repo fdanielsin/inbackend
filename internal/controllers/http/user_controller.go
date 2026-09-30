@@ -66,15 +66,15 @@ func (uc *UserController) GetUser(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, shared.ErrorResponse("Invalid user ID"))
 	}
 
-	uc.log.Info("Fetching user", slog.Int64("id", int64(id)))
+	uc.log.Info("Fetching user", slog.Uint64("id", id))
 
 	resp, err := uc.getUserHandler.Execute(c.Request().Context(), queries.GetUserRequest{ID: uint(id)})
 	if err != nil {
 		if shared.IsNotFoundError(err) {
-			uc.log.Info("User not found", slog.Int64("id", int64(id)))
+			uc.log.Info("User not found", slog.Uint64("id", id))
 			return c.JSON(http.StatusNotFound, shared.ErrorResponse("User not found"))
 		}
-		uc.log.Error("Error fetching user", slog.Int64("id", int64(id)), slog.String("error", err.Error()))
+		uc.log.Error("Error fetching user", slog.Uint64("id", id), slog.String("error", err.Error()))
 		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 

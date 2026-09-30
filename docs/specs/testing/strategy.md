@@ -20,7 +20,8 @@ make test-integration
 make test-e2e
 make test
 make lint
-go vet ./...
+make lint-api
+make vuln
 go build ./...
 ```
 

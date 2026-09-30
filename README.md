@@ -27,7 +27,7 @@ inbackend/
 - **Database**: PostgreSQL with GORM ORM
 - **Logging**: slog structured logging delegated to zap
 - **Testing**: Testcontainers, stdlib testing
-- **Security**: Nancy dependency scanning in the backend CI/CD workflow
+- **Security**: govulncheck dependency scanning in the backend CI/CD workflow
 - **Container**: Docker + Podman support
 
 ## ✨ Features
@@ -102,8 +102,10 @@ Server runs at `http://localhost:8080`
 | `make test-unit` | Unit tests only |
 | `make test-integration` | Integration tests with Testcontainers |
 | `make test-e2e` | End-to-end tests |
-| `make lint` | Format & vet checks |
-| `make fmt` | Auto-format code |
+| `make lint` | golangci-lint and formatting check (gofumpt, goimports) |
+| `make lint-api` | Redocly lint of the OpenAPI contract (requires Node) |
+| `make vuln` | govulncheck dependency scan |
+| `make fmt` | Auto-format code and tidy modules |
 | `make docker-build` | Build Docker image |
 | `make docker-run` | Run container |
 
@@ -220,10 +222,10 @@ Runs on push to `main`/`develop`:
 
 The same `ci.yml` workflow also runs code quality checks:
 Runs on every push:
-- ✅ Format checks (gofmt)
-- ✅ Static analysis (go vet, go mod tidy)
-- ✅ Dependency security scanning (Nancy)
-- ✅ Uploads results to GitHub Security tab
+- ✅ golangci-lint and formatting check (`make lint`)
+- ✅ OpenAPI contract lint with Redocly (`make lint-api`)
+- ✅ `go mod tidy` consistency
+- ✅ Dependency vulnerability scan with govulncheck (`make vuln`, blocking)
 
 ## 🔗 Frontend Integration
 

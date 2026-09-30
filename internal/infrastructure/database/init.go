@@ -1,3 +1,4 @@
+// Package database ouvre la connexion PostgreSQL et applique les migrations.
 package database
 
 import (
@@ -9,6 +10,7 @@ import (
 	persistencepg "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
 )
 
+// InitDB ouvre la connexion PostgreSQL et applique les migrations automatiques.
 func InitDB(dsn string, logger *zap.Logger) (*gorm.DB, error) {
 	logger.Info("Initializing PostgreSQL database")
 

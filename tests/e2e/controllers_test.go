@@ -112,7 +112,7 @@ func TestUserController_ListUsers_HappyPath(t *testing.T) {
 	// THEN: Verify response
 	require.Equal(t, http.StatusOK, rec.Code)
 	var resp shared.APIResponse
-	json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	assert.True(t, resp.Success)
 }
 
@@ -141,7 +141,7 @@ func TestUserController_GetUser_HappyPath(t *testing.T) {
 	// THEN: Verify response
 	require.Equal(t, http.StatusOK, rec.Code)
 	var resp shared.APIResponse
-	json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	assert.True(t, resp.Success)
 }
 
@@ -170,7 +170,7 @@ func TestTaskController_CreateTask_HappyPath(t *testing.T) {
 	// THEN: Verify response
 	require.Equal(t, http.StatusCreated, rec.Code)
 	var resp shared.APIResponse
-	json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	assert.True(t, resp.Success)
 }
 
@@ -201,7 +201,7 @@ func TestTaskController_ListUserTasks_HappyPath(t *testing.T) {
 	// THEN: Verify response
 	require.Equal(t, http.StatusOK, rec.Code)
 	var resp shared.APIResponse
-	json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	assert.True(t, resp.Success)
 }
 
@@ -220,7 +220,7 @@ func TestHealthController_HealthCheck_HappyPath(t *testing.T) {
 	// THEN: Verify response
 	require.Equal(t, http.StatusOK, rec.Code)
 	var resp shared.APIResponse
-	json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	assert.True(t, resp.Success)
 }
 
@@ -249,6 +249,6 @@ func TestStatsController_GetStats_HappyPath(t *testing.T) {
 	// THEN: Verify response
 	require.Equal(t, http.StatusOK, rec.Code)
 	var resp shared.APIResponse
-	json.Unmarshal(rec.Body.Bytes(), &resp)
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
 	assert.True(t, resp.Success)
 }

@@ -1,0 +1,10 @@
+extends:
+  - recommended-strict
+
+rules:
+  # L'API n'a aucune authentification : décision produit, hors périmètre actuel.
+  security-defined: off
+  # Le dépôt est privé : aucune licence à déclarer.
+  info-license: off
+  # Le contrat décrit le serveur de développement local (localhost).
+  no-server-example.com: off

@@ -1,4 +1,9 @@
-.PHONY: help build run test test-unit test-integration test-e2e lint fmt clean docker-build docker-run
+.PHONY: help build run test test-unit test-integration test-e2e lint lint-api fmt vuln clean docker-build docker-run
+
+# Outils épinglés, lancés avec `go run` pour ne pas modifier go.mod (ADR 0006).
+GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+GOVULNCHECK := go run golang.org/x/vuln/cmd/govulncheck@v1.8.0
+REDOCLY := npx --yes @redocly/cli@2.55.0
 
 help:
 	@echo "🔧 Available commands:"
@@ -8,8 +13,10 @@ help:
 	@echo "  make test-unit       - Run unit tests"
 	@echo "  make test-integration - Run integration tests with testcontainers"
 	@echo "  make test-e2e        - Run E2E tests"
-	@echo "  make lint            - Check formatting (gofmt) and run go vet"
-	@echo "  make fmt             - Format code"
+	@echo "  make lint            - Run golangci-lint and check formatting (gofumpt, goimports)"
+	@echo "  make lint-api        - Lint the OpenAPI contract with Redocly (requires Node)"
+	@echo "  make fmt             - Format code and tidy modules"
+	@echo "  make vuln            - Scan dependencies with govulncheck"
 	@echo "  make clean           - Remove build artifacts"
 	@echo "  make docker-build    - Build Docker image with Podman"
 	@echo "  make docker-run      - Run Docker container with Podman"
@@ -39,14 +46,22 @@ test-e2e:
 	go test -v ./tests/e2e/...
 
 lint:
-	@echo "🔍 Checking formatting and vet..."
-	@test -z "$$(gofmt -s -l .)" || (gofmt -s -d .; exit 1)
-	go vet ./...
+	@echo "🔍 Linting and checking formatting..."
+	$(GOLANGCI_LINT) run ./...
+	$(GOLANGCI_LINT) fmt --diff ./...
+
+lint-api:
+	@echo "📜 Linting OpenAPI contract..."
+	$(REDOCLY) lint --config docs/specs/api/redocly.yaml docs/specs/api/openapi.yaml
 
 fmt:
 	@echo "✨ Formatting code..."
-	gofmt -w .
+	$(GOLANGCI_LINT) fmt ./...
 	go mod tidy
+
+vuln:
+	@echo "🛡️ Scanning dependencies..."
+	$(GOVULNCHECK) ./...
 
 clean:
 	@echo "🧹 Cleaning..."

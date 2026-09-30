@@ -119,17 +119,31 @@ Closes #123
 
 ### 3. CI/CD Pipeline: 7-Stage Gating
 
-**Pipeline Stages (must all pass before merge, sauf l'étape 4 — voir note) :**
+**Pipeline Stages (must all pass before merge) :**
 
 | # | Stage | Command | Duration | Notes |
 |---|-------|---------|----------|-------|
-| 1 | Lint & Format | `gofmt`, `go vet`, `go mod tidy` | ~5s | Enforces code style |
+| 1 | Lint & Format | `make lint` (golangci-lint, gofumpt, goimports), `make lint-api` (Redocly), `go mod tidy` | ~30s | Enforces code style, static analysis and the OpenAPI contract |
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
-| 4 | Security | `nancy sleuth` | ~20s | Échoue actuellement (`401 Unauthorized` sur OSS Index) à chaque run ; l'erreur est masquée par `\|\| true` dans `ci.yml` et ne bloque jamais le job. Ne détecte donc aucune dépendance vulnérable en pratique. Suivi : `Q-05`. |
+| 4 | Security | `make vuln` (govulncheck) | ~20s | Bloquant : échoue si une vulnérabilité est atteignable par le code. Remplace `nancy` (`Q-05`). |
 | 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 60s` | ~90s | PostgreSQL via Testcontainers |
 | 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 60s` | ~60s | SQLite in-memory, HTTP contract coverage |
 | 7 | Coverage Report | `go test -coverprofile=coverage.out ./...` | ~30s | Threshold reported, non-blocking |
+
+**Outillage de lint :** `golangci-lint` (v2.14.0, config `.golangci.yml`),
+`govulncheck` (v1.8.0) et `@redocly/cli` (v2.55.0, config
+`docs/specs/api/redocly.yaml` et `.redocly.lint-ignore.yaml`) sont épinglés dans le `Makefile` et lancés avec
+`go run ...@version` / `npx`, à l'identique en local et en CI. Une dépendance
+d'outil Go (`go get -tool`) a été écartée : elle passait la directive `go` de
+`go.mod` à 1.26 et faisait monter des dépendances de production (`x/crypto`,
+`x/net`, `protobuf`, `otel`). Les jobs Lint et Security utilisent donc
+Go 1.26 (`GO_TOOLS_VERSION`), les jobs Build et tests restent sur la version
+de `go.mod`. Chaque règle désactivée l'est avec sa justification dans le
+fichier de configuration.
+
+**Angle mort connu :** govulncheck ne voit pas encore la stdlib réellement
+utilisée (build en Go 1.25.0, scan en 1.26) ; corrigé par le lot Go 1.26.
 
 **Total time:** ~10-11 minutes, mesuré sur le run `develop` du 2026-09-29
 (22:02–22:13 UTC, `gh run view` sur le commit `d2fede3`). L'estimation
@@ -236,11 +250,9 @@ branches:
 **Before pushing, run:**
 
 ```bash
-# Format
-go fmt ./...
-
-# Lint
-go vet ./...
+# Lint and formatting check (same command as CI)
+make lint
+make lint-api
 
 # Tidy modules
 go mod tidy
@@ -385,5 +397,5 @@ A: No. All changes must flow through feature branch → `develop` → PR → CR 
 ---
 
 **Approved By:** Architecture Review  
-**Last Updated:** 2026-09-20  
+**Last Updated:** 2026-09-30  
 **Version:** 1.0

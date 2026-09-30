@@ -1,3 +1,4 @@
+// Package queries regroupe les requêtes CQRS du contexte tâche.
 package queries
 
 import (
@@ -31,7 +32,7 @@ func NewGetStatsHandler(userRepo user.Repository, taskRepo task.Repository) *Get
 }
 
 // Execute exécute la requête GetStats.
-func (h *GetStatsHandler) Execute(ctx context.Context, req GetStatsRequest) (*GetStatsResponse, error) {
+func (h *GetStatsHandler) Execute(ctx context.Context, _ GetStatsRequest) (*GetStatsResponse, error) {
 	users, err := h.userRepo.List(ctx)
 	if err != nil {
 		return nil, err

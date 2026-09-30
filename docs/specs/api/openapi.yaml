@@ -11,9 +11,13 @@ servers:
     description: Développement local
 tags:
   - name: Health
+    description: Vérification de disponibilité du service.
   - name: Users
+    description: Création et consultation des utilisateurs.
   - name: Tasks
+    description: Création, mise à jour, suppression et liste des tâches.
   - name: Statistics
+    description: Compteurs agrégés du service.
 paths:
   /health:
     get:
@@ -381,11 +385,6 @@ components:
           type: string
         completed:
           type: boolean
-    MessageResponse:
-      allOf:
-        - $ref: '#/components/schemas/SuccessResponse'
-        - type: object
-          required: [message]
   responses:
     BadRequest:
       description: Requête invalide ou erreur de validation

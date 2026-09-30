@@ -1,3 +1,4 @@
+// Package logger initialise zap et le logger slog qui lui délègue.
 package logger
 
 import (
@@ -8,7 +9,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Global logger instances
+// SlogLog est le logger slog global, initialisé par InitLogger.
 var SlogLog *slog.Logger
 
 // InitLogger initialise les deux loggers : zap et slog.

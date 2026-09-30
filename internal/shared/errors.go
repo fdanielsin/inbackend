@@ -1,3 +1,4 @@
+// Package shared contient les erreurs HTTP et l'enveloppe de réponse communes.
 package shared
 
 import (
