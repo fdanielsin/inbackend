@@ -123,7 +123,7 @@ Closes #123
 
 | # | Stage | Command | Duration | Notes |
 |---|-------|---------|----------|-------|
-| 1 | Lint & Format | `make lint` (golangci-lint, gofumpt, goimports), `make lint-api` (Redocly), `make lint-ci` (actionlint), `go mod tidy` | ~30s | Enforces code style, static analysis and the OpenAPI contract |
+| 1 | Lint & Format | `make lint` (golangci-lint, gofumpt, goimports), `make lint-api` (Redocly), `make lint-ci` (actionlint), `go mod tidy` | ~30s | Enforces code style, static analysis, the OpenAPI contract and the workflow syntax |
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
 | 4 | Security | `make vuln` (govulncheck) | ~20s | Bloquant : échoue si une vulnérabilité est atteignable par le code. Remplace `nancy` (`Q-05`). |

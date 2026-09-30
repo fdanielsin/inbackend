@@ -18,6 +18,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- CI : `codecov-action` v3 remplacé par v5 (runtime signalé trop ancien par actionlint) ; actionlint ajouté.
 - `Q-03` : CI, une seule version de Go (celle de `go.mod`).
 - `Q-03` : CI, nouveau job `docker` bloquant (image, pile compose, `/health`).
 - Backend restructuré en couches domain/application/infrastructure/controllers
@@ -32,7 +33,6 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Fixed
 
-- CI : le workflow ne démarrait plus (`startup_failure`) à cause de `codecov-action@v3` ; passé en v5.
 - `Q-03` : l'image Docker se construit et `docker compose up` démarre PostgreSQL et le backend.
 - `Q-05` : le scan de vulnérabilités de la CI bloque (govulncheck remplace `nancy`).
 - `Q-12` : `GET /api/v1/users/{id}/tasks` retourne les tâches triées par
