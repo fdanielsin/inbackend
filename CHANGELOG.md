@@ -11,6 +11,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Champ `error_code` (code stable, enum dans le contrat) dans toute réponse d'erreur ; une seule table erreur → statut/code/message (lot 4).
+- `make mutate` : tests de mutation (gremlins) sur le diff, hors CI.
 - Spécification OpenAPI 3.1 du contrat HTTP (`docs/specs/api/openapi.yaml`).
 - Tests de régression pour `Q-01` (unitaires, e2e, intégration PostgreSQL).
 - Contrôles bloquants en CI : golangci-lint (`make lint`), Redocly sur le contrat
@@ -19,6 +21,11 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- `B-03` : créer un utilisateur avec un email déjà pris répond 409 `EMAIL_TAKEN` au lieu de 500 (comparaison sur l'email normalisé).
+- Emails normalisés à la création (espaces retirés, minuscules) et format minimal validé (un `@`, domaine à deux labels non vides, ni espace ni caractère de contrôle) (400 `VALIDATION_FAILED`).
+- `B-04` : supprimer une tâche absente répond 404 `TASK_NOT_FOUND` au lieu de 200.
+- `GET /api/v1/stats` compte les utilisateurs sans les charger.
+- `B-08` : l'email et le nom des utilisateurs ne sont plus journalisés (l'identifiant seulement), ni le texte brut des erreurs PostgreSQL ; le logger GORM est silencieux.
 - CI : `codecov-action` v3 remplacé par v5 (runtime signalé trop ancien par actionlint) ; actionlint ajouté.
 - `Q-03` : CI, une seule version de Go (celle de `go.mod`).
 - `Q-03` : CI, nouveau job `docker` bloquant (image, pile compose, `/health`).

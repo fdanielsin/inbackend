@@ -38,20 +38,14 @@ func NewUserController(
 func (uc *UserController) CreateUser(c echo.Context) error {
 	var req commands.CreateUserRequest
 	if err := c.Bind(&req); err != nil {
-		uc.log.Warn("Invalid request body", slog.String("error", err.Error()))
-		return c.JSON(http.StatusBadRequest, shared.ErrorResponse("Invalid request body"))
+		return respondInvalidBody(c, uc.log)
 	}
 
-	uc.log.Info("Creating user", slog.String("email", req.Email), slog.String("name", req.Name))
+	uc.log.Info("Creating user")
 
 	resp, err := uc.createUserHandler.Execute(c.Request().Context(), req)
 	if err != nil {
-		if shared.IsValidationError(err) {
-			uc.log.Warn("Validation error creating user", slog.String("error", err.Error()))
-			return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.MapErrorToMessage(err)))
-		}
-		uc.log.Error("Error creating user", slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
+		return respondWithError(c, uc.log, "Error creating user", err)
 	}
 
 	return c.JSON(http.StatusCreated, shared.SuccessResponse(resp, "User created"))
@@ -62,20 +56,14 @@ func (uc *UserController) GetUser(c echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		uc.log.Warn("Invalid user ID", slog.String("id", idStr))
-		return c.JSON(http.StatusBadRequest, shared.ErrorResponse("Invalid user ID"))
+		return respondInvalidID(c, uc.log, "user", idStr)
 	}
 
 	uc.log.Info("Fetching user", slog.Uint64("id", id))
 
 	resp, err := uc.getUserHandler.Execute(c.Request().Context(), queries.GetUserRequest{ID: uint(id)})
 	if err != nil {
-		if shared.IsNotFoundError(err) {
-			uc.log.Info("User not found", slog.Uint64("id", id))
-			return c.JSON(http.StatusNotFound, shared.ErrorResponse("User not found"))
-		}
-		uc.log.Error("Error fetching user", slog.Uint64("id", id), slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
+		return respondWithError(c, uc.log, "Error fetching user", err, slog.Uint64("id", id))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))
@@ -87,8 +75,7 @@ func (uc *UserController) ListUsers(c echo.Context) error {
 
 	resp, err := uc.listUsersHandler.Execute(c.Request().Context(), queries.ListUsersRequest{})
 	if err != nil {
-		uc.log.Error("Error listing users", slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
+		return respondWithError(c, uc.log, "Error listing users", err)
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))

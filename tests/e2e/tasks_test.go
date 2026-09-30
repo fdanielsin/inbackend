@@ -67,22 +67,23 @@ func TestCreateTask_KeepsSpecialCharacters(t *testing.T) {
 func TestCreateTask_RejectsInvalidPayloads(t *testing.T) {
 	cases := map[string]struct {
 		body    string
+		code    string
 		message string
 	}{
-		"empty title":         {`{"user_id":1,"title":""}`, "Task title cannot be empty"},
-		"missing title":       {`{"user_id":1}`, "Task title cannot be empty"},
-		"user id 0":           {`{"user_id":0,"title":"Buy milk"}`, "Task user_id cannot be empty"},
-		"missing user id":     {`{"title":"Buy milk"}`, "Task user_id cannot be empty"},
-		"negative user id":    {`{"user_id":-1,"title":"Buy milk"}`, "Invalid request body"},
-		"user id as a string": {`{"user_id":"1","title":"Buy milk"}`, "Invalid request body"},
-		"malformed JSON":      {`{"user_id":1,"title":`, "Invalid request body"},
+		"empty title":         {`{"user_id":1,"title":""}`, "VALIDATION_FAILED", "Task title cannot be empty"},
+		"missing title":       {`{"user_id":1}`, "VALIDATION_FAILED", "Task title cannot be empty"},
+		"user id 0":           {`{"user_id":0,"title":"Buy milk"}`, "VALIDATION_FAILED", "Task user_id cannot be empty"},
+		"missing user id":     {`{"title":"Buy milk"}`, "VALIDATION_FAILED", "Task user_id cannot be empty"},
+		"negative user id":    {`{"user_id":-1,"title":"Buy milk"}`, "INVALID_BODY", "Invalid request body"},
+		"user id as a string": {`{"user_id":"1","title":"Buy milk"}`, "INVALID_BODY", "Invalid request body"},
+		"malformed JSON":      {`{"user_id":1,"title":`, "INVALID_BODY", "Invalid request body"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			s := newTestServer(t)
 			s.createUser("Owner", "owner@example.com")
 
-			requireError(t, s.do(http.MethodPost, "/api/v1/tasks", tc.body), http.StatusBadRequest, tc.message)
+			requireError(t, s.do(http.MethodPost, "/api/v1/tasks", tc.body), http.StatusBadRequest, tc.code, tc.message)
 			assert.Zero(t, s.countRows(&pgimpl.TaskModel{}), "nothing may be stored")
 		})
 	}
@@ -124,7 +125,7 @@ func TestListUserTasks_InvalidIDs(t *testing.T) {
 	s := newTestServer(t)
 
 	for _, id := range []string{"abc", "-1", "4294967296"} {
-		requireError(t, s.do(http.MethodGet, "/api/v1/users/"+id+"/tasks", ""), http.StatusBadRequest, "Invalid user ID")
+		requireError(t, s.do(http.MethodGet, "/api/v1/users/"+id+"/tasks", ""), http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
 	}
 }
 
@@ -149,9 +150,35 @@ func TestDeleteTask_InvalidIDs(t *testing.T) {
 	task := s.createTask(owner.ID, "Keep me", "")
 
 	for _, id := range []string{"abc", "-1", "4294967296"} {
-		requireError(t, s.do(http.MethodDelete, "/api/v1/tasks/"+id, ""), http.StatusBadRequest, "Invalid task ID")
+		requireError(t, s.do(http.MethodDelete, "/api/v1/tasks/"+id, ""), http.StatusBadRequest, "INVALID_ID", "Invalid task ID")
 	}
 	assert.Equal(t, []taskJSON{task}, s.listTasks(owner.ID))
+}
+
+// GIVEN a task and an unknown id / WHEN DELETE the unknown id, or the same task twice / THEN 404 TASK_NOT_FOUND and the other tasks stay (B-04)
+func TestDeleteTask_AbsentTaskIsNotFound(t *testing.T) {
+	s := newTestServer(t)
+	owner := s.createUser("Owner", "owner@example.com")
+	kept := s.createTask(owner.ID, "Keep me", "")
+	removed := s.createTask(owner.ID, "Delete me", "")
+
+	requireError(t, s.do(http.MethodDelete, "/api/v1/tasks/999", ""), http.StatusNotFound, "TASK_NOT_FOUND", "Task not found")
+
+	first := s.do(http.MethodDelete, fmt.Sprintf("/api/v1/tasks/%d", removed.ID), "")
+	require.Equal(t, http.StatusOK, first.code, "body: %s", first.body)
+	second := s.do(http.MethodDelete, fmt.Sprintf("/api/v1/tasks/%d", removed.ID), "")
+	requireError(t, second, http.StatusNotFound, "TASK_NOT_FOUND", "Task not found")
+
+	assert.Equal(t, []taskJSON{kept}, s.listTasks(owner.ID))
+}
+
+// GIVEN valid ids at the uint32 boundaries with no task / WHEN DELETE / THEN 404 TASK_NOT_FOUND (B-04 boundaries)
+func TestDeleteTask_BoundaryIDsAreNotFound(t *testing.T) {
+	s := newTestServer(t)
+
+	for _, id := range []string{"0", "4294967295"} {
+		requireError(t, s.do(http.MethodDelete, "/api/v1/tasks/"+id, ""), http.StatusNotFound, "TASK_NOT_FOUND", "Task not found")
+	}
 }
 
 type updatedTaskJSON struct {
@@ -204,14 +231,15 @@ func TestUpdateTask_BoundaryIDs(t *testing.T) {
 
 	for id, want := range map[string]struct {
 		status  int
+		code    string
 		message string
 	}{
-		"0":          {http.StatusNotFound, "Task not found"},
-		"4294967295": {http.StatusNotFound, "Task not found"},
-		"4294967296": {http.StatusBadRequest, "Invalid task ID"},
-		"-1":         {http.StatusBadRequest, "Invalid task ID"},
+		"0":          {http.StatusNotFound, "TASK_NOT_FOUND", "Task not found"},
+		"4294967295": {http.StatusNotFound, "TASK_NOT_FOUND", "Task not found"},
+		"4294967296": {http.StatusBadRequest, "INVALID_ID", "Invalid task ID"},
+		"-1":         {http.StatusBadRequest, "INVALID_ID", "Invalid task ID"},
 	} {
-		requireError(t, s.do(http.MethodPut, "/api/v1/tasks/"+id, `{"completed":true}`), want.status, want.message)
+		requireError(t, s.do(http.MethodPut, "/api/v1/tasks/"+id, `{"completed":true}`), want.status, want.code, want.message)
 	}
 	assert.Zero(t, s.countRows(&pgimpl.TaskModel{}), "an update must never create a task")
 }

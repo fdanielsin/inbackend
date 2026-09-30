@@ -40,11 +40,11 @@ func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 func TestRouter_UnknownRouteAndMethod(t *testing.T) {
 	s := newTestServer(t)
 
-	notFound := s.do(http.MethodGet, "/api/v1/unknown", "")
+	notFound := s.doRaw(http.MethodGet, "/api/v1/unknown", "")
 	assert.Equal(t, http.StatusNotFound, notFound.code)
 	assert.JSONEq(t, `{"message":"Not Found"}`, string(notFound.body))
 
-	notAllowed := s.do(http.MethodPost, "/health", "")
+	notAllowed := s.doRaw(http.MethodPost, "/health", "")
 	assert.Equal(t, http.StatusMethodNotAllowed, notAllowed.code)
 	assert.JSONEq(t, `{"message":"Method Not Allowed"}`, string(notAllowed.body))
 }
@@ -82,7 +82,7 @@ func TestRouter_RecoversFromPanics(t *testing.T) {
 	s := newTestServer(t)
 	s.e.GET("/panic", func(echo.Context) error { panic("boom") })
 
-	r := s.do(http.MethodGet, "/panic", "")
+	r := s.doRaw(http.MethodGet, "/panic", "")
 
 	assert.Equal(t, http.StatusInternalServerError, r.code)
 	assert.Equal(t, http.StatusOK, s.do(http.MethodGet, "/health", "").code, "the server must survive the panic")

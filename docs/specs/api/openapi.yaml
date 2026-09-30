@@ -78,6 +78,8 @@ paths:
                         $ref: '#/components/schemas/User'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/EmailTaken'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/v1/users/{id}:
@@ -205,6 +207,9 @@ paths:
     delete:
       tags: [Tasks]
       summary: Supprimer une tâche
+      description: |
+        Répond `404` si la tâche n'existe pas ou a déjà été supprimée : la
+        suppression n'est donc pas idempotente côté statut HTTP.
       operationId: deleteTask
       responses:
         '200':
@@ -218,6 +223,8 @@ paths:
                     required: [message]
         '400':
           $ref: '#/components/responses/InvalidTaskId'
+        '404':
+          $ref: '#/components/responses/TaskNotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/v1/stats:
@@ -264,13 +271,39 @@ components:
         data: {}
     ErrorResponse:
       type: object
-      required: [success, error]
+      required: [success, error, error_code]
       properties:
         success:
           type: boolean
           const: false
         error:
           type: string
+          description: Message lisible, destiné à l'affichage ; sa formulation peut évoluer.
+        error_code:
+          $ref: '#/components/schemas/ErrorCode'
+    ErrorCode:
+      type: string
+      description: |
+        Code d'erreur stable, à utiliser pour décider du comportement d'un
+        client (le message `error` ne doit pas être comparé). Les codes
+        existants ne changent ni de nom ni de sens ; de nouveaux codes
+        peuvent être ajoutés.
+      enum:
+        - INVALID_BODY
+        - INVALID_ID
+        - VALIDATION_FAILED
+        - USER_NOT_FOUND
+        - TASK_NOT_FOUND
+        - EMAIL_TAKEN
+        - INTERNAL_ERROR
+      x-enumDescriptions:
+        INVALID_BODY: Corps JSON absent, mal formé ou de mauvais type (400).
+        INVALID_ID: Identifiant de chemin non numérique ou hors de la plage uint32 (400).
+        VALIDATION_FAILED: Règle de validation violée (titre, nom ou email vide, format d'email invalide, user_id absent) ; `error` précise laquelle (400).
+        USER_NOT_FOUND: Utilisateur introuvable (404).
+        TASK_NOT_FOUND: Tâche introuvable (404).
+        EMAIL_TAKEN: Un utilisateur avec cet email (une fois normalisé) existe déjà (409).
+        INTERNAL_ERROR: Erreur serveur, détails non exposés (500).
     User:
       type: object
       required: [id, name, email]
@@ -353,6 +386,16 @@ components:
         email:
           type: string
           minLength: 1
+          description: |
+            Normalisé par le serveur : espaces de début et de fin retirés,
+            minuscules. L'email renvoyé est la forme normalisée, et l'unicité
+            porte sur elle (`A@x.io` après `a@x.io` : 409 `EMAIL_TAKEN`).
+            Format minimal (pas la RFC 5322), sinon 400 `VALIDATION_FAILED` :
+            un seul `@`, une partie locale non vide, un domaine d'au moins
+            deux labels non vides séparés par des points (`a@.c`, `a@b.` et
+            `a@b..c` sont refusés), et aucun espace ni caractère de contrôle
+            (après retrait des espaces de début et de fin). Un email vide ou
+            composé d'espaces est aussi refusé.
     CreateTaskRequest:
       type: object
       required: [user_id, title]
@@ -387,37 +430,43 @@ components:
           type: boolean
   responses:
     BadRequest:
-      description: Requête invalide ou erreur de validation
+      description: Corps invalide (`INVALID_BODY`) ou erreur de validation (`VALIDATION_FAILED`)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     InvalidUserId:
-      description: Identifiant utilisateur invalide
+      description: Identifiant utilisateur invalide (`INVALID_ID`)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     InvalidTaskId:
-      description: Identifiant tâche invalide
+      description: Identifiant tâche invalide (`INVALID_ID`)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     UserNotFound:
-      description: Utilisateur introuvable
+      description: Utilisateur introuvable (`USER_NOT_FOUND`)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     TaskNotFound:
-      description: Tâche introuvable
+      description: Tâche introuvable (`TASK_NOT_FOUND`)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    EmailTaken:
+      description: Un utilisateur avec cet email existe déjà (`EMAIL_TAKEN`)
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     InternalServerError:
-      description: Erreur interne; les détails techniques ne sont pas exposés
+      description: Erreur interne (`INTERNAL_ERROR`) ; les détails techniques ne sont pas exposés
       content:
         application/json:
           schema:

@@ -1,18 +1,14 @@
 package e2e
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"testing"
 
 	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
-	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gorm.io/gorm"
 )
 
 type taskBody struct {
@@ -24,19 +20,16 @@ type taskBody struct {
 }
 
 type taskEnvelope struct {
-	Success bool     `json:"success"`
-	Data    taskBody `json:"data"`
-	Error   string   `json:"error"`
+	Success   bool     `json:"success"`
+	Data      taskBody `json:"data"`
+	Error     string   `json:"error"`
+	ErrorCode string   `json:"error_code"`
 }
 
-type taskListEnvelope struct {
-	Success bool       `json:"success"`
-	Data    []taskBody `json:"data"`
-}
-
+// taskUpdateFixture seeds tasks directly in the database and updates them
+// through the production router, with every response checked against the contract.
 type taskUpdateFixture struct {
-	e      *echo.Echo
-	db     *gorm.DB
+	s      *testServer
 	userID uint
 }
 
@@ -47,43 +40,35 @@ func newTaskUpdateFixture(t *testing.T) *taskUpdateFixture {
 	user := &pgimpl.UserModel{Name: "Owner", Email: "owner@example.com"}
 	require.NoError(t, s.db.Create(user).Error)
 
-	return &taskUpdateFixture{e: s.e, db: s.db, userID: user.ID}
+	return &taskUpdateFixture{s: s, userID: user.ID}
 }
 
 func (f *taskUpdateFixture) seedTask(t *testing.T, title, description string, completed bool) uint {
 	t.Helper()
 	model := &pgimpl.TaskModel{Title: title, Description: description, UserID: f.userID}
-	require.NoError(t, f.db.Create(model).Error)
+	require.NoError(t, f.s.db.Create(model).Error)
 	if completed {
-		require.NoError(t, f.db.Model(model).Update("completed", true).Error)
+		require.NoError(t, f.s.db.Model(model).Update("completed", true).Error)
 	}
 	return model.ID
 }
 
 func (f *taskUpdateFixture) put(t *testing.T, id uint, body string) (int, taskEnvelope) {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/api/v1/tasks/%d", id), bytes.NewBufferString(body))
-	req.Header.Set("Content-Type", "application/json")
-	rec := httptest.NewRecorder()
-	f.e.ServeHTTP(rec, req)
+	r := f.s.do(http.MethodPut, fmt.Sprintf("/api/v1/tasks/%d", id), body)
 
 	var env taskEnvelope
-	if rec.Body.Len() > 0 {
-		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &env), "invalid JSON body: %s", rec.Body.String())
-	}
-	return rec.Code, env
+	require.NoError(t, json.Unmarshal(r.body, &env), "invalid JSON body: %s", r.body)
+	return r.code, env
 }
 
 func (f *taskUpdateFixture) persistedTasks(t *testing.T) []taskBody {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/users/%d/tasks", f.userID), nil)
-	rec := httptest.NewRecorder()
-	f.e.ServeHTTP(rec, req)
-	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
-
-	var env taskListEnvelope
-	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &env))
-	return env.Data
+	var tasks []taskBody
+	for _, tk := range f.s.listTasks(f.userID) {
+		tasks = append(tasks, taskBody(tk))
+	}
+	return tasks
 }
 
 func (f *taskUpdateFixture) persistedTask(t *testing.T, id uint) taskBody {
@@ -180,6 +165,7 @@ func TestTaskController_UpdateTask_SadPath_ExplicitEmptyTitle(t *testing.T) {
 	// THEN: The request is rejected and the title is unchanged.
 	require.Equal(t, http.StatusBadRequest, code)
 	assert.False(t, resp.Success)
+	assert.Equal(t, "VALIDATION_FAILED", resp.ErrorCode)
 	assert.Equal(t, "Task title cannot be empty", resp.Error)
 	assert.Equal(t, "Buy milk", f.persistedTask(t, id).Title)
 }
@@ -194,6 +180,7 @@ func TestTaskController_UpdateTask_SadPath_UnknownTask(t *testing.T) {
 
 	// THEN: 404 with the contract error message.
 	require.Equal(t, http.StatusNotFound, code)
+	assert.Equal(t, "TASK_NOT_FOUND", resp.ErrorCode)
 	assert.Equal(t, "Task not found", resp.Error)
 }
 
@@ -204,23 +191,22 @@ func TestTaskController_UpdateTask_SadPath_InvalidInput(t *testing.T) {
 	id := f.seedTask(t, "Buy milk", "Semi-skimmed", false)
 
 	cases := map[string]struct {
-		path string
-		body string
+		path    string
+		body    string
+		code    string
+		message string
 	}{
-		"non numeric id": {path: "/api/v1/tasks/abc", body: `{"completed":true}`},
-		"malformed body": {path: fmt.Sprintf("/api/v1/tasks/%d", id), body: `{"completed":`},
-		"wrong type":     {path: fmt.Sprintf("/api/v1/tasks/%d", id), body: `{"completed":"yes"}`},
+		"non numeric id": {"/api/v1/tasks/abc", `{"completed":true}`, "INVALID_ID", "Invalid task ID"},
+		"malformed body": {fmt.Sprintf("/api/v1/tasks/%d", id), `{"completed":`, "INVALID_BODY", "Invalid request body"},
+		"wrong type":     {fmt.Sprintf("/api/v1/tasks/%d", id), `{"completed":"yes"}`, "INVALID_BODY", "Invalid request body"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
 			// WHEN: The invalid request is sent.
-			req := httptest.NewRequest(http.MethodPut, tc.path, bytes.NewBufferString(tc.body))
-			req.Header.Set("Content-Type", "application/json")
-			rec := httptest.NewRecorder()
-			f.e.ServeHTTP(rec, req)
+			r := f.s.do(http.MethodPut, tc.path, tc.body)
 
-			// THEN: 400 and the task is untouched.
-			assert.Equal(t, http.StatusBadRequest, rec.Code, rec.Body.String())
+			// THEN: 400 with the stable code, and the task is untouched.
+			requireError(t, r, http.StatusBadRequest, tc.code, tc.message)
 			assert.Equal(t, taskBody{ID: id, Title: "Buy milk", Description: "Semi-skimmed", UserID: f.userID}, f.persistedTask(t, id))
 		})
 	}
@@ -245,9 +231,8 @@ func TestTaskController_UpdateTask_SadPath_DeletedTaskIsNotRecreated(t *testing.
 	// GIVEN: A task that has been deleted through the API.
 	f := newTaskUpdateFixture(t)
 	id := f.seedTask(t, "Buy milk", "Semi-skimmed", false)
-	del := httptest.NewRecorder()
-	f.e.ServeHTTP(del, httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/api/v1/tasks/%d", id), nil))
-	require.Equal(t, http.StatusOK, del.Code)
+	del := f.s.do(http.MethodDelete, fmt.Sprintf("/api/v1/tasks/%d", id), "")
+	require.Equal(t, http.StatusOK, del.code, "body: %s", del.body)
 
 	// WHEN: The deleted task is updated.
 	code, _ := f.put(t, id, `{"completed":true}`)

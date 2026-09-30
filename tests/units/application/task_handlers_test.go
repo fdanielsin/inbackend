@@ -117,14 +117,16 @@ func TestListUserTasksHandler_Execute_RepositoryErrorIsPropagated(t *testing.T) 
 	assert.ErrorIs(t, err, errDatabaseDown)
 }
 
-func statsRepositories(users []*user.User, usersErr error, tasks int64, tasksErr error) (*stubUserRepository, *stubTaskRepository) {
-	return &stubUserRepository{listFn: func() ([]*user.User, error) { return users, usersErr }},
+// statsRepositories answers counts only: a stats query that loads the users
+// (List) instead of counting them fails, because listFn is not expected.
+func statsRepositories(users int64, usersErr error, tasks int64, tasksErr error) (*stubUserRepository, *stubTaskRepository) {
+	return &stubUserRepository{countFn: func() (int64, error) { return users, usersErr }},
 		&stubTaskRepository{countFn: func() (int64, error) { return tasks, tasksErr }}
 }
 
 // GIVEN 3 users and 5 tasks / WHEN GetStats / THEN the exact counters are returned
 func TestGetStatsHandler_Execute_ReturnsExactCounters(t *testing.T) {
-	userRepo, taskRepo := statsRepositories([]*user.User{{ID: 1}, {ID: 2}, {ID: 3}}, nil, 5, nil)
+	userRepo, taskRepo := statsRepositories(3, nil, 5, nil)
 
 	resp, err := queries.NewGetStatsHandler(userRepo, taskRepo).Execute(context.Background(), queries.GetStatsRequest{})
 
@@ -132,9 +134,20 @@ func TestGetStatsHandler_Execute_ReturnsExactCounters(t *testing.T) {
 	assert.Equal(t, queries.GetStatsResponse{Users: 3, Tasks: 5}, *resp)
 }
 
+// GIVEN listing the users fails / WHEN GetStats / THEN the users are counted, never loaded
+func TestGetStatsHandler_Execute_CountsUsersWithoutLoadingThem(t *testing.T) {
+	userRepo, taskRepo := statsRepositories(2, nil, 0, nil)
+	userRepo.listFn = func() ([]*user.User, error) { return nil, errDatabaseDown }
+
+	resp, err := queries.NewGetStatsHandler(userRepo, taskRepo).Execute(context.Background(), queries.GetStatsRequest{})
+
+	require.NoError(t, err)
+	assert.Equal(t, queries.GetStatsResponse{Users: 2, Tasks: 0}, *resp)
+}
+
 // GIVEN an empty database / WHEN GetStats / THEN both counters are 0
 func TestGetStatsHandler_Execute_EmptyDatabase(t *testing.T) {
-	userRepo, taskRepo := statsRepositories(nil, nil, 0, nil)
+	userRepo, taskRepo := statsRepositories(0, nil, 0, nil)
 
 	resp, err := queries.NewGetStatsHandler(userRepo, taskRepo).Execute(context.Background(), queries.GetStatsRequest{})
 
@@ -146,7 +159,7 @@ func TestGetStatsHandler_Execute_EmptyDatabase(t *testing.T) {
 func TestGetStatsHandler_Execute_RepositoryErrorIsPropagated(t *testing.T) {
 	for name, repos := range map[string][2]error{"users": {errDatabaseDown, nil}, "tasks": {nil, errDatabaseDown}} {
 		t.Run(name, func(t *testing.T) {
-			userRepo, taskRepo := statsRepositories([]*user.User{{ID: 1}}, repos[0], 2, repos[1])
+			userRepo, taskRepo := statsRepositories(1, repos[0], 2, repos[1])
 
 			resp, err := queries.NewGetStatsHandler(userRepo, taskRepo).Execute(context.Background(), queries.GetStatsRequest{})
 

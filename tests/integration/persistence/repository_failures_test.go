@@ -22,6 +22,7 @@ func repositoryCalls(ctx context.Context, db *gorm.DB) map[string]error {
 	_, errs["User.GetByID"] = users.GetByID(ctx, 1)
 	_, errs["User.GetByEmail"] = users.GetByEmail(ctx, "ada@example.com")
 	_, errs["User.List"] = users.List(ctx)
+	_, errs["User.Count"] = users.Count(ctx)
 	_, errs["Task.Create"] = tasks.Create(ctx, &task.Task{Title: "Buy milk", UserID: 1})
 	_, errs["Task.GetByID"] = tasks.GetByID(ctx, 1)
 	_, errs["Task.ListByUserID"] = tasks.ListByUserID(ctx, 1)
@@ -32,11 +33,12 @@ func repositoryCalls(ctx context.Context, db *gorm.DB) map[string]error {
 }
 
 // A technical failure must surface as an error, never as success nor as a
-// "not found" that the controllers would turn into a 404.
+// domain error that the controllers would turn into a 404 or a 409.
 func assertTechnicalFailure(t *testing.T, name string, err error) {
 	t.Helper()
 	require.Error(t, err, name)
 	assert.NotErrorIs(t, err, user.ErrUserNotFound, name)
+	assert.NotErrorIs(t, err, user.ErrUserEmailTaken, name)
 	assert.NotErrorIs(t, err, task.ErrTaskNotFound, name)
 }
 

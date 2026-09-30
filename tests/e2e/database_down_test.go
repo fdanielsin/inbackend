@@ -25,7 +25,7 @@ func TestEndpoints_DatabaseDown_Return500WithoutDetails(t *testing.T) {
 			s.createTask(owner.ID, "Buy milk", "")
 			s.closeDatabase()
 
-			requireError(t, s.do(req.method, req.path, req.body), http.StatusInternalServerError, "Internal server error")
+			requireError(t, s.do(req.method, req.path, req.body), http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error")
 		})
 	}
 }

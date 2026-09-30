@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"testing"
@@ -31,13 +32,20 @@ func TestCreateUser_ReturnsAndPersistsUser(t *testing.T) {
 func TestCreateUser_RejectsInvalidPayloads(t *testing.T) {
 	cases := map[string]struct {
 		body    string
+		code    string
 		message string
 	}{
-		"empty name":     {`{"name":"","email":"john@example.com"}`, "User name cannot be empty"},
-		"empty email":    {`{"name":"John","email":""}`, "User email cannot be empty"},
-		"empty object":   {`{}`, "User name cannot be empty"},
-		"malformed JSON": {`{"name":"John",`, "Invalid request body"},
-		"wrong type":     {`{"name":1,"email":"john@example.com"}`, "Invalid request body"},
+		"empty name":           {`{"name":"","email":"john@example.com"}`, "VALIDATION_FAILED", "User name cannot be empty"},
+		"empty email":          {`{"name":"John","email":""}`, "VALIDATION_FAILED", "User email cannot be empty"},
+		"email of spaces only": {`{"name":"John","email":"   "}`, "VALIDATION_FAILED", "User email cannot be empty"},
+		"email without @":      {`{"name":"John","email":"john.example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"email with two @":     {`{"name":"John","email":"john@@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"email without local":  {`{"name":"John","email":"@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"email without domain": {`{"name":"John","email":"john@"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"domain without a dot": {`{"name":"John","email":"john@localhost"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"empty object":         {`{}`, "VALIDATION_FAILED", "User name cannot be empty"},
+		"malformed JSON":       {`{"name":"John",`, "INVALID_BODY", "Invalid request body"},
+		"wrong type":           {`{"name":1,"email":"john@example.com"}`, "INVALID_BODY", "Invalid request body"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -45,24 +53,58 @@ func TestCreateUser_RejectsInvalidPayloads(t *testing.T) {
 
 			r := s.do(http.MethodPost, "/api/v1/users", tc.body)
 
-			requireError(t, r, http.StatusBadRequest, tc.message)
+			requireError(t, r, http.StatusBadRequest, tc.code, tc.message)
 			assert.Zero(t, s.countRows(&pgimpl.UserModel{}), "nothing may be stored")
 		})
 	}
 }
 
-// GIVEN one-character name and email (contract minLength 1) / WHEN POST / THEN 201
-func TestCreateUser_AcceptsSingleCharacterFields(t *testing.T) {
+// GIVEN a one-character name and the shortest valid email "a@b.c" / WHEN POST / THEN 201
+func TestCreateUser_AcceptsShortestValidFields(t *testing.T) {
 	s := newTestServer(t)
 
-	assert.Equal(t, userJSON{ID: 1, Name: "J", Email: "j"}, s.createUser("J", "j"))
+	assert.Equal(t, userJSON{ID: 1, Name: "J", Email: "a@b.c"}, s.createUser("J", "a@b.c"))
 }
 
-// GIVEN an email without @ (the contract only requires a non-empty string) / WHEN POST / THEN 201
-func TestCreateUser_AcceptsEmailWithoutFormat(t *testing.T) {
+// GIVEN an email with surrounding spaces and capitals / WHEN POST / THEN 201 with the trimmed, lower-case email, stored so
+func TestCreateUser_NormalizesEmail(t *testing.T) {
 	s := newTestServer(t)
 
-	assert.Equal(t, userJSON{ID: 1, Name: "John", Email: "bad"}, s.createUser("John", "bad"))
+	created := s.createUser("Ada", "  Ada.Lovelace@Example.COM \t")
+
+	assert.Equal(t, userJSON{ID: 1, Name: "Ada", Email: "ada.lovelace@example.com"}, created)
+	stored := s.do(http.MethodGet, "/api/v1/users/1", "")
+	require.Equal(t, http.StatusOK, stored.code)
+	assert.Equal(t, created, decode[userJSON](t, stored).Data)
+}
+
+// GIVEN an existing user / WHEN POST with the same email, differently cased or padded / THEN 409 EMAIL_TAKEN and nothing stored (B-03)
+func TestCreateUser_RejectsTakenEmail(t *testing.T) {
+	for name, email := range map[string]string{
+		"same email":           "ada@x.io",
+		"other case":           "ADA@X.IO",
+		"surrounded by spaces": " ada@x.io ",
+	} {
+		t.Run(name, func(t *testing.T) {
+			s := newTestServer(t)
+			s.createUser("Ada", "ada@x.io")
+			body, err := json.Marshal(map[string]string{"name": "Other", "email": email})
+			require.NoError(t, err)
+
+			r := s.do(http.MethodPost, "/api/v1/users", string(body))
+
+			requireError(t, r, http.StatusConflict, "EMAIL_TAKEN", "Email already in use")
+			assert.Equal(t, int64(1), s.countRows(&pgimpl.UserModel{}), "the duplicate must not be stored")
+		})
+	}
+}
+
+// GIVEN an existing user / WHEN POST with an email differing by one character / THEN 201 (B-03 boundary)
+func TestCreateUser_EmailDifferingByOneCharacterIsFree(t *testing.T) {
+	s := newTestServer(t)
+	s.createUser("Ada", "ada@x.io")
+
+	assert.Equal(t, userJSON{ID: 2, Name: "Bob", Email: "adb@x.io"}, s.createUser("Bob", "adb@x.io"))
 }
 
 // GIVEN Unicode, emoji, quotes and markup / WHEN created then read / THEN returned byte for byte
@@ -135,21 +177,22 @@ func TestGetUser_UnknownAndInvalidIDs(t *testing.T) {
 	cases := map[string]struct {
 		id      string
 		status  int
+		code    string
 		message string
 	}{
-		"unknown":               {"999", http.StatusNotFound, "User not found"},
-		"zero":                  {"0", http.StatusNotFound, "User not found"},
-		"max uint32":            {"4294967295", http.StatusNotFound, "User not found"},
-		"max uint32 + 1":        {"4294967296", http.StatusBadRequest, "Invalid user ID"},
-		"negative":              {"-1", http.StatusBadRequest, "Invalid user ID"},
-		"not a number":          {"abc", http.StatusBadRequest, "Invalid user ID"},
-		"decimal":               {"1.5", http.StatusBadRequest, "Invalid user ID"},
-		"explicit plus sign":    {"+1", http.StatusBadRequest, "Invalid user ID"},
-		"space-padded (escape)": {"%201", http.StatusBadRequest, "Invalid user ID"},
+		"unknown":               {"999", http.StatusNotFound, "USER_NOT_FOUND", "User not found"},
+		"zero":                  {"0", http.StatusNotFound, "USER_NOT_FOUND", "User not found"},
+		"max uint32":            {"4294967295", http.StatusNotFound, "USER_NOT_FOUND", "User not found"},
+		"max uint32 + 1":        {"4294967296", http.StatusBadRequest, "INVALID_ID", "Invalid user ID"},
+		"negative":              {"-1", http.StatusBadRequest, "INVALID_ID", "Invalid user ID"},
+		"not a number":          {"abc", http.StatusBadRequest, "INVALID_ID", "Invalid user ID"},
+		"decimal":               {"1.5", http.StatusBadRequest, "INVALID_ID", "Invalid user ID"},
+		"explicit plus sign":    {"+1", http.StatusBadRequest, "INVALID_ID", "Invalid user ID"},
+		"space-padded (escape)": {"%201", http.StatusBadRequest, "INVALID_ID", "Invalid user ID"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
-			requireError(t, s.do(http.MethodGet, "/api/v1/users/"+tc.id, ""), tc.status, tc.message)
+			requireError(t, s.do(http.MethodGet, "/api/v1/users/"+tc.id, ""), tc.status, tc.code, tc.message)
 		})
 	}
 }

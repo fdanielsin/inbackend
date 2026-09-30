@@ -33,7 +33,7 @@ func NewGetStatsHandler(userRepo user.Repository, taskRepo task.Repository) *Get
 
 // Execute exécute la requête GetStats.
 func (h *GetStatsHandler) Execute(ctx context.Context, _ GetStatsRequest) (*GetStatsResponse, error) {
-	users, err := h.userRepo.List(ctx)
+	userCount, err := h.userRepo.Count(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func (h *GetStatsHandler) Execute(ctx context.Context, _ GetStatsRequest) (*GetS
 	}
 
 	return &GetStatsResponse{
-		Users: int64(len(users)),
+		Users: userCount,
 		Tasks: taskCount,
 	}, nil
 }

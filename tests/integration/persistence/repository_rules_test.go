@@ -119,6 +119,62 @@ func TestTaskRepository_Delete_RemovesOnlyTargetedTask(t *testing.T) {
 	assert.Equal(t, int64(2), count)
 }
 
+// GIVEN no task with these ids, then a deleted task / WHEN Delete / THEN ErrTaskNotFound and nothing else is removed (B-04)
+func TestTaskRepository_Delete_AbsentTask_ReturnsNotFound(t *testing.T) {
+	ctx := context.Background()
+	db := setupTestDB(t)
+	repo := postgres.NewTaskRepository(db)
+	ownerID := createTestUser(t, db, "owner@example.com")
+	kept := createTestTask(t, repo, ownerID, "Keep me")
+	removed := createTestTask(t, repo, ownerID, "Delete me")
+
+	for _, id := range []uint{0, 999, maxContractID} {
+		assert.ErrorIs(t, repo.Delete(ctx, id), task.ErrTaskNotFound, "id %d", id)
+	}
+	require.NoError(t, repo.Delete(ctx, removed))
+	assert.ErrorIs(t, repo.Delete(ctx, removed), task.ErrTaskNotFound, "a second delete must report the task as absent")
+
+	remaining, err := repo.ListByUserID(ctx, ownerID)
+	require.NoError(t, err)
+	require.Len(t, remaining, 1)
+	assert.Equal(t, kept, remaining[0].ID)
+}
+
+// GIVEN a stored user / WHEN Create with the same email / THEN ErrUserEmailTaken, no raw database error, nothing stored (B-03)
+func TestUserRepository_Create_DuplicateEmail_ReturnsEmailTaken(t *testing.T) {
+	ctx := context.Background()
+	db := setupTestDB(t)
+	repo := postgres.NewUserRepository(db)
+	_, err := repo.Create(ctx, &user.User{Name: "Ada", Email: "ada@x.io"})
+	require.NoError(t, err)
+
+	_, err = repo.Create(ctx, &user.User{Name: "Other", Email: "ada@x.io"})
+
+	require.ErrorIs(t, err, user.ErrUserEmailTaken)
+	assert.NotContains(t, err.Error(), "ada@x.io", "the error must not carry the email")
+	count, err := repo.Count(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, int64(1), count)
+}
+
+// GIVEN an empty table, then 2 users / WHEN Count / THEN 0, then 2
+func TestUserRepository_Count(t *testing.T) {
+	ctx := context.Background()
+	db := setupTestDB(t)
+	repo := postgres.NewUserRepository(db)
+
+	empty, err := repo.Count(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), empty)
+
+	createTestUser(t, db, "alice@example.com")
+	createTestUser(t, db, "bob@example.com")
+
+	count, err := repo.Count(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), count)
+}
+
 // GIVEN tasks of several users / WHEN Count / THEN all tasks are counted, 0 on an empty table
 func TestTaskRepository_Count(t *testing.T) {
 	ctx := context.Background()

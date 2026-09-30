@@ -3,31 +3,26 @@ package postgres
 import (
 	"context"
 	"errors"
-	"log/slog"
 
 	"github.com/fdanielsin/inbackend/internal/domain/user"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
+	"github.com/jackc/pgx/v5/pgconn"
 	"gorm.io/gorm"
 )
 
 // UserRepository implémente l'interface domain.user.Repository avec PostgreSQL/GORM.
 type UserRepository struct {
-	db  *gorm.DB
-	log *slog.Logger
+	db *gorm.DB
 }
 
 // NewUserRepository crée une nouvelle instance du repository.
 func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{
-		db:  db,
-		log: logger.GetSlog(),
+		db: db,
 	}
 }
 
 // Create crée un nouvel utilisateur et retourne l'ID généré.
 func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error) {
-	r.log.Debug("Creating user", slog.String("email", u.Email), slog.String("name", u.Name))
-
 	gormUser := &UserModel{
 		Name:  u.Name,
 		Email: u.Email,
@@ -35,27 +30,24 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error)
 
 	result := r.db.WithContext(ctx).Create(gormUser)
 	if result.Error != nil {
-		r.log.Error("Failed to create user", slog.String("error", result.Error.Error()))
+		if isUniqueViolation(result.Error) {
+			return 0, user.ErrUserEmailTaken
+		}
 		return 0, result.Error
 	}
 
-	r.log.Info("User created", slog.Uint64("id", uint64(gormUser.ID)), slog.String("email", u.Email))
 	return gormUser.ID, nil
 }
 
 // GetByID récupère un utilisateur par son ID.
 func (r *UserRepository) GetByID(ctx context.Context, id uint) (*user.User, error) {
-	r.log.Debug("Fetching user by ID", slog.Uint64("id", uint64(id)))
-
 	var gormUser UserModel
 	result := r.db.WithContext(ctx).First(&gormUser, id)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			r.log.Info("User not found", slog.Uint64("id", uint64(id)))
 			return nil, user.ErrUserNotFound
 		}
-		r.log.Error("Failed to fetch user", slog.Uint64("id", uint64(id)), slog.String("error", result.Error.Error()))
 		return nil, result.Error
 	}
 
@@ -104,4 +96,21 @@ func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
 	}
 
 	return users, nil
+}
+
+// Count retourne le nombre total d'utilisateurs.
+func (r *UserRepository) Count(ctx context.Context) (int64, error) {
+	var count int64
+	result := r.db.WithContext(ctx).Model(&UserModel{}).Count(&count)
+	return count, result.Error
+}
+
+const pgUniqueViolation = "23505"
+
+// isUniqueViolation détecte la violation de la seule contrainte d'unicité
+// utilisateur (l'email). Le test de la base, plutôt qu'un SELECT préalable,
+// reste correct sous requêtes concurrentes.
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == pgUniqueViolation
 }

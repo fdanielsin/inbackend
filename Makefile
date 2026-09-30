@@ -1,9 +1,11 @@
-.PHONY: help build run test test-unit test-integration test-e2e lint lint-api lint-ci fmt vuln clean docker-build docker-run
+.PHONY: help build run test test-unit test-integration test-e2e mutate lint lint-api lint-ci fmt vuln clean docker-build docker-run
 
 # Outils épinglés, lancés avec `go run` pour ne pas modifier go.mod (ADR 0006).
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 GOVULNCHECK := go run golang.org/x/vuln/cmd/govulncheck@v1.8.0
 ACTIONLINT := go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
+GREMLINS := go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0
+MUTATION_BASE ?= develop
 REDOCLY := npx --yes @redocly/cli@2.55.0
 
 help:
@@ -14,6 +16,7 @@ help:
 	@echo "  make test-unit       - Run unit tests"
 	@echo "  make test-integration - Run integration tests with testcontainers"
 	@echo "  make test-e2e        - Run E2E tests (requires Docker or Podman)"
+	@echo "  make mutate          - Mutation testing on the diff against MUTATION_BASE (default develop), not run in CI"
 	@echo "  make lint            - Run golangci-lint and check formatting (gofumpt, goimports)"
 	@echo "  make lint-api        - Lint the OpenAPI contract with Redocly (requires Node)"
 	@echo "  make lint-ci         - Lint GitHub Actions workflows with actionlint"
@@ -46,6 +49,10 @@ test-integration:
 test-e2e:
 	@echo "🧪 Running E2E tests with Testcontainers..."
 	go test -v ./tests/e2e/...
+
+mutate:
+	@echo "🧬 Mutation testing on the diff against $(MUTATION_BASE)..."
+	$(GREMLINS) unleash --integration --coverpkg=./internal/... -D $(MUTATION_BASE)
 
 lint:
 	@echo "🔍 Linting and checking formatting..."

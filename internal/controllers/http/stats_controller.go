@@ -30,8 +30,7 @@ func (sc *StatsController) GetStats(c echo.Context) error {
 
 	resp, err := sc.getStatsHandler.Execute(c.Request().Context(), queries.GetStatsRequest{})
 	if err != nil {
-		sc.log.Error("Error fetching statistics", slog.String("error", err.Error()))
-		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
+		return respondWithError(c, sc.log, "Error fetching statistics", err)
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))

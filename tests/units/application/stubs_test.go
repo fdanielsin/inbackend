@@ -13,6 +13,7 @@ type stubUserRepository struct {
 	createFn func(u *user.User) (uint, error)
 	getFn    func(id uint) (*user.User, error)
 	listFn   func() ([]*user.User, error)
+	countFn  func() (int64, error)
 	created  []user.User
 }
 
@@ -31,6 +32,10 @@ func (r *stubUserRepository) GetByEmail(_ context.Context, _ string) (*user.User
 
 func (r *stubUserRepository) List(_ context.Context) ([]*user.User, error) {
 	return r.listFn()
+}
+
+func (r *stubUserRepository) Count(_ context.Context) (int64, error) {
+	return r.countFn()
 }
 
 // stubTaskRepository records calls and returns canned results, like stubUserRepository.

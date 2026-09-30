@@ -306,6 +306,24 @@ Branche `test/lot3-backend` (worktree `inbackend/.worktrees/lot3-backend`).
 - **Hors périmètre** : nouvelle fonctionnalité, modification du frontend,
   création de fichiers à la racine, commit ou push.
 
+## Lot 4 : erreurs et contrat (branche `feat/lot4-errors-contrat`)
+
+- Toute erreur porte un `error_code` stable (enum dans `openapi.yaml`) ; une
+  seule table erreur -> statut/code/message dans `internal/shared/errors.go`.
+- `B-03` : email en double -> 409 `EMAIL_TAKEN` (code PostgreSQL 23505). Email
+  normalisé dans `NewUser` (trim, minuscules) et format minimal validé (400).
+  Les doublons par casse déjà en base relèvent du lot des migrations.
+- `B-04` : DELETE d'une tâche absente -> 404 `TASK_NOT_FOUND`.
+- Stats : `COUNT` SQL (`user.Repository.Count`).
+- `B-08` : aucun email, nom ni texte brut d'erreur dans les logs ; logger GORM
+  `Silent` ; les repositories ne journalisent plus, les controllers journalisent
+  `error_code` et l'id. Logger injecté dans les tests par `slog.SetDefault`.
+- Tests de contrat : kin-openapi v0.149.0, helper `tests/testsupport/contract.go`.
+- `make mutate` : mutation (gremlins) sur le diff, hors CI.
+- À faire au lot des migrations : `isUniqueViolation` doit aussi vérifier le nom
+  de la contrainte (`idx_user_models_email` : GORM nomme les tables `user_models` et `task_models`, la migration initiale doit les reproduire) ; index unique sur `lower(email)` et
+  migration qui refuse, sans rien supprimer, s'il existe des doublons par casse.
+
 ## Prochaine mission
 
 La conformité locale est vérifiée pour les commandes exécutées ci-dessus,
@@ -356,6 +374,7 @@ Prochaine étape :
 
 ## Dernière mise à jour
 
+2026-10-01 : lot 4 erreurs et contrat (voir « Lot 4 »).
 2026-09-30 — outillage lint sur `chore/lint-tooling` (golangci-lint, govulncheck,
 Redocly), sans changement de comportement ; voir « Outillage lint » ci-dessus.
 Le nettoyage backend précédent est détaillé dans « Nettoyage backend ».

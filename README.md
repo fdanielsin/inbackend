@@ -248,7 +248,7 @@ Frontend Repo: https://github.com/fdanielsin/infrontend
 ## 🛠️ Development Notes
 
 - **GORM Auto-Migration**: Runs on startup, see `internal/infrastructure/database/init.go`
-- **Error Handling**: Unified `APIResponse` in `internal/shared/response.go`
+- **Error Handling**: Unified `APIResponse` in `internal/shared/response.go`; every error carries a stable `error_code`, all mapped in one table in `internal/shared/errors.go` (codes listed in `docs/specs/api/openapi.yaml`)
 - **CORS**: Configured in `internal/app/router.go`, adjust origins as needed
 - **Logging**: Development (pretty) vs Production (structured JSON)
 - **Testing**: Testcontainers start one PostgreSQL container per test package; tables are truncated before each test

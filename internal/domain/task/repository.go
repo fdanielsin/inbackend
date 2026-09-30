@@ -17,7 +17,7 @@ type Repository interface {
 	// Update met à jour une tâche existante.
 	Update(ctx context.Context, task *Task) error
 
-	// Delete supprime une tâche.
+	// Delete supprime une tâche ; ErrTaskNotFound si elle n'existe pas.
 	Delete(ctx context.Context, id uint) error
 
 	// Count retourne le nombre total de tâches.

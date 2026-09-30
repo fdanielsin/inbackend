@@ -26,12 +26,66 @@ func TestNewUser_EmptyNameAndEmail_ReportsNameFirst(t *testing.T) {
 	assert.ErrorIs(t, err, user.ErrUserNameEmpty)
 }
 
-// GIVEN: One-character name and email (contract minLength 1) / WHEN: NewUser / THEN: accepted
-func TestNewUser_SingleCharacterFields_AreAccepted(t *testing.T) {
-	u, err := user.NewUser(0, "J", "j")
+// GIVEN: A one-character name and the shortest valid email / WHEN: NewUser / THEN: accepted
+func TestNewUser_ShortestValidFields_AreAccepted(t *testing.T) {
+	u, err := user.NewUser(0, "J", "a@b.c")
 
 	require.NoError(t, err)
-	assert.Equal(t, user.User{ID: 0, Name: "J", Email: "j"}, *u)
+	assert.Equal(t, user.User{ID: 0, Name: "J", Email: "a@b.c"}, *u)
+}
+
+// GIVEN: An email with surrounding spaces and capitals, ASCII or not / WHEN: NewUser / THEN: trimmed and lower-cased; the name is kept as typed
+func TestNewUser_NormalizesEmailOnly(t *testing.T) {
+	for raw, want := range map[string]string{
+		"  Ada@Example.COM\t":  "ada@example.com",
+		"\nÉLODIE@EXEMPLE.FR ": "élodie@exemple.fr",
+		"ada@mail.example.co":  "ada@mail.example.co",
+	} {
+		u, err := user.NewUser(0, "Ada LOVELACE", raw)
+
+		require.NoError(t, err, raw)
+		assert.Equal(t, want, u.Email, raw)
+		assert.Equal(t, "Ada LOVELACE", u.Name, raw)
+	}
+}
+
+// GIVEN: An email made of spaces only / WHEN: NewUser / THEN: ErrUserEmailEmpty, checked before the format
+func TestNewUser_BlankEmail_IsEmpty(t *testing.T) {
+	u, err := user.NewUser(0, "Ada", " \t\n ")
+
+	assert.Nil(t, u)
+	assert.ErrorIs(t, err, user.ErrUserEmailEmpty)
+}
+
+// GIVEN: An email without the minimal shape local@domain.tld (current rule) / WHEN: NewUser / THEN: ErrUserEmailInvalid
+func TestNewUser_MalformedEmail_IsInvalid(t *testing.T) {
+	for _, email := range []string{
+		"ada.example.com",   // no @
+		"ada@@example.com",  // two @
+		"ada@exa@mple.com",  // @ in the domain
+		"@example.com",      // empty local part
+		"ada@",              // empty domain
+		"ada@localhost",     // domain without a dot
+		"ada@.com",          // empty first label
+		"ada@example.",      // empty last label
+		"ada lovelace@x.io", // inner space
+		"ada@exa..mple.com", // empty middle label
+		"ada\u00a0l@x.io",   // inner no-break space
+		"ada\x00@x.io",      // control character
+		"\x00ada@x.io",      // control character first (not removed by the trim)
+	} {
+		u, err := user.NewUser(0, "Ada", email)
+
+		assert.Nil(t, u, email)
+		assert.ErrorIs(t, err, user.ErrUserEmailInvalid, email)
+	}
+}
+
+// GIVEN: An empty name and a malformed email / WHEN: NewUser / THEN: the name is reported first
+func TestNewUser_EmptyNameAndMalformedEmail_ReportsNameFirst(t *testing.T) {
+	_, err := user.NewUser(0, "", "not-an-email")
+
+	assert.ErrorIs(t, err, user.ErrUserNameEmpty)
 }
 
 // GIVEN: Long Unicode values / WHEN: NewUser / THEN: kept byte for byte

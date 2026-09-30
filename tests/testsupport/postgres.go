@@ -68,6 +68,11 @@ func StartPostgres() *Postgres {
 	return pg
 }
 
+// Available reports whether the container started.
+func (p *Postgres) Available() bool {
+	return p.startErr == nil
+}
+
 // Terminate stops the container, if it was created.
 func (p *Postgres) Terminate() {
 	if p.container != nil {

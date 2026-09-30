@@ -6,6 +6,8 @@ type APIResponse struct {
 	Message string      `json:"message,omitempty"`
 	Data    interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
+	// ErrorCode est le code stable de l'erreur (voir les constantes Code*).
+	ErrorCode string `json:"error_code,omitempty"`
 }
 
 // SuccessResponse crée une réponse de succès.
@@ -26,9 +28,10 @@ func SuccessResponseEmpty(message string) APIResponse {
 }
 
 // ErrorResponse crée une réponse d'erreur.
-func ErrorResponse(errorMsg string) APIResponse {
+func ErrorResponse(code, errorMsg string) APIResponse {
 	return APIResponse{
-		Success: false,
-		Error:   errorMsg,
+		Success:   false,
+		Error:     errorMsg,
+		ErrorCode: code,
 	}
 }

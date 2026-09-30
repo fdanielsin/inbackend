@@ -16,4 +16,7 @@ type Repository interface {
 
 	// List récupère tous les utilisateurs.
 	List(ctx context.Context) ([]*User, error)
+
+	// Count retourne le nombre total d'utilisateurs.
+	Count(ctx context.Context) (int64, error)
 }

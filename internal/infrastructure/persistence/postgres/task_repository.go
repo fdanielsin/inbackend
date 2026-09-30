@@ -110,10 +110,17 @@ func (r *TaskRepository) Update(ctx context.Context, t *task.Task) error {
 	return nil
 }
 
-// Delete supprime une tâche.
+// Delete supprime une tâche ; RowsAffected == 0 signifie qu'elle n'existe pas
+// (ou plus, en cas de suppression concurrente).
 func (r *TaskRepository) Delete(ctx context.Context, id uint) error {
 	result := r.db.WithContext(ctx).Delete(&TaskModel{}, id)
-	return result.Error
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return task.ErrTaskNotFound
+	}
+	return nil
 }
 
 // Count retourne le nombre total de tâches.
