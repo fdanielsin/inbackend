@@ -19,17 +19,18 @@ Structurer TOUS les tests autour de trois catégories :
 
 1. **Unit** (~5ms)  
    - Logique métier pure, pas d'I/O
-   - Fichiers d'entités de domaine
-   - Location : `tests/units/domain/`
+   - Domaine, handlers applicatifs (avec stubs) et erreurs partagées
+   - Location : `tests/units/domain/`, `tests/units/application/`,
+     `tests/units/shared/`
 
 2. **Integration** (~100ms)  
    - Tests de contracts de repository
-   - Contre une vraie base de données (SQLite en local, PostgreSQL en CI)
+   - Contre une vraie base de données (PostgreSQL via Testcontainers)
    - Location : `tests/integration/persistence/`
 
 3. **E2E** (~500ms)  
    - Flux HTTP complet : controller → repo → DB
-   - SQLite en mémoire pour les tests actuels
+   - Via `app.NewRouter` sur PostgreSQL (Testcontainers)
    - Location : `tests/e2e/`
 
 ### Structure des répertoires
@@ -37,13 +38,16 @@ Structurer TOUS les tests autour de trois catégories :
 ```
 tests/
 ├── units/
-│   └── domain/              # Entity tests
+│   ├── domain/              # Entity tests
+│   ├── application/         # Handler tests (stubs)
+│   └── shared/              # Shared error tests
 │
 ├── integration/
 │   └── persistence/         # Repository tests + shared fixtures
 │
-└── e2e/
-    └── controllers_test.go  # HTTP endpoint tests
+├── e2e/                     # HTTP flow tests (users, tasks, router, startup, DB down)
+│
+└── testsupport/             # PostgreSQL Testcontainers helper (one container per package)
 ```
 
 ### Convention de nommage
@@ -94,8 +98,8 @@ func TestX_Y_Z(t *testing.T) {
 
 - Plus de fichiers (un par composant testé)
 - Fixtures partagées nécessitent coordination
-- Les tests d'intégration PostgreSQL nécessitent Podman/Docker. Les tests E2E
-  actuels utilisent SQLite en mémoire.
+- Les tests d'intégration PostgreSQL nécessitent Podman/Docker, comme les tests E2E
+  (SQLite retiré, Q-06).
 
 ## Alternatives rejetées
 

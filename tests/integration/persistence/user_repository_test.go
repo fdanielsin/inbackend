@@ -60,13 +60,13 @@ func TestUserRepository_GetByEmail_HappyPath(t *testing.T) {
 	assert.Equal(t, "jane@example.com", found.Email)
 }
 
-// GIVEN: UserRepository / WHEN: Get by non-existent email / THEN: Error or nil
+// GIVEN: UserRepository / WHEN: Get by non-existent email / THEN: ErrUserNotFound
 func TestUserRepository_GetByEmail_SadPath_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	repo := postgres.NewUserRepository(db)
 
 	found, err := repo.GetByEmail(context.Background(), "nonexistent@example.com")
 
-	require.Error(t, err)
+	assert.ErrorIs(t, err, user.ErrUserNotFound)
 	assert.Nil(t, found)
 }

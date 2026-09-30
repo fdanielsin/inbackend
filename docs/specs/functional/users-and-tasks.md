@@ -35,4 +35,4 @@ les tests existants.
 - L'email est seulement vérifié comme non vide; aucun format email n'est
   imposé par le domaine.
 - Aucune authentification ou autorisation n'est actuellement définie.
-- La mise à jour d'une tâche ne vérifie pas le titre vide au niveau du handler.
+- La mise à jour d'une tâche rejette un titre explicitement vide (`Q-01`).

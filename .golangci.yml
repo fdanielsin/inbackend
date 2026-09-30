@@ -47,7 +47,7 @@ linters:
       # change le format des logs et fait l'objet d'un lot séparé.
       - linters: [staticcheck]
         text: "SA1019: github.com/labstack/echo/v4/middleware.Logger"
-        path: main\.go
+        path: internal/app/router\.go
 
 formatters:
   enable:

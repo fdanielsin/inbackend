@@ -6,10 +6,11 @@ Professional Go + Echo + PostgreSQL REST API with comprehensive testing.
 
 ```
 inbackend/
-├── main.go                 # Entry point, server setup
+├── main.go                 # Entry point: config, database, server start
 ├── docs/                   # Project architecture and workflow documentation
 ├── CHANGELOG.md            # Concise project history
 ├── internal/
+│   ├── app/                # Composition root: app.NewRouter wires everything
 │   ├── domain/             # Business domain entities and interfaces
 │   │   └── user/           # User domain (entity, errors, repository)
 │   ├── application/        # Use cases (CQRS commands and queries) [Phase 2]
@@ -47,7 +48,7 @@ inbackend/
 - Go 1.26.8 (`go.mod` pins the toolchain; Go downloads it automatically)
 - PostgreSQL 14+ (or Docker/Podman)
 - Make
-- **Docker or Podman** (required for Testcontainers integration tests)
+- **Docker or Podman** (required for the Testcontainers integration and E2E tests)
   - Podman is preferred (open-source, rootless-by-default, better compatibility)
 
 ## 🚀 Quick Start
@@ -101,7 +102,7 @@ Server runs at `http://localhost:8080`
 | `make test` | All tests (unit + integration + E2E) |
 | `make test-unit` | Unit tests only |
 | `make test-integration` | Integration tests with Testcontainers |
-| `make test-e2e` | End-to-end tests |
+| `make test-e2e` | End-to-end tests (PostgreSQL via Testcontainers, requires Docker/Podman) |
 | `make lint` | golangci-lint and formatting check (gofumpt, goimports) |
 | `make lint-api` | Redocly lint of the OpenAPI contract (requires Node) |
 | `make lint-ci` | actionlint on the GitHub Actions workflows |
@@ -248,9 +249,9 @@ Frontend Repo: https://github.com/fdanielsin/infrontend
 
 - **GORM Auto-Migration**: Runs on startup, see `internal/infrastructure/database/init.go`
 - **Error Handling**: Unified `APIResponse` in `internal/shared/response.go`
-- **CORS**: Configured in `main.go`, adjust origins as needed
+- **CORS**: Configured in `internal/app/router.go`, adjust origins as needed
 - **Logging**: Development (pretty) vs Production (structured JSON)
-- **Testing**: Testcontainers spin up isolated PostgreSQL per test
+- **Testing**: Testcontainers start one PostgreSQL container per test package; tables are truncated before each test
 
 ## ❓ Troubleshooting
 

@@ -21,6 +21,7 @@ JSON.
 inbackend/
 ├── main.go
 └── internal/
+    ├── app/               (racine de composition : NewRouter)
     ├── application/
     │   ├── user/
     │   │   ├── commands/
@@ -94,8 +95,8 @@ serveur; les réponses 500 n'exposent qu'un message générique.
 L'infrastructure implémente les ports du domaine et contient aujourd'hui
 PostgreSQL, GORM et le logger. Elle n'utilise pas Echo et ne contient pas le
 router : Echo est utilisé directement par les controllers
-(`internal/controllers/http`) et par `main.go`, où le router est assemblé
-(`main.go:56-75`). Un package `infrastructure/http/` qui engloberait Echo et
+(`internal/controllers/http`) et par `internal/app`, où le router est
+assemblé (`app.NewRouter`). Un package `infrastructure/http/` qui engloberait Echo et
 le routage est une cible (voir Structure cible), pas l'état actuel. Il
 n'existe pas non plus de package de configuration dédié : les variables
 d'environnement (`DATABASE_URL`, `PORT`, `ENV`) sont lues directement dans
@@ -114,11 +115,14 @@ devenir un dossier de helpers génériques.
 controllers ──> application ──> domain
 infrastructure ────────────────> domain
 controllers ────────────────────> infrastructure/logger
+main ──> app ──> controllers, application, infrastructure
 ```
 
 Le domaine définit les contrats. L'infrastructure fournit les implémentations
-(persistance, logger) et ne dépend que du domaine. `main.go` assemble les
-dépendances.
+(persistance, logger) et ne dépend que du domaine. `internal/app` assemble les
+dépendances (repositories, handlers, controllers, middlewares, routes) ; `main.go`
+lit la configuration, ouvre la base et appelle `app.NewRouter`. Rien ne dépend
+de `app` sauf `main.go` et les tests E2E.
 
 ## CQRS retenu
 

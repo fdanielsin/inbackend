@@ -7,6 +7,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 ### Security
 
 - Go 1.26.8 : corrige les vulnérabilités atteignables de la stdlib 1.25.0 (`Q-03`).
+- `golang.org/x/crypto` v0.56.0 et `moby/go-archive` v0.3.0 : corrigent GO-2026-6355, GO-2026-6354 et GO-2026-6253, atteignables depuis les tests.
 
 ### Added
 

@@ -13,7 +13,7 @@
 # Go binaries
 /bin/
 /build/
-app
+/app
 inbackend
 *.exe
 *.exe~
@@ -148,8 +148,6 @@ releases/
 # Database & Cache
 # ============================================================
 *.db
-*.sqlite
-*.sqlite3
 *.db-journal
 *.log-*
 

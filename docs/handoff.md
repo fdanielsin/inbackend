@@ -17,7 +17,7 @@ internal/infrastructure/
 ```
 
 Le CQRS applicatif est présent avec des `commands` et des `queries`. Les
-repositories PostgreSQL/GORM sont assemblés dans `main.go`.
+repositories PostgreSQL/GORM sont assemblés dans `internal/app` (`app.NewRouter`).
 
 Les validations locales exécutées depuis `inbackend` et vérifiables dans cet
 état sont :
@@ -228,6 +228,37 @@ Branche `fix/Q03-go126-docker`.
   logs si échec, `down -v`).
 - **Non couvert** : Podman/`make docker-run` non testés ; le job CI `docker`
   n'a pas encore tourné sur GitHub (vérifié seulement en local avec Docker).
+
+## Racine de composition `internal/app` (QP-01)
+
+Branche `test/lot3-backend` (worktree `inbackend/.worktrees/lot3-backend`).
+
+- Le câblage repositories, handlers, controllers, middlewares (Logger, Recover,
+  CORS) et les 9 routes quitte `main.go` pour `app.NewRouter(db *gorm.DB) *echo.Echo`
+  (`internal/app/router.go`). `main.go` garde logger, configuration, `InitDB`,
+  `app.NewRouter(db)` et `Start`.
+- Refactoring sans changement de comportement. Décision utilisateur du
+  2026-09-30 : les E2E testent l'assemblage réel ; ADR 0005 amendé.
+
+## SQLite retiré des tests (Q-06)
+
+- Les E2E passent par `app.NewRouter` sur PostgreSQL (Testcontainers,
+  `tests/testsupport/postgres.go`). `gorm.io/driver/sqlite` et `go-sqlite3`
+  sont retirés de `go.mod` par `go mod tidy` ; les tests tournent avec
+  `CGO_ENABLED=0`.
+- `make test-e2e` exige Docker ou Podman. Sans provider, les tests PostgreSQL
+  sont ignorés en local avec leur cause ; avec `CI=true` ils échouent (Q-09).
+- Job CI : le service `postgres` et `DATABASE_URL`, inutilisés, sont retirés
+  des jobs integration-tests, e2e-tests et coverage.
+- Dépendances : `x/crypto` v0.56.0 et `moby/go-archive` v0.3.0 corrigent 3
+  vulnérabilités que govulncheck atteint via `tests/testsupport` (`make vuln` :
+  0). Montent aussi, par résolution : `x/net` v0.57.0, `x/text` v0.41.0,
+  `klauspost/compress` v1.18.7, `moby/sys/user` v0.4.1. `x/crypto`, `x/net` et
+  `x/text` sont aussi liés au binaire de production (transitif).
+- Base du lot : `test/lot3-backend` est empilée sur `fix/Q03-go126-docker`
+  (Go 1.26.8, requis par `x/crypto` v0.56.0).
+- Docs alignées : ADR 0004, 0005, 0006, strategy.md, users-and-tasks.md,
+  README, lignes `*.sqlite` du `.gitignore` retirées.
 
 ## Corrections confirmées
 

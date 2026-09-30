@@ -1,8 +1,9 @@
-# ADR 0005 : Pattern d'Injection de Dépendances (main.go)
+# ADR 0005 : Pattern d'Injection de Dépendances (internal/app)
 
 - **Statut** : accepted
 - **Périmètre** : `inbackend`
 - **Date** : 2026-09-20
+- **Amendement** : 2026-09-30 (décision utilisateur), la racine de composition passe de `main.go` à `internal/app`. Raison : les tests E2E appellent `app.NewRouter(db)` et testent ainsi l'assemblage réel (repositories, handlers, controllers, middlewares, routes) au lieu de le recâbler à la main.
 
 ## Contexte
 
@@ -14,15 +15,16 @@ L'injection de dépendances doit être centralisée mais rester simple et explic
 
 ## Décision
 
-**Centraliser l'assemblage de TOUTES les dépendances dans `main.go`.**
+**Centraliser l'assemblage de TOUTES les dépendances dans `internal/app` (`app.NewRouter(db *gorm.DB) *echo.Echo`).** `main.go` ne garde que le logger, la configuration (`DATABASE_URL`, `PORT`), `InitDB`, l'appel à `app.NewRouter(db)` et le démarrage du serveur.
 
 ### Structure d'assemblage
 
 ```go
-main()
+main() : logger, configuration
   ↓
 InitDB(dsn) → *gorm.DB
   ↓
+app.NewRouter(db) :
 NewUserRepository(db) → UserRepository
 NewTaskRepository(db) → TaskRepository
   ↓
@@ -33,10 +35,10 @@ NewGetUserHandler(userRepo) → GetUserHandler
 NewUserController(createUserHandler, getUserHandler, ...) → UserController
 ... (repeat for all controllers)
   ↓
-echo.New() → *echo.Echo
+echo.New() + middlewares → *echo.Echo
 register routes with wired controllers
   ↓
-e.Start(":8080")
+main() : e.Start(":8080")
 ```
 
 ### Hiérarchie de construction
@@ -57,7 +59,7 @@ Server (depends on Routes)
 
 ### Règles d'assemblage
 
-1. **Une seule source de vérité** : `main.go` = point unique d'assemblage
+1. **Une seule source de vérité** : `internal/app` = point unique d'assemblage (`main.go` l'appelle, les tests aussi)
 2. **Pas de constructeur complexe** : Chaque composant a un `New*()` simple
 3. **Pas de service locator** : Pas de global registry ou singleton factory
 4. **Dépendances explicites** : Chaque composant déclare ses dépendances en paramètres
@@ -66,10 +68,11 @@ Server (depends on Routes)
 ### Exemple réel de wiring
 
 ```go
-// Database
+// main.go
 db := InitDB(dsn, log)
+e := app.NewRouter(db)
 
-// Repositories
+// internal/app/router.go : Repositories
 userRepo := postgres.NewUserRepository(db)
 taskRepo := postgres.NewTaskRepository(db)
 
@@ -95,14 +98,14 @@ e.POST("/api/v1/users", userCtrl.CreateUser)
 ## Avantages
 
 - **Testabilité** : Facile d'injecter des mocks dans les tests
-- **Clarté** : Toutes les dépendances visibles en un seul fichier
+- **Clarté** : Toutes les dépendances visibles en un seul fichier (`internal/app/router.go`)
 - **Flexibilité** : Changer une implémentation = un seul endroit à modifier
 - **Maintenabilité** : Nouveaux développeurs comprennent le flow en 5 min
 - **Pas de magie** : Zero frameworks/decorators/annotations
 
 ## Inconvénients acceptés
 
-- **Verbeux** : Beaucoup de lignes de wiring dans `main.go`
+- **Verbeux** : Beaucoup de lignes de wiring dans `internal/app`
 - **Pas de lazy loading** : Toutes les dépendances créées au démarrage
 - **Durée de démarrage** : Plus de setup avant que le serveur soit prêt
 
@@ -138,15 +141,13 @@ func TestCreateUserHandler(t *testing.T) {
 }
 ```
 
-Tests d'intégration/E2E réutilisent l'assemblage mais avec SQLite :
+Les tests E2E réutilisent l'assemblage réel avec leur propre base PostgreSQL (Testcontainers) :
 
 ```go
 func TestUserController_CreateUser(t *testing.T) {
-  db := setupTestDB(t)  // SQLite in-memory
-  userRepo := postgres.NewUserRepository(db)
-  // ... rest of wiring
-  userCtrl := ctrlhttp.NewUserController(...)
-  // Test via HTTP
+  db := setupTestDB(t)
+  e := app.NewRouter(db)
+  // Test via HTTP : e.ServeHTTP(rec, req)
 }
 ```
 
@@ -156,8 +157,8 @@ Ajouter un nouveau feature :
 
 1. Créer le handler dans `application/`
 2. Créer le controller dans `controllers/http/`
-3. Wirer dans `main.go`
-4. Enregistrer la route dans `main.go`
+3. Wirer dans `internal/app/router.go`
+4. Enregistrer la route dans `internal/app/router.go`
 
 Zéro boilerplate externe. Zéro annotations. Zéro magic.
 
@@ -171,4 +172,4 @@ Zéro boilerplate externe. Zéro annotations. Zéro magic.
 
 - [Dependency Injection in Go](https://www.golang-book.com/books/intro/13)
 - [Functional Options Pattern](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)
-- `main.go` dans ce dépôt (implementation de référence)
+- `internal/app/router.go` dans ce dépôt (implementation de référence)

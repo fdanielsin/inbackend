@@ -8,9 +8,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/application/task/commands"
-	"github.com/fdanielsin/inbackend/internal/application/task/queries"
-	ctrlhttp "github.com/fdanielsin/inbackend/internal/controllers/http"
 	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
@@ -45,25 +42,12 @@ type taskUpdateFixture struct {
 
 func newTaskUpdateFixture(t *testing.T) *taskUpdateFixture {
 	t.Helper()
-	db := setupTestDB(t)
-
-	taskRepo := pgimpl.NewTaskRepository(db)
-	taskCtrl := ctrlhttp.NewTaskController(
-		commands.NewCreateTaskHandler(taskRepo),
-		commands.NewUpdateTaskHandler(taskRepo),
-		commands.NewDeleteTaskHandler(taskRepo),
-		queries.NewListUserTasksHandler(taskRepo),
-	)
-
-	e := echo.New()
-	e.PUT("/api/v1/tasks/:id", taskCtrl.UpdateTask)
-	e.DELETE("/api/v1/tasks/:id", taskCtrl.DeleteTask)
-	e.GET("/api/v1/users/:id/tasks", taskCtrl.ListUserTasks)
+	s := newTestServer(t)
 
 	user := &pgimpl.UserModel{Name: "Owner", Email: "owner@example.com"}
-	require.NoError(t, db.Create(user).Error)
+	require.NoError(t, s.db.Create(user).Error)
 
-	return &taskUpdateFixture{e: e, db: db, userID: user.ID}
+	return &taskUpdateFixture{e: s.e, db: s.db, userID: user.ID}
 }
 
 func (f *taskUpdateFixture) seedTask(t *testing.T, title, description string, completed bool) uint {

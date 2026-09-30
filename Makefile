@@ -13,7 +13,7 @@ help:
 	@echo "  make test            - Run all tests"
 	@echo "  make test-unit       - Run unit tests"
 	@echo "  make test-integration - Run integration tests with testcontainers"
-	@echo "  make test-e2e        - Run E2E tests"
+	@echo "  make test-e2e        - Run E2E tests (requires Docker or Podman)"
 	@echo "  make lint            - Run golangci-lint and check formatting (gofumpt, goimports)"
 	@echo "  make lint-api        - Lint the OpenAPI contract with Redocly (requires Node)"
 	@echo "  make lint-ci         - Lint GitHub Actions workflows with actionlint"
@@ -44,7 +44,7 @@ test-integration:
 	go test -v -race ./tests/integration/...
 
 test-e2e:
-	@echo "🧪 Running E2E tests..."
+	@echo "🧪 Running E2E tests with Testcontainers..."
 	go test -v ./tests/e2e/...
 
 lint:

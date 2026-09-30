@@ -6,11 +6,12 @@
 
 ## Catégories
 
-- **Unit** : logique de domaine sans I/O dans `tests/units/domain/`.
+- **Unit** : logique sans I/O dans `tests/units/domain/`,
+  `tests/units/application/` (handlers, stubs) et `tests/units/shared/`.
 - **Integration** : contrats des repositories PostgreSQL dans
   `tests/integration/persistence/`, avec Testcontainers.
-- **E2E** : flux HTTP des controllers dans `tests/e2e/`, avec base SQLite
-  en mémoire pour un feedback local rapide.
+- **E2E** : flux HTTP des controllers dans `tests/e2e/`, sur PostgreSQL
+  (Testcontainers), via `app.NewRouter`.
 
 ## Commandes de validation
 
@@ -37,5 +38,5 @@ go build ./...
 ## Limites connues
 
 - La couverture chiffrée par couche n'est pas encore définie.
-- Les tests E2E locaux utilisent SQLite et ne remplacent pas la validation
-  PostgreSQL.
+- Les tests PostgreSQL (intégration et E2E) exigent Docker ou Podman ;
+  avec `CI=true` leur indisponibilité fait échouer les tests au lieu de les ignorer.

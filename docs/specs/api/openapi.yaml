@@ -5,7 +5,7 @@ info:
   description: |
     Contrat HTTP de l'API REST du backend InDrive.
     Cette spécification décrit les routes actuellement enregistrées dans
-    `main.go` et leurs réponses réellement produites par les controllers.
+    `internal/app/router.go` et leurs réponses réellement produites par les controllers.
 servers:
   - url: http://localhost:8080
     description: Développement local

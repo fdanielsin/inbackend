@@ -35,7 +35,7 @@
 - **Statut : conforme après remise en conformité**
 - Remplacer les handlers monolithiques par des controllers HTTP.
 - Conserver les routes existantes.
-- Construire les dépendances dans `main.go`.
+- Construire les dépendances dans `internal/app` (`app.NewRouter`, lot 3 ; `main.go` ne garde que la configuration).
 - Centraliser la conversion des erreurs HTTP.
 
 ## Phase 5 — validation

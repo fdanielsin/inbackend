@@ -10,7 +10,7 @@
 
 The backend project requires clear, enforced discipline across three domains:
 1. **Git & Commits:** Branching strategy, commit message conventions, co-authored rules
-2. **CI/CD Pipeline:** 7-stage automated gating, testing strategy (SQLite vs PostgreSQL phases)
+2. **CI/CD Pipeline:** 7-stage automated gating, testing strategy (PostgreSQL via Testcontainers)
 3. **Governance:** Workflow file hygiene (single active file), documentation deduplication
 
 Without explicit decisions:
@@ -128,8 +128,8 @@ Closes #123
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
 | 4 | Security | `make vuln` (govulncheck) | ~20s | Bloquant : échoue si une vulnérabilité est atteignable par le code. Remplace `nancy` (`Q-05`). |
 | 4b | Docker | `docker compose build`, `docker compose up -d --wait`, `curl -f /health`, `docker compose down -v` | ~1-2 min | Bloquant : l'image se construit et la pile démarre avec PostgreSQL (`Q-03`) |
-| 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 60s` | ~90s | PostgreSQL via Testcontainers |
-| 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 60s` | ~60s | SQLite in-memory, HTTP contract coverage |
+| 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 5m` | ~90s | PostgreSQL via Testcontainers |
+| 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 5m` | ~60s | PostgreSQL via Testcontainers, HTTP contract coverage through `app.NewRouter` |
 | 7 | Coverage Report | `go test -coverprofile=coverage.out ./...` | ~30s | Threshold reported, non-blocking |
 
 **Outillage de lint :** `golangci-lint` (v2.14.0, config `.golangci.yml`),
@@ -154,14 +154,11 @@ précédente (~4-5 min) n'était plus à jour.
 
 ### 4. Local Development vs CI/CD Testing Strategy
 
-#### Phase 1-5: SQLite (Legacy)
+#### Historique : SQLite (retiré, Q-06)
 
-**Approach:** Use SQLite in-memory for unit, integration, and E2E tests.
-
-**Rationale:**
-- Zero setup friction (no Docker/Podman required)
-- Fast feedback loop (tests finish in ~500ms)
-- Sufficient for 95% of logic bugs
+Les phases 1 à 5 utilisaient SQLite en mémoire pour les tests E2E (sans Docker,
+~500 ms). Il a été retiré : il masquait les différences avec PostgreSQL. Les
+dépendances `gorm.io/driver/sqlite` et `go-sqlite3` ne sont plus dans `go.mod`.
 
 #### PostgreSQL integration validation (Current)
 
@@ -173,25 +170,25 @@ Docker or Podman provider is available.
 **Rationale:**
 - Validates PostgreSQL-specific features (constraints, JSONB, transactions)
 - Tests schema migrations against real database
-- CI/CD uses same setup: PostgreSQL via service container
-- Catches edge cases that SQLite misses (e.g., prepared statement differences)
+- CI/CD uses the same setup: Testcontainers, no runner service container
 
 **Trade-offs:**
-- ⚠️ Slower local tests (~10-15 seconds per test run vs ~500ms with SQLite)
+- ⚠️ Local tests need Docker or Podman and take longer (container start)
 - ✅ Production-parity testing (PostgreSQL everywhere)
 - ✅ CI/CD matches local dev (no surprise failures)
 
 **Local Development:**
-- Unit and E2E tests remain runnable without a container provider.
-- PostgreSQL integration tests are skipped with an explicit reason when no
-  provider is available and remain blocking when a provider is available.
+- Unit tests remain runnable without a container provider.
+- PostgreSQL integration and E2E tests are skipped with an explicit reason when
+  no provider is available locally. With `CI=true` (GitHub Actions) they fail
+  instead of being skipped (Q-09).
 
 **Local commands:**
 ```bash
 make fmt              # Format & tidy modules
 make test-unit        # Unit tests
 make test-integration # PostgreSQL integration tests
-make test-e2e         # HTTP E2E tests with SQLite
+make test-e2e         # HTTP E2E tests on PostgreSQL (requires Docker or Podman)
 make test             # All packages; PostgreSQL tests require a provider
 ```
 
@@ -199,25 +196,12 @@ make test             # All packages; PostgreSQL tests require a provider
 
 #### CI/CD Pipeline (GitHub Actions)
 
-The integration job's workflow file also declares a `services: postgres` block
-and a `DATABASE_URL` env var, but `tests/integration/persistence/setup_test.go`
-never reads `DATABASE_URL`: it starts its own PostgreSQL container via
-Testcontainers instead, ignoring the runner's service container. The E2E job
-executes `tests/e2e` directly; those tests use SQLite in-memory by design and
-do not require PostgreSQL at all.
-
-**Historical rationale for the earlier SQLite transition:**
-- **Local:** SQLite eliminates setup complexity, enables fast iteration
-- **CI/CD:** PostgreSQL (via Testcontainers or service container) validates real database behavior
-  - Tests schema migrations
-  - Tests PostgreSQL-specific features (JSONB, transactions, constraints)
-  - Catches prepared statement bugs that SQLite doesn't catch
-- **Trade-off:** Accept that local SQLite tests may miss some PostgreSQL edge cases; CI/CD catches them before merge
+The integration, E2E and coverage jobs start their own PostgreSQL through
+Testcontainers (`tests/testsupport/postgres.go`) and declare no `services:`
+block nor `DATABASE_URL`.
 
 **Historical note:**
-- Earlier phases used SQLite more broadly.
-- The current repository uses PostgreSQL for repository integration tests when a
-  provider is available, and SQLite in memory for E2E tests.
+- E2E tests no longer use SQLite (Q-06): they call `app.NewRouter` on PostgreSQL.
 - A skipped local PostgreSQL test is not evidence that the integration test ran.
 
 ---
@@ -279,10 +263,10 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 - **Considered:** Clear separation, release management
 - **Rejected:** Overkill for small team; Trunk-Based Development simpler
 
-### C. Always Testcontainers/PostgreSQL locally
-- **Considered:** Identical test environments
-- **Rejected:** High friction (Podman setup required); SQLite fast feedback sufficient
-- **Decision:** Phase 1-5 local = SQLite; Phase 6+ CI/CD = PostgreSQL via Testcontainers
+### C. SQLite locally, PostgreSQL in CI
+- **Considered:** Fast local feedback without Docker
+- **Rejected (Q-06):** SQLite hides PostgreSQL differences
+- **Decision:** Testcontainers/PostgreSQL everywhere, locally and in CI
 
 ### D. Co-authored Commits (multiple developers)
 - **Considered:** Recognize pair programming
@@ -310,14 +294,13 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 ### Positive
 - ✅ Clear accountability (single author per commit)
 - ✅ Reproducible builds and tests locally
-- ✅ Fast feedback (SQLite local tests < 1 second)
 - ✅ CI jobs provide lint, build, unit, integration and E2E validation
 - ✅ Predictable git history (conventional commits)
 - ✅ Team trust maintained (no spurious attribution)
 
 ### Negative
-- ⚠️ SQLite E2E tests may miss PostgreSQL edge cases; integration tests cover
-  those cases only when PostgreSQL actually runs
+- ⚠️ Local PostgreSQL tests need Docker or Podman and are skipped without a
+  provider (not a proof that they ran)
 - ⚠️ ~10-11 min CI/CD runtime mesuré (voir section 3) ; optimisation future
   possible : parallélisation des étapes
 
@@ -375,16 +358,16 @@ created.
 ## Related Decisions
 
 - **ADR 0004:** Test Strategy (Given/When/Then patterns, test tiers)
-- **ADR 0005:** Dependency Injection (no framework, main.go assembly)
+- **ADR 0005:** Dependency Injection (no framework, `internal/app` assembly)
 - **ADR 0001:** Backend Architecture (domain → application → infrastructure)
 
 ---
 
 ## Questions & Answers
 
-**Q: Why not use Testcontainers for every local test?**
-A: SQLite is faster for E2E feedback. PostgreSQL integration tests remain
-available locally when Docker or Podman is configured and are expected in CI.
+**Q: Why Testcontainers for every database test?**
+A: One real PostgreSQL everywhere (Q-06). Locally, Docker or Podman is needed;
+without a provider the tests are skipped with their cause, never counted as passed.
 
 **Q: Why no merge commits?**
 A: Rebase keeps git history linear, easier to bisect, simpler to understand cause of regressions.
