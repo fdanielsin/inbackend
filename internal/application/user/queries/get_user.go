@@ -1,3 +1,4 @@
+// Package queries regroupe les requêtes CQRS du contexte utilisateur.
 package queries
 
 import (

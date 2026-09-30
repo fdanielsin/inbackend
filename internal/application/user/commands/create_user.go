@@ -1,3 +1,4 @@
+// Package commands regroupe les commandes CQRS du contexte utilisateur.
 package commands
 
 import (

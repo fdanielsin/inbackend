@@ -39,23 +39,23 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error)
 		return 0, result.Error
 	}
 
-	r.log.Info("User created", slog.Int64("id", int64(gormUser.ID)), slog.String("email", u.Email))
+	r.log.Info("User created", slog.Uint64("id", uint64(gormUser.ID)), slog.String("email", u.Email))
 	return gormUser.ID, nil
 }
 
 // GetByID récupère un utilisateur par son ID.
 func (r *UserRepository) GetByID(ctx context.Context, id uint) (*user.User, error) {
-	r.log.Debug("Fetching user by ID", slog.Int64("id", int64(id)))
+	r.log.Debug("Fetching user by ID", slog.Uint64("id", uint64(id)))
 
 	var gormUser UserModel
 	result := r.db.WithContext(ctx).First(&gormUser, id)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			r.log.Info("User not found", slog.Int64("id", int64(id)))
+			r.log.Info("User not found", slog.Uint64("id", uint64(id)))
 			return nil, user.ErrUserNotFound
 		}
-		r.log.Error("Failed to fetch user", slog.Int64("id", int64(id)), slog.String("error", result.Error.Error()))
+		r.log.Error("Failed to fetch user", slog.Uint64("id", uint64(id)), slog.String("error", result.Error.Error()))
 		return nil, result.Error
 	}
 

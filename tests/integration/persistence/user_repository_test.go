@@ -48,8 +48,10 @@ func TestUserRepository_GetByEmail_HappyPath(t *testing.T) {
 	u1 := &user.User{Name: "John", Email: "john@example.com"}
 	u2 := &user.User{Name: "Jane", Email: "jane@example.com"}
 
-	repo.Create(context.Background(), u1)
-	repo.Create(context.Background(), u2)
+	_, err := repo.Create(context.Background(), u1)
+	require.NoError(t, err)
+	_, err = repo.Create(context.Background(), u2)
+	require.NoError(t, err)
 
 	// THEN: Find by email
 	found, err := repo.GetByEmail(context.Background(), "jane@example.com")

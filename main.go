@@ -1,6 +1,9 @@
+// Command inbackend démarre l'API HTTP : il assemble les dépendances et lance Echo.
 package main
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"os"
 
@@ -19,21 +22,27 @@ import (
 
 func main() {
 	log := logger.InitLogger()
-	defer log.Sync()
 
+	// Fatal vide les buffers de zap avant de quitter : aucun Sync différé n'est nécessaire.
+	if err := run(log); err != nil {
+		log.Fatal("Server failed", zap.Error(err))
+	}
+}
+
+func run(log *zap.Logger) error {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
-		log.Fatal("DATABASE_URL not set")
+		return errors.New("DATABASE_URL not set")
 	}
 
-	database, err := database.InitDB(dsn, log)
+	db, err := database.InitDB(dsn, log)
 	if err != nil {
-		log.Fatal("Failed to initialize database", zap.Error(err))
+		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 
 	// Initialiser les repositories PostgreSQL
-	userRepo := postgres.NewUserRepository(database)
-	taskRepo := postgres.NewTaskRepository(database)
+	userRepo := postgres.NewUserRepository(db)
+	taskRepo := postgres.NewTaskRepository(db)
 
 	// Initialiser les handlers (commands et queries)
 	createUserHandler := usercommands.NewCreateUserHandler(userRepo)
@@ -80,5 +89,5 @@ func main() {
 	}
 
 	log.Info("Starting server", zap.String("port", port))
-	e.Logger.Fatal(e.Start(":" + port))
+	return e.Start(":" + port)
 }

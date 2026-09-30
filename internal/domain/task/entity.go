@@ -1,3 +1,4 @@
+// Package task contient l'entité, les erreurs et le port de persistance des tâches.
 package task
 
 // Task est l'entité métier Task indépendante de toute technologie.

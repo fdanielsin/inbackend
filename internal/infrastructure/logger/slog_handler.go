@@ -18,7 +18,7 @@ func NewZapHandler(logger *zap.Logger) *ZapHandler {
 }
 
 // Handle traite un enregistrement slog et le délègue vers zap.
-func (h *ZapHandler) Handle(ctx context.Context, r slog.Record) error {
+func (h *ZapHandler) Handle(_ context.Context, r slog.Record) error {
 	// Construire les champs zap depuis les attributs slog
 	fields := make([]zap.Field, 0, r.NumAttrs())
 
@@ -57,7 +57,7 @@ func (h *ZapHandler) WithGroup(name string) slog.Handler {
 }
 
 // Enabled retourne vrai si le niveau de log doit être traité.
-func (h *ZapHandler) Enabled(ctx context.Context, level slog.Level) bool {
+func (h *ZapHandler) Enabled(_ context.Context, _ slog.Level) bool {
 	return true // zap filtre déjà par niveau
 }
 

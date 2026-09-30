@@ -7,8 +7,11 @@ ci-dessous constituent la baseline actuelle, pas une promesse de production.
 
 ## Qualité et validation
 
-- Le code doit être formaté avec `gofmt`.
-- `go vet ./...`, `go build ./...` et `go test ./...` doivent passer.
+- `make lint` (golangci-lint, configuré dans `.golangci.yml`, plus le
+  formatage gofumpt/goimports) doit passer.
+- `make lint-api` (Redocly, contrat OpenAPI) et `make vuln` (govulncheck) sont
+  bloquants en CI.
+- `go build ./...` et `go test ./...` doivent passer.
 - Les tests PostgreSQL doivent s'exécuter avec un provider Docker/Podman en
   CI ou lors d'une validation locale complète.
 - Les tests sans provider doivent être explicitement signalés comme ignorés,

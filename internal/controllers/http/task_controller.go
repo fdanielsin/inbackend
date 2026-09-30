@@ -45,7 +45,7 @@ func (tc *TaskController) CreateTask(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, shared.ErrorResponse("Invalid request body"))
 	}
 
-	tc.log.Info("Creating task", slog.Int64("userID", int64(req.UserID)), slog.String("title", req.Title))
+	tc.log.Info("Creating task", slog.Uint64("userID", uint64(req.UserID)), slog.String("title", req.Title))
 
 	resp, err := tc.createTaskHandler.Execute(c.Request().Context(), req)
 	if err != nil {
@@ -76,19 +76,19 @@ func (tc *TaskController) UpdateTask(c echo.Context) error {
 	}
 	req.ID = uint(id)
 
-	tc.log.Info("Updating task", slog.Int64("id", int64(id)))
+	tc.log.Info("Updating task", slog.Uint64("id", id))
 
 	resp, err := tc.updateTaskHandler.Execute(c.Request().Context(), req)
 	if err != nil {
 		if shared.IsNotFoundError(err) {
-			tc.log.Info("Task not found", slog.Int64("id", int64(id)))
+			tc.log.Info("Task not found", slog.Uint64("id", id))
 			return c.JSON(http.StatusNotFound, shared.ErrorResponse("Task not found"))
 		}
 		if shared.IsValidationError(err) {
 			tc.log.Warn("Validation error updating task", slog.String("error", err.Error()))
 			return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 		}
-		tc.log.Error("Error updating task", slog.Int64("id", int64(id)), slog.String("error", err.Error()))
+		tc.log.Error("Error updating task", slog.Uint64("id", id), slog.String("error", err.Error()))
 		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
@@ -104,11 +104,11 @@ func (tc *TaskController) DeleteTask(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, shared.ErrorResponse("Invalid task ID"))
 	}
 
-	tc.log.Info("Deleting task", slog.Int64("id", int64(id)))
+	tc.log.Info("Deleting task", slog.Uint64("id", id))
 
 	err = tc.deleteTaskHandler.Execute(c.Request().Context(), commands.DeleteTaskRequest{ID: uint(id)})
 	if err != nil {
-		tc.log.Error("Error deleting task", slog.Int64("id", int64(id)), slog.String("error", err.Error()))
+		tc.log.Error("Error deleting task", slog.Uint64("id", id), slog.String("error", err.Error()))
 		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
@@ -124,11 +124,11 @@ func (tc *TaskController) ListUserTasks(c echo.Context) error {
 		return c.JSON(http.StatusBadRequest, shared.ErrorResponse("Invalid user ID"))
 	}
 
-	tc.log.Info("Listing user tasks", slog.Int64("userID", int64(id)))
+	tc.log.Info("Listing user tasks", slog.Uint64("userID", id))
 
 	resp, err := tc.listUserTasksHandler.Execute(c.Request().Context(), queries.ListUserTasksRequest{UserID: uint(id)})
 	if err != nil {
-		tc.log.Error("Error listing user tasks", slog.Int64("userID", int64(id)), slog.String("error", err.Error()))
+		tc.log.Error("Error listing user tasks", slog.Uint64("userID", id), slog.String("error", err.Error()))
 		return c.JSON(http.StatusInternalServerError, shared.ErrorResponse(shared.MapErrorToMessage(err)))
 	}
 
