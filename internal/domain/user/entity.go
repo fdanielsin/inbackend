@@ -1,3 +1,4 @@
+// Package user contient l'entité, les erreurs et le port de persistance des utilisateurs.
 package user
 
 // User est l'entité métier User indépendante de toute technologie.

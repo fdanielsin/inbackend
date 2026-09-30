@@ -1,0 +1,55 @@
+version: "2"
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - errorlint
+    - bodyclose
+    - noctx
+    - gosec
+    - revive
+    - gocritic
+  # misspell est volontairement absent : son dictionnaire est anglais et signale
+  # à tort des mots français (« pointeur », « attributs », « existant »).
+  settings:
+    gocritic:
+      enabled-tags:
+        - diagnostic
+    revive:
+      rules:
+        - name: blank-imports
+        - name: context-as-argument
+        - name: dot-imports
+        - name: error-naming
+        - name: error-return
+        - name: error-strings
+        - name: exported
+        - name: indent-error-flow
+        - name: package-comments
+        - name: receiver-naming
+        - name: superfluous-else
+        - name: unreachable-code
+        - name: unused-parameter
+        - name: var-naming
+  exclusions:
+    rules:
+      # noctx impose un contexte aux requêtes HTTP ; les tests e2e utilisent
+      # httptest.NewRequest, sans réseau, où le contexte n'apporte rien.
+      - linters: [noctx]
+        text: "httptest.NewRequest must not be called"
+        path: _test\.go
+      # middleware.Logger d'Echo est déprécié ; sa migration vers RequestLogger
+      # change le format des logs et fait l'objet d'un lot séparé.
+      - linters: [staticcheck]
+        text: "SA1019: github.com/labstack/echo/v4/middleware.Logger"
+        path: main\.go
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports

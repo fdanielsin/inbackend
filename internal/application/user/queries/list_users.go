@@ -27,7 +27,7 @@ func NewListUsersHandler(repo user.Repository) *ListUsersHandler {
 }
 
 // Execute exécute la requête ListUsers.
-func (h *ListUsersHandler) Execute(ctx context.Context, req ListUsersRequest) ([]*ListUsersResponse, error) {
+func (h *ListUsersHandler) Execute(ctx context.Context, _ ListUsersRequest) ([]*ListUsersResponse, error) {
 	users, err := h.repo.List(ctx)
 	if err != nil {
 		return nil, err

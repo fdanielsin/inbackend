@@ -23,7 +23,7 @@ Les validations locales exécutées depuis `inbackend` et vérifiables dans cet
 état sont :
 
 ```text
-make lint                                         → réussi (gofmt et go vet)
+make lint                                         → réussi (golangci-lint, gofumpt, goimports)
 make test                                         → réussi ; 7 tests PostgreSQL ignorés sans provider
 go test ./...                                     → réussi
 go vet ./...                                      → réussi
@@ -173,6 +173,43 @@ comportement ni de contrat.
   et après, aucun appelant des symboles supprimés) ; corrections ci-dessus
   faites en réponse, `qa` prévenue pour re-vérification.
 
+## Outillage lint (branche `chore/lint-tooling`)
+
+- **Ajouté** : `.golangci.yml` (errcheck, govet, staticcheck, unused,
+  ineffassign, errorlint, bodyclose, noctx, gosec, revive réduit, gocritic
+  diagnostic ; formatters gofumpt et goimports), `docs/specs/api/redocly.yaml`,
+  cibles `make lint-api` et `make vuln`. `make lint`, `make fmt` et la CI
+  utilisent les mêmes commandes ; Redocly et govulncheck sont bloquants en CI
+  (`Q-05` : govulncheck remplace `nancy`, qui ne vérifiait rien).
+- **Pourquoi `go run ...@version` et pas `go get -tool`** : la dépendance
+  d'outil faisait passer `go.mod` à `go 1.26.0` et montait des dépendances de
+  production par résolution MVS (`x/crypto`, `x/net`, `protobuf`, `otel`) ;
+  `go.mod` et `go.sum` restent donc inchangés. Les jobs CI Lint et Security
+  passent en Go 1.26, les autres restent sur 1.25.0.
+- **Exclusions justifiées dans la config** : `misspell` non activé (faux
+  positifs sur le français), `noctx` limité à `httptest.NewRequest` dans les
+  `_test.go` (les ids uint sont journalisés avec `slog.Uint64`, sans exclusion
+  gosec `G115`), staticcheck `SA1019` sur `middleware.Logger` d'Echo
+  (migration vers `RequestLogger` dans un lot séparé). Redocly (`recommended-strict`, pour que
+  `operation-4xx-response` soit une erreur bloquante) : `security-defined` (pas d'authentification, décision produit),
+  `info-license` (dépôt privé), `no-server-example.com` (serveur localhost du
+  contrat) ; `operation-4xx-response` reste active, avec 3 opérations ignorées
+  dans `docs/specs/api/.redocly.lint-ignore.yaml` (`/health`, `GET /users`,
+  `GET /stats` : aucune 4xx possible).
+- **Code** : aucun changement de comportement. `main.go` : la logique passe
+  dans `run` qui renvoie une erreur, `main` appelle `log.Fatal` (zap vide ses
+  buffers avant de quitter, le `defer log.Sync()` est supprimé) ; le message de
+  log d'échec au démarrage change de libellé, le code de sortie reste 1.
+  Paramètres inutilisés renommés `_`, commentaires de package et godoc
+  ajoutés. Les 8 corrections dans `tests/` ont été faites par `qa`.
+- **Contrat** : descriptions de tags ajoutées, schéma inutilisé
+  `MessageResponse` supprimé ; aucun code HTTP ajouté, ceux déjà documentés
+  correspondent aux controllers.
+- **Non couvert** : les hooks `.githooks/` restent sur `gofmt` et `go vet`
+  (contrôle rapide, sous-ensemble de `make lint`).
+- **Angle mort connu** : govulncheck ne voit pas encore la stdlib réellement
+  utilisée (build en Go 1.25.0, scan en 1.26) ; corrigé par le lot Go 1.26.
+
 ## Corrections confirmées
 
 - Les jobs CI d'intégration et E2E ciblent désormais leurs packages respectifs.
@@ -269,6 +306,6 @@ Prochaine étape :
 
 ## Dernière mise à jour
 
-2026-09-30 — nettoyage backend (code mort, commentaires, config morte, écarts
-de doc) sur `chore/cleanup-backend`, sans changement de comportement ni de
-contrat ; voir « Nettoyage backend » ci-dessus.
+2026-09-30 — outillage lint sur `chore/lint-tooling` (golangci-lint, govulncheck,
+Redocly), sans changement de comportement ; voir « Outillage lint » ci-dessus.
+Le nettoyage backend précédent est détaillé dans « Nettoyage backend ».

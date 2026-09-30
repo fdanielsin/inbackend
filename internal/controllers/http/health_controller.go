@@ -1,3 +1,4 @@
+// Package http expose les controllers HTTP Echo de l'API.
 package http
 
 import (

@@ -29,11 +29,11 @@ func newFakeTaskRepository(existing *task.Task) *fakeTaskRepository {
 	return &fakeTaskRepository{tasks: tasks}
 }
 
-func (r *fakeTaskRepository) Create(ctx context.Context, t *task.Task) (uint, error) {
+func (r *fakeTaskRepository) Create(_ context.Context, _ *task.Task) (uint, error) {
 	panic("not used by these tests")
 }
 
-func (r *fakeTaskRepository) GetByID(ctx context.Context, id uint) (*task.Task, error) {
+func (r *fakeTaskRepository) GetByID(_ context.Context, id uint) (*task.Task, error) {
 	if r.getByIDErr != nil {
 		return nil, r.getByIDErr
 	}
@@ -45,21 +45,21 @@ func (r *fakeTaskRepository) GetByID(ctx context.Context, id uint) (*task.Task, 
 	return &cp, nil
 }
 
-func (r *fakeTaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task.Task, error) {
+func (r *fakeTaskRepository) ListByUserID(_ context.Context, _ uint) ([]*task.Task, error) {
 	panic("not used by these tests")
 }
 
-func (r *fakeTaskRepository) Update(ctx context.Context, t *task.Task) error {
+func (r *fakeTaskRepository) Update(_ context.Context, t *task.Task) error {
 	r.updateCalls = append(r.updateCalls, *t)
 	r.tasks[t.ID] = t
 	return nil
 }
 
-func (r *fakeTaskRepository) Delete(ctx context.Context, id uint) error {
+func (r *fakeTaskRepository) Delete(_ context.Context, _ uint) error {
 	panic("not used by these tests")
 }
 
-func (r *fakeTaskRepository) Count(ctx context.Context) (int64, error) {
+func (r *fakeTaskRepository) Count(_ context.Context) (int64, error) {
 	panic("not used by these tests")
 }
 

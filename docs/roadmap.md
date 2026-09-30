@@ -60,13 +60,14 @@ QA) :
 | 0 | CI verte | — | Fait : `develop` à `66335a8`, run CI `36632944817` vert. |
 | 1 | `PUT /api/v1/tasks/{id}` ignorait les valeurs falsy/vides | `Q-01` | **Corrigé** : PR [inbackend#3](https://github.com/fdanielsin/inbackend/pull/3) mergée dans `develop` (`b28ee65`), CI verte. |
 | 2 | Erreurs lisibles | `B-03`, `B-04` (+ `F-01`, `F-02` côté frontend) | À faire |
-| 3 | Tests honnêtes | `Q-06`, `Q-07`, `Q-12`, `Q-09`, `Q-10` | À faire |
+| 3 | Tests honnêtes | `Q-06`, `Q-07`, `Q-12`, `Q-09`, `Q-10` | Partiel : `Q-12` fait (PR #6, `d289dc2`) et `Q-10` fait par le nettoyage ; `Q-06`, `Q-07`, `Q-09` à faire. |
 | 4 | Schéma (migrations versionnées d'abord) | `B-05`, puis `B-02`, `B-07`, `B-08` | À faire |
-| 5 | Portes CI | `Q-04`, `Q-05`, `Q-13`, `Q-11`, `B-06` | À faire |
+| 5 | Portes CI | `Q-04`, `Q-05`, `Q-13`, `Q-11`, `B-06` | Partiel : `Q-05` et `B-06` dans la PR outillage lint (non mergée) ; `Q-04`, `Q-13`, `Q-11` à faire. |
 | 6 | Docker | `Q-03` | À faire |
 | 7 | Documentation | `F-03` (frontend) | À faire |
 | 8 | Fonctionnalités | `FP-03`, `FP-01`, `FP-02`, `BP-02` (tri), `FP-04` | À faire |
-| — | Nettoyage backend (demande utilisateur, hors audit) | — | **Fait** : code mort retiré (`testdb.go`, `GetZap`/`ZapLog`, `zapLevelForSlog`, `Delete` de `user.Repository`), commentaires paraphrases retirés, `.env.example` aligné sur les variables réellement lues, écart `architecture.md` corrigé. Branche `chore/cleanup-backend` depuis `develop`. Aucun changement de comportement ni de contrat ; `make lint`/`go vet`/`go build`/`go test ./...` verts avant et après. |
+| — | Nettoyage backend (demande utilisateur, hors audit) | — | **Fait** : mergé dans `develop` (PR #5), sans changement de comportement ni de contrat. |
+| — | Outillage lint (rattaché au lot 5) | `Q-05`, `B-06` | **En PR** (`chore/lint-tooling`) : golangci-lint, govulncheck et Redocly bloquants en CI, sans changement de comportement. |
 
 ## Règle de progression
 
