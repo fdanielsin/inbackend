@@ -219,6 +219,9 @@ Branche `fix/Q03-go126-docker`.
 - **Compose** : PostgreSQL 16 avec healthcheck, `DATABASE_URL` construite avec
   des identifiants de développement, backend derrière `service_healthy`, healthcheck
   HTTP sur `/health`. `.dockerignore` versionné (retiré du `.gitignore`).
+- **CI** : `codecov-action` passé de v3 à v5 (le runtime Node 16 de v3 faisait
+  échouer le workflow au démarrage, `startup_failure` de la PR #8) ; `make
+  lint-ci` (actionlint v1.7.7) dans le job Lint empêche ce cas.
 - **CI** : job `docker` bloquant (build, `compose up -d --wait`, `/health`,
   logs si échec, `down -v`).
 - **Non couvert** : Podman/`make docker-run` non testés ; le job CI `docker`

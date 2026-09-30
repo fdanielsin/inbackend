@@ -123,7 +123,7 @@ Closes #123
 
 | # | Stage | Command | Duration | Notes |
 |---|-------|---------|----------|-------|
-| 1 | Lint & Format | `make lint` (golangci-lint, gofumpt, goimports), `make lint-api` (Redocly), `go mod tidy` | ~30s | Enforces code style, static analysis and the OpenAPI contract |
+| 1 | Lint & Format | `make lint` (golangci-lint, gofumpt, goimports), `make lint-api` (Redocly), `make lint-ci` (actionlint), `go mod tidy` | ~30s | Enforces code style, static analysis and the OpenAPI contract |
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
 | 4 | Security | `make vuln` (govulncheck) | ~20s | Bloquant : échoue si une vulnérabilité est atteignable par le code. Remplace `nancy` (`Q-05`). |
@@ -133,7 +133,7 @@ Closes #123
 | 7 | Coverage Report | `go test -coverprofile=coverage.out ./...` | ~30s | Threshold reported, non-blocking |
 
 **Outillage de lint :** `golangci-lint` (v2.14.0, config `.golangci.yml`),
-`govulncheck` (v1.8.0) et `@redocly/cli` (v2.55.0, config
+`govulncheck` (v1.8.0), `actionlint` (v1.7.7) et `@redocly/cli` (v2.55.0, config
 `docs/specs/api/redocly.yaml` et `.redocly.lint-ignore.yaml`) sont épinglés dans le `Makefile` et lancés avec
 `go run ...@version` / `npx`, à l'identique en local et en CI. Une dépendance
 d'outil Go (`go get -tool`) a été écartée : elle faisait monter des

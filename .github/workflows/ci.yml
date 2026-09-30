@@ -33,6 +33,9 @@ jobs:
       - name: "OpenAPI lint"
         run: make lint-api
 
+      - name: "GitHub Actions lint"
+        run: make lint-ci
+
       - name: "go mod tidy"
         run: |
           go mod tidy
@@ -253,7 +256,7 @@ jobs:
           fi
       
       - name: "Upload to Codecov"
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v5
         with:
           files: ./coverage.out
           flags: backend

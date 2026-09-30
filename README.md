@@ -104,6 +104,7 @@ Server runs at `http://localhost:8080`
 | `make test-e2e` | End-to-end tests |
 | `make lint` | golangci-lint and formatting check (gofumpt, goimports) |
 | `make lint-api` | Redocly lint of the OpenAPI contract (requires Node) |
+| `make lint-ci` | actionlint on the GitHub Actions workflows |
 | `make vuln` | govulncheck dependency scan |
 | `make fmt` | Auto-format code and tidy modules |
 | `make docker-build` | Build Docker image |

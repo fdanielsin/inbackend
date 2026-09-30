@@ -13,7 +13,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 - Spécification OpenAPI 3.1 du contrat HTTP (`docs/specs/api/openapi.yaml`).
 - Tests de régression pour `Q-01` (unitaires, e2e, intégration PostgreSQL).
 - Contrôles bloquants en CI : golangci-lint (`make lint`), Redocly sur le contrat
-  OpenAPI (`make lint-api`) et govulncheck (`make vuln`).
+  OpenAPI (`make lint-api`), govulncheck (`make vuln`) et actionlint sur les
+  workflows (`make lint-ci`).
 
 ### Changed
 
@@ -31,6 +32,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Fixed
 
+- CI : le workflow ne démarrait plus (`startup_failure`) à cause de `codecov-action@v3` ; passé en v5.
 - `Q-03` : l'image Docker se construit et `docker compose up` démarre PostgreSQL et le backend.
 - `Q-05` : le scan de vulnérabilités de la CI bloque (govulncheck remplace `nancy`).
 - `Q-12` : `GET /api/v1/users/{id}/tasks` retourne les tâches triées par

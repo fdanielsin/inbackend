@@ -1,8 +1,9 @@
-.PHONY: help build run test test-unit test-integration test-e2e lint lint-api fmt vuln clean docker-build docker-run
+.PHONY: help build run test test-unit test-integration test-e2e lint lint-api lint-ci fmt vuln clean docker-build docker-run
 
 # Outils épinglés, lancés avec `go run` pour ne pas modifier go.mod (ADR 0006).
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 GOVULNCHECK := go run golang.org/x/vuln/cmd/govulncheck@v1.8.0
+ACTIONLINT := go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
 REDOCLY := npx --yes @redocly/cli@2.55.0
 
 help:
@@ -15,6 +16,7 @@ help:
 	@echo "  make test-e2e        - Run E2E tests"
 	@echo "  make lint            - Run golangci-lint and check formatting (gofumpt, goimports)"
 	@echo "  make lint-api        - Lint the OpenAPI contract with Redocly (requires Node)"
+	@echo "  make lint-ci         - Lint GitHub Actions workflows with actionlint"
 	@echo "  make fmt             - Format code and tidy modules"
 	@echo "  make vuln            - Scan dependencies with govulncheck"
 	@echo "  make clean           - Remove build artifacts"
@@ -53,6 +55,10 @@ lint:
 lint-api:
 	@echo "📜 Linting OpenAPI contract..."
 	$(REDOCLY) lint --config docs/specs/api/redocly.yaml docs/specs/api/openapi.yaml
+
+lint-ci:
+	@echo "⚙️ Linting GitHub Actions workflows..."
+	$(ACTIONLINT) .github/workflows/*.yml
 
 fmt:
 	@echo "✨ Formatting code..."
