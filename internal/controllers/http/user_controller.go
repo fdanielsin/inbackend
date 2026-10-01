@@ -36,16 +36,17 @@ func NewUserController(
 
 // CreateUser gère POST /api/v1/users.
 func (uc *UserController) CreateUser(c echo.Context) error {
+	log := requestLogger(c, uc.log)
 	var req commands.CreateUserRequest
 	if err := c.Bind(&req); err != nil {
-		return respondInvalidBody(c, uc.log)
+		return respondInvalidBody(c, log, err)
 	}
 
-	uc.log.Info("Creating user")
+	log.Info("Creating user")
 
 	resp, err := uc.createUserHandler.Execute(c.Request().Context(), req)
 	if err != nil {
-		return respondWithError(c, uc.log, "Error creating user", err)
+		return respondWithError(c, log, "Error creating user", err)
 	}
 
 	return c.JSON(http.StatusCreated, shared.SuccessResponse(resp, "User created"))
@@ -53,17 +54,18 @@ func (uc *UserController) CreateUser(c echo.Context) error {
 
 // GetUser gère GET /api/v1/users/:id.
 func (uc *UserController) GetUser(c echo.Context) error {
+	log := requestLogger(c, uc.log)
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		return respondInvalidID(c, uc.log, "user", idStr)
+		return respondInvalidID(c, log, "user", idStr)
 	}
 
-	uc.log.Info("Fetching user", slog.Uint64("id", id))
+	log.Info("Fetching user", slog.Uint64("id", id))
 
 	resp, err := uc.getUserHandler.Execute(c.Request().Context(), queries.GetUserRequest{ID: uint(id)})
 	if err != nil {
-		return respondWithError(c, uc.log, "Error fetching user", err, slog.Uint64("id", id))
+		return respondWithError(c, log, "Error fetching user", err, slog.Uint64("id", id))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))
@@ -71,11 +73,12 @@ func (uc *UserController) GetUser(c echo.Context) error {
 
 // ListUsers gère GET /api/v1/users.
 func (uc *UserController) ListUsers(c echo.Context) error {
-	uc.log.Info("Listing all users")
+	log := requestLogger(c, uc.log)
+	log.Info("Listing all users")
 
 	resp, err := uc.listUsersHandler.Execute(c.Request().Context(), queries.ListUsersRequest{})
 	if err != nil {
-		return respondWithError(c, uc.log, "Error listing users", err)
+		return respondWithError(c, log, "Error listing users", err)
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))

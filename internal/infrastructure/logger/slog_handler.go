@@ -27,15 +27,16 @@ func (h *ZapHandler) Handle(_ context.Context, r slog.Record) error {
 		return true
 	})
 
-	// Déterminer le niveau et logger
-	switch r.Level {
-	case slog.LevelDebug:
+	// Chaque niveau slog, y compris intermédiaire (slog.Level(2), slog.Level(12)),
+	// est ramené à la tranche zap correspondante : aucune entrée n'est perdue.
+	switch {
+	case r.Level < slog.LevelInfo:
 		h.log.Debug(r.Message, fields...)
-	case slog.LevelInfo:
+	case r.Level < slog.LevelWarn:
 		h.log.Info(r.Message, fields...)
-	case slog.LevelWarn:
+	case r.Level < slog.LevelError:
 		h.log.Warn(r.Message, fields...)
-	case slog.LevelError:
+	default:
 		h.log.Error(r.Message, fields...)
 	}
 

@@ -36,17 +36,27 @@ func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 	}, got)
 }
 
-// GIVEN an unknown path or an unsupported method / THEN 404 or 405 with Echo's JSON error body
+// GIVEN an unknown path or an unsupported method / THEN 404 ROUTE_NOT_FOUND or 405 METHOD_NOT_ALLOWED in the error envelope
 func TestRouter_UnknownRouteAndMethod(t *testing.T) {
 	s := newTestServer(t)
 
-	notFound := s.doRaw(http.MethodGet, "/api/v1/unknown", "")
-	assert.Equal(t, http.StatusNotFound, notFound.code)
-	assert.JSONEq(t, `{"message":"Not Found"}`, string(notFound.body))
+	requireError(t, s.doOutsideOperations(http.MethodGet, "/api/v1/unknown"), http.StatusNotFound, "ROUTE_NOT_FOUND", "Route not found")
 
-	notAllowed := s.doRaw(http.MethodPost, "/health", "")
-	assert.Equal(t, http.StatusMethodNotAllowed, notAllowed.code)
-	assert.JSONEq(t, `{"message":"Method Not Allowed"}`, string(notAllowed.body))
+	notAllowed := s.doOutsideOperations(http.MethodPatch, "/api/v1/users")
+	requireError(t, notAllowed, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed")
+	assert.Equal(t, "OPTIONS, GET, POST", notAllowed.header.Get("Allow"))
+
+	requireError(t, s.doOutsideOperations(http.MethodPost, "/health"), http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed")
+}
+
+// GIVEN HEAD on an unknown path / THEN 404 without a body
+func TestRouter_HeadOnUnknownRouteHasNoBody(t *testing.T) {
+	s := newTestServer(t)
+
+	r := s.doRaw(http.MethodHead, "/api/v1/unknown", "")
+
+	assert.Equal(t, http.StatusNotFound, r.code)
+	assert.Empty(t, r.body)
 }
 
 // GIVEN a browser preflight from any origin / THEN CORS allows the four methods of the API
@@ -77,14 +87,16 @@ func TestRouter_CORSSimpleRequest(t *testing.T) {
 	assert.Equal(t, "*", rec.Header().Get(echo.HeaderAccessControlAllowOrigin))
 }
 
-// GIVEN a handler that panics behind the production middlewares / THEN 500 and the server keeps serving
+// GIVEN a handler that panics behind the production middlewares / THEN 500 INTERNAL_ERROR without detail, and the server keeps serving
 func TestRouter_RecoversFromPanics(t *testing.T) {
 	s := newTestServer(t)
-	s.e.GET("/panic", func(echo.Context) error { panic("boom") })
+	s.e.GET("/panic", func(echo.Context) error { panic("boom secret detail") })
 
 	r := s.doRaw(http.MethodGet, "/panic", "")
 
-	assert.Equal(t, http.StatusInternalServerError, r.code)
+	contract.ValidateErrorEnvelope(t, r.body)
+	requireError(t, r, http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error")
+	assert.NotContains(t, string(r.body), "boom")
 	assert.Equal(t, http.StatusOK, s.do(http.MethodGet, "/health", "").code, "the server must survive the panic")
 }
 
@@ -122,4 +134,32 @@ func TestRouter_ErrorBodiesAreJSON(t *testing.T) {
 
 	assert.True(t, json.Valid(r.body), "body: %s", r.body)
 	assert.Equal(t, echo.MIMEApplicationJSON, r.header.Get(echo.HeaderContentType))
+}
+
+// GIVEN a handler that returns another 4xx HTTP error / THEN its status is kept, in the envelope with INVALID_BODY
+func TestErrorHandler_OtherClientErrorKeepsItsStatus(t *testing.T) {
+	s := newTestServer(t)
+	s.e.GET("/teapot", func(echo.Context) error { return echo.NewHTTPError(http.StatusTeapot, "secret detail") })
+
+	r := s.doRaw(http.MethodGet, "/teapot", "")
+
+	contract.ValidateErrorEnvelope(t, r.body)
+	requireError(t, r, http.StatusTeapot, "INVALID_BODY", "Invalid request")
+	assert.NotContains(t, string(r.body), "secret detail")
+}
+
+// GIVEN a handler that already answered and then returns an error / THEN the answer is kept as is, nothing is appended
+func TestErrorHandler_LeavesACommittedResponseAlone(t *testing.T) {
+	s := newTestServer(t)
+	s.e.GET("/committed", func(c echo.Context) error {
+		if err := c.String(http.StatusAccepted, "done"); err != nil {
+			return err
+		}
+		return echo.NewHTTPError(http.StatusInternalServerError)
+	})
+
+	r := s.doRaw(http.MethodGet, "/committed", "")
+
+	assert.Equal(t, http.StatusAccepted, r.code)
+	assert.Equal(t, "done", string(r.body))
 }

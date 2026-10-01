@@ -25,6 +25,7 @@ func TestInitDB_MigratesAnEmptyDatabase(t *testing.T) {
 	assert.Equal(t, migrationState{Version: latestMigration}, readMigrationState(t, db))
 	assert.True(t, hasIndex(t, db, "idx_user_models_email_lower"), "unique lower(email) index must exist")
 	assert.True(t, hasConstraint(t, db, "fk_task_models_user"), "task owner foreign key must exist")
+	assert.Equal(t, 25, sqlDB.Stats().MaxOpenConnections, "connection pool size")
 }
 
 // GIVEN an unreachable database / WHEN InitDB / THEN an error is returned instead of a usable connection

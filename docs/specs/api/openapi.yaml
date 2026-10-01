@@ -6,6 +6,16 @@ info:
     Contrat HTTP de l'API REST du backend InDrive.
     Cette spécification décrit les routes actuellement enregistrées dans
     `internal/app/router.go` et leurs réponses réellement produites par les controllers.
+
+    Règles valables pour toutes les routes, non répétées opération par opération :
+    - toute réponse porte l'en-tête `X-Request-Id` (l'identifiant envoyé par le
+      client est repris s'il est composé de 1 à 64 caractères parmi
+      `A-Za-z0-9._-`, sinon le serveur en génère un) ;
+    - une route inconnue répond `404` `ROUTE_NOT_FOUND` et une méthode non
+      supportée sur une route connue répond `405` `METHOD_NOT_ALLOWED` (avec
+      l'en-tête `Allow`), tous deux dans l'enveloppe d'erreur ;
+    - un corps de requête de plus de 1 MiB (1 048 576 octets) répond `413`
+      `PAYLOAD_TOO_LARGE`.
 servers:
   - url: http://localhost:8080
     description: Développement local
@@ -80,6 +90,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '409':
           $ref: '#/components/responses/EmailTaken'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/v1/users/{id}:
@@ -169,6 +181,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/UserNotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/v1/tasks/{id}:
@@ -208,6 +222,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/TaskNotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
         '500':
           $ref: '#/components/responses/InternalServerError'
     delete:
@@ -301,6 +317,9 @@ components:
         - USER_NOT_FOUND
         - TASK_NOT_FOUND
         - EMAIL_TAKEN
+        - ROUTE_NOT_FOUND
+        - METHOD_NOT_ALLOWED
+        - PAYLOAD_TOO_LARGE
         - INTERNAL_ERROR
       x-enumDescriptions:
         INVALID_BODY: Corps JSON absent, mal formé ou de mauvais type (400).
@@ -309,6 +328,9 @@ components:
         USER_NOT_FOUND: Utilisateur introuvable (404).
         TASK_NOT_FOUND: Tâche introuvable (404).
         EMAIL_TAKEN: Un utilisateur avec cet email (une fois normalisé) existe déjà (409).
+        ROUTE_NOT_FOUND: Route inconnue (404).
+        METHOD_NOT_ALLOWED: Méthode non supportée sur cette route (405).
+        PAYLOAD_TOO_LARGE: Corps de requête de plus de 1 MiB (413).
         INTERNAL_ERROR: Erreur serveur, détails non exposés (500).
     User:
       type: object
@@ -467,6 +489,12 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     EmailTaken:
       description: Un utilisateur avec cet email existe déjà (`EMAIL_TAKEN`)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    PayloadTooLarge:
+      description: Corps de requête de plus de 1 MiB (`PAYLOAD_TOO_LARGE`)
       content:
         application/json:
           schema:

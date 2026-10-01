@@ -2,30 +2,30 @@
 
 ## Statut
 
-`active` — modèle correspondant aux modèles GORM actuellement migrés.
+`active` — schéma défini par les migrations SQL (`internal/infrastructure/database/migrations/`, ADR 0007) ; les modèles GORM doivent rester cohérents avec lui.
 
-## Utilisateur
+## Utilisateur (table `user_models`)
 
 | Champ | Type Go | Contraintes |
 | --- | --- | --- |
-| `id` | `uint` | clé primaire générée par GORM |
+| `id` | `uint` | clé primaire (`bigserial`) |
 | `name` | `string` | non vide au niveau domaine |
-| `email` | `string` | index unique GORM, non vide au niveau domaine |
+| `email` | `string` | normalisé (espaces retirés, minuscules) et format minimal validé au niveau domaine ; index unique `idx_user_models_email_lower` sur `lower(email)` |
 
-## Tâche
+## Tâche (table `task_models`)
 
 | Champ | Type Go | Contraintes |
 | --- | --- | --- |
-| `id` | `uint` | clé primaire générée par GORM |
+| `id` | `uint` | clé primaire (`bigserial`) |
 | `title` | `string` | non vide à la création au niveau domaine |
 | `description` | `string` | facultatif |
-| `user_id` | `uint` | identifiant utilisateur non nul à la création |
+| `user_id` | `uint` | non nul à la création ; clé étrangère `fk_task_models_user` vers `user_models.id` (index `idx_task_models_user_id`) |
 | `completed` | `bool` | valeur par défaut Go `false` |
 
 ## Persistance
 
 - PostgreSQL est la base d'exécution.
-- Les migrations sont exécutées au démarrage via `AutoMigrate`.
+- Les migrations versionnées (golang-migrate) sont appliquées au démarrage.
 - Les tests de repository utilisent PostgreSQL via Testcontainers lorsqu'un
   provider Docker/Podman est disponible.
 - Les modèles de persistance sont isolés dans
@@ -33,7 +33,7 @@
 
 ## Limites connues
 
-- La contrainte de relation entre `tasks.user_id` et `users.id` n'est pas
-  déclarée explicitement dans les modèles GORM.
-- Les migrations versionnées et les suppressions destructives ne sont pas
-  définies.
+- Pas de suppression d'utilisateur dans l'API : la clé étrangère est `RESTRICT`.
+- Pas de pagination des listes.
+- Les noms de tables `user_models` et `task_models` viennent de GORM ; un
+  renommage serait une migration séparée.

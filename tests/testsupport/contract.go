@@ -3,6 +3,7 @@ package testsupport
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -82,6 +83,24 @@ func (c *Contract) ValidateResponse(t testing.TB, req *http.Request, status int,
 	c.mu.Lock()
 	c.produced[pairKey(route.Operation.OperationID, status)] = true
 	c.mu.Unlock()
+}
+
+// ValidateErrorEnvelope fails the test unless body is an ErrorResponse of the
+// contract. It checks the responses that no operation declares, such as Echo's
+// 404 for an unknown route or 405 for an unsupported method.
+func (c *Contract) ValidateErrorEnvelope(t testing.TB, body []byte) {
+	t.Helper()
+	ref, ok := c.doc.Components.Schemas["ErrorResponse"]
+	if !ok || ref.Value == nil {
+		t.Fatalf("contract: ErrorResponse schema is missing")
+	}
+	var value any
+	if err := json.Unmarshal(body, &value); err != nil {
+		t.Fatalf("contract: body is not JSON: %v\nbody: %s", err, body)
+	}
+	if err := ref.Value.VisitJSON(value); err != nil {
+		t.Fatalf("contract: body does not match ErrorResponse: %v\nbody: %s", err, body)
+	}
 }
 
 // MissingPairs lists the (operationId, status) pairs declared by the contract

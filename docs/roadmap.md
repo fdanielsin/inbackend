@@ -62,7 +62,7 @@ QA) :
 | 2 | Erreurs lisibles | `B-03`, `B-04` (+ `F-01`, `F-02` côté frontend) | Backend accepté QA, en PR (`feat/lot4-errors-contrat`) ; frontend à faire. |
 | 3 | Tests honnêtes | `Q-06`, `Q-07`, `Q-12`, `Q-09`, `Q-10` | **Fait** : `Q-12` (PR #6, `d289dc2`), `Q-10` (nettoyage), `Q-06`, `Q-07`, `Q-09` (lot 3, PR #9). |
 | 4 | Schéma (migrations versionnées d'abord) | `B-05`, puis `B-02`, `B-07` (pagination : décision de contrat) | `B-05` et `B-02` codés sur `feat/lot5-migrations` (en attente de QA) ; `B-07` à décider ; `B-08` fait au lot 2 backend. |
-| 5 | Portes CI | `Q-04`, `Q-05`, `Q-13`, `Q-11`, `B-06` | Partiel : `Q-05` et `B-06` faits (PR #7) ; `Q-04`, `Q-13`, `Q-11` à faire. |
+| 5 | Portes CI | `Q-04`, `Q-05`, `Q-13`, `Q-11`, `B-06` | Partiel : `Q-05` et `B-06` faits (PR #7) ; `Q-04` (`make cover`, seuil 85 %) et `Q-11` (pre-push) codés sur `chore/lot6-outillage` ; `Q-13` à faire. |
 | 6 | Docker | `Q-03` | Accepté QA (PR #8) ; merge bloqué par la CI (compte GitHub). |
 | 7 | Documentation | `F-03` (frontend) | À faire |
 | 8 | Fonctionnalités | `FP-03`, `FP-01`, `FP-02`, `BP-02` (tri), `FP-04` | À faire |

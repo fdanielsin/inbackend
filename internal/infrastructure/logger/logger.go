@@ -18,13 +18,13 @@ func InitLogger() *zap.Logger {
 	var zapLogger *zap.Logger
 	var err error
 
-	env := os.Getenv("ENV")
-	if env == "production" {
-		zapLogger, err = zap.NewProduction()
-	} else {
-		zapLogger, err = zap.NewDevelopment()
+	config := zap.NewDevelopmentConfig()
+	if os.Getenv("ENV") == "production" {
+		config = zap.NewProductionConfig()
 	}
-
+	// Pile d'appels seulement à partir d'Error : en développement zap en ajoute
+	// par défaut dès Warn, donc à chaque 4xx du journal d'accès.
+	zapLogger, err = config.Build(zap.AddStacktrace(zap.ErrorLevel))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
 		os.Exit(1)

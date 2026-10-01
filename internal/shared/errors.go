@@ -17,6 +17,9 @@ const (
 	CodeUserNotFound     = "USER_NOT_FOUND"
 	CodeTaskNotFound     = "TASK_NOT_FOUND"
 	CodeEmailTaken       = "EMAIL_TAKEN"
+	CodeRouteNotFound    = "ROUTE_NOT_FOUND"
+	CodeMethodNotAllowed = "METHOD_NOT_ALLOWED"
+	CodePayloadTooLarge  = "PAYLOAD_TOO_LARGE"
 	CodeInternalError    = "INTERNAL_ERROR"
 )
 

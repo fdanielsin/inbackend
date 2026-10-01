@@ -8,7 +8,6 @@ on:
 
 env:
   NODE_VERSION: "22"
-  COVERAGE_THRESHOLD: 80
 
 jobs:
   # ========== STAGE 1: LINT & FORMAT ==========
@@ -81,7 +80,7 @@ jobs:
       
       - name: "Run unit tests"
         run: |
-          go test -v -race -short ./tests/units/... -timeout 30s
+          go test -v -race -short -shuffle=on ./tests/units/... -timeout 30s
           echo "✅ Unit tests passed"
 
   # ========== STAGE 4: SECURITY CHECK ==========
@@ -144,7 +143,7 @@ jobs:
       
       - name: "Run integration tests"
         run: |
-          go test -v -race ./tests/integration/... -timeout 5m
+          go test -v -race -shuffle=on ./tests/integration/... -timeout 5m
           echo "✅ Integration tests passed"
 
   # ========== STAGE 6: E2E TESTS ==========
@@ -166,7 +165,7 @@ jobs:
       
       - name: "Run E2E tests"
         run: |
-          go test -v -race ./tests/e2e/... -timeout 5m
+          go test -v -race -shuffle=on ./tests/e2e/... -timeout 5m
           echo "✅ E2E tests passed"
 
   # ========== STAGE 7: COVERAGE CHECK ==========
@@ -186,21 +185,9 @@ jobs:
       - name: "Download dependencies"
         run: go mod download
       
-      - name: "Generate coverage report"
-        run: |
-          go test -coverprofile=coverage.out -covermode=atomic ./...
-          go tool cover -func=coverage.out | tail -1
-      
-      - name: "Check coverage threshold"
-        run: |
-          COVERAGE=$(go tool cover -func=coverage.out | tail -1 | awk '{print $3}' | sed 's/%//')
-          echo "Coverage: ${COVERAGE}%"
-          if (( $(echo "$COVERAGE < ${{ env.COVERAGE_THRESHOLD }}" | bc -l) )); then
-            echo "⚠️  Coverage ${COVERAGE}% is below threshold of ${{ env.COVERAGE_THRESHOLD }}% (non-blocking)"
-          else
-            echo "✅ Coverage check passed (${COVERAGE}%)"
-          fi
-      
+      - name: "Coverage of internal/ (blocking minimum, same command as locally)"
+        run: make cover
+
       - name: "Upload to Codecov"
         uses: codecov/codecov-action@v5
         with:

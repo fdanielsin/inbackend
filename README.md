@@ -102,6 +102,7 @@ Server runs at `http://localhost:8080`
 | `make test` | All tests (unit + integration + E2E) |
 | `make test-unit` | Unit tests only |
 | `make test-integration` | Integration tests with Testcontainers |
+| `make cover` | All tests with coverage of `internal/`, fails under 85 % (requires Docker/Podman; same command as CI) |
 | `make test-e2e` | End-to-end tests (PostgreSQL via Testcontainers, requires Docker/Podman) |
 | `make lint` | golangci-lint and formatting check (gofumpt, goimports) |
 | `make lint-api` | Redocly lint of the OpenAPI contract (requires Node) |
@@ -249,7 +250,10 @@ Frontend Repo: https://github.com/fdanielsin/infrontend
 
 - **Migrations**: versioned SQL in `internal/infrastructure/database/migrations/`, applied on startup (ADR 0007); `make migrate-new name=...` creates the next one
 - **Error Handling**: Unified `APIResponse` in `internal/shared/response.go`; every error carries a stable `error_code`, all mapped in one table in `internal/shared/errors.go` (codes listed in `docs/specs/api/openapi.yaml`)
-- **CORS**: Configured in `internal/app/router.go`, adjust origins as needed
+- **CORS**: `CORS_ALLOWED_ORIGINS` (comma-separated, `*` by default, restrict it in production), see `internal/app/router.go`
+- **Requests**: each response carries `X-Request-Id` (the client value is kept if it is 1-64 chars of `A-Za-z0-9._-`); bodies above 1 MiB get 413; unknown routes and methods use the error envelope (`ROUTE_NOT_FOUND`, `METHOD_NOT_ALLOWED`)
+- **Shutdown**: SIGINT/SIGTERM stop the server gracefully (10 s for in-flight requests)
+- **Git hook**: `git config core.hooksPath .githooks` enables a blocking pre-push (lint, build, unit tests, no Docker needed)
 - **Logging**: Development (pretty) vs Production (structured JSON)
 - **Testing**: Testcontainers start one PostgreSQL container per test package; tables are truncated before each test
 

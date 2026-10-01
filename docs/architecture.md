@@ -99,9 +99,26 @@ router : Echo est utilisé directement par les controllers
 assemblé (`app.NewRouter`). Un package `infrastructure/http/` qui engloberait Echo et
 le routage est une cible (voir Structure cible), pas l'état actuel. Il
 n'existe pas non plus de package de configuration dédié : les variables
-d'environnement (`DATABASE_URL`, `PORT`, `ENV`) sont lues directement dans
+d'environnement (`DATABASE_URL`, `PORT`, `ENV`, `CORS_ALLOWED_ORIGINS`) sont lues directement dans
 `main.go` et `internal/infrastructure/logger` ; un package `config/` est la
 cible.
+
+### Serveur HTTP et middlewares
+
+- `app.Serve` : `http.Server` avec `ReadHeaderTimeout` 5 s, `ReadTimeout` 15 s,
+  `WriteTimeout` 30 s, `IdleTimeout` 60 s ; SIGINT/SIGTERM déclenchent un arrêt
+  gracieux (10 s pour les requêtes en cours), puis fermeture du pool SQL.
+- Pool SQL : 25 connexions ouvertes au plus, 5 inactives, durée de vie 30 min.
+- Ordre des middlewares : `RequestID` (X-Request-Id repris s'il correspond à
+  `[A-Za-z0-9._-]{1,64}`, sinon UUID ; logger de requête porté par le contexte),
+  `AccessLog` (méthode, chemin sans query, route, statut, durée ; jamais de
+  corps), `Recover`, CORS (`CORS_ALLOWED_ORIGINS`, `*` par défaut), `BodyLimit`
+  (1 MiB exacts, avec ou sans Content-Length : `http.MaxBytesReader` ; le
+  `BodyLimit` d'Echo n'est pas utilisé car il laisse passer un JSON complet qui
+  dépasse de quelques octets sans Content-Length).
+- `http.NewErrorHandler` : les erreurs d'Echo (404 `ROUTE_NOT_FOUND`, 405
+  `METHOD_NOT_ALLOWED`, 413 `PAYLOAD_TOO_LARGE`, panique 500) sortent dans
+  l'enveloppe d'erreur avec leur `error_code`.
 
 ### Shared
 

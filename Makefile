@@ -1,4 +1,4 @@
-.PHONY: help build run test test-unit test-integration test-e2e mutate migrate-up migrate-down migrate-force migrate-new lint lint-api lint-ci fmt vuln clean docker-build docker-run
+.PHONY: help build run test test-unit test-integration test-e2e cover mutate migrate-up migrate-down migrate-force migrate-new lint lint-api lint-ci fmt vuln clean docker-build docker-run
 
 # Outils épinglés, lancés avec `go run` pour ne pas modifier go.mod (ADR 0006).
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
@@ -7,6 +7,7 @@ ACTIONLINT := go run github.com/rhysd/actionlint/cmd/actionlint@v1.7.7
 MIGRATE := go run -tags pgx5 github.com/golang-migrate/migrate/v4/cmd/migrate@v4.20.1
 MIGRATIONS_DIR := internal/infrastructure/database/migrations
 MIGRATE_DATABASE_URL = $(patsubst postgres://%,pgx5://%,$(patsubst postgresql://%,pgx5://%,$(DATABASE_URL)))
+COVERAGE_MIN ?= 85
 GREMLINS := go run github.com/go-gremlins/gremlins/cmd/gremlins@v0.6.0
 MUTATION_BASE ?= develop
 REDOCLY := npx --yes @redocly/cli@2.55.0
@@ -23,6 +24,7 @@ help:
 	@echo "  make migrate-down    - Revert the last migration (requires DATABASE_URL)"
 	@echo "  make migrate-force version=N - Clear the dirty flag after a failed migration (N = last version fully applied)"
 	@echo "  make migrate-new name=xxx - Create the next up/down migration files"
+	@echo "  make cover           - Run all tests with coverage of internal/ and fail under COVERAGE_MIN (default 85)"
 	@echo "  make mutate          - Mutation testing on the diff against MUTATION_BASE (default develop), not run in CI"
 	@echo "  make lint            - Run golangci-lint and check formatting (gofumpt, goimports)"
 	@echo "  make lint-api        - Lint the OpenAPI contract with Redocly (requires Node)"
@@ -43,19 +45,27 @@ run:
 
 test:
 	@echo "🧪 Running all tests..."
-	go test -v -race -cover ./...
+	go test -v -race -shuffle=on -cover ./...
 
 test-unit:
 	@echo "🧪 Running unit tests..."
-	go test -v -race ./tests/units/...
+	go test -v -race -shuffle=on ./tests/units/...
 
 test-integration:
 	@echo "🧪 Running integration tests with Testcontainers..."
-	go test -v -race ./tests/integration/...
+	go test -v -race -shuffle=on ./tests/integration/...
 
 test-e2e:
 	@echo "🧪 Running E2E tests with Testcontainers..."
-	go test -v ./tests/e2e/...
+	go test -v -shuffle=on ./tests/e2e/...
+
+cover:
+	@echo "📊 Running all tests with coverage (requires Docker/Podman)..."
+	go test -race -shuffle=on -coverpkg=./internal/... -coverprofile=coverage.out ./...
+	@total=$$(go tool cover -func=coverage.out | awk '/^total:/ {sub("%", "", $$NF); print $$NF}'); \
+	echo "Coverage: $$total% (minimum $(COVERAGE_MIN)%)"; \
+	awk -v total="$$total" -v min="$(COVERAGE_MIN)" 'BEGIN { exit (total + 0 >= min + 0) ? 0 : 1 }' \
+		|| { echo "❌ Coverage $$total% is below the minimum of $(COVERAGE_MIN)%"; exit 1; }
 
 mutate:
 	@echo "🧬 Mutation testing on the diff against $(MUTATION_BASE)..."

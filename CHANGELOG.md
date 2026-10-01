@@ -11,6 +11,10 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Identifiant de requête `X-Request-Id` (repris du client s'il est valide), présent dans les logs ; erreurs d'Echo (route inconnue, méthode non supportée, corps trop gros) dans l'enveloppe avec `ROUTE_NOT_FOUND`, `METHOD_NOT_ALLOWED`, `PAYLOAD_TOO_LARGE` (413 au-delà de 1 MiB).
+- Délais du serveur HTTP, arrêt gracieux sur SIGINT/SIGTERM et pool SQL borné.
+- `CORS_ALLOWED_ORIGINS` (`*` par défaut).
+- `make cover` : couverture de `internal/` avec minimum bloquant de 85 %, aussi en CI (`Q-04`).
 - Migrations versionnées golang-migrate (`make migrate-up/down/force/new`, ADR 0007) ; `AutoMigrate` retiré (`B-05`).
 - `B-02` : clé étrangère `task_models.user_id` -> `user_models.id` ; créer une tâche pour un utilisateur inexistant répond 404 `USER_NOT_FOUND`.
 - Champ `error_code` (code stable, enum dans le contrat) dans toute réponse d'erreur ; une seule table erreur → statut/code/message (lot 4).
@@ -23,6 +27,9 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- Les logs zap n'ajoutent plus de pile d'appels qu'à partir du niveau Error (en développement, dès Warn, donc à chaque 4xx).
+- `Q-11` : le hook pre-push (lint, build, tests unitaires, sans Docker) bloque réellement en cas d'échec.
+- Logs de requête via `RequestLoggerWithConfig` (méthode, chemin sans query, route, statut, durée, request id) à la place de `middleware.Logger` déprécié ; format de ligne différent.
 - `DATABASE_URL` doit être une URL `postgres://` (le format `clé=valeur` est refusé au démarrage avec un message clair) ; `.env.example` mis à jour.
 - Emails existants normalisés en minuscules et unicité insensible à la casse en base ; le démarrage échoue avec un message clair s'il existe des doublons par casse ou des tâches orphelines (rien n'est supprimé).
 - `B-03` : créer un utilisateur avec un email déjà pris répond 409 `EMAIL_TAKEN` au lieu de 500 (comparaison sur l'email normalisé).

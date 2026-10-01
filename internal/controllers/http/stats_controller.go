@@ -26,11 +26,12 @@ func NewStatsController(getStatsHandler *queries.GetStatsHandler) *StatsControll
 
 // GetStats gère GET /api/v1/stats.
 func (sc *StatsController) GetStats(c echo.Context) error {
-	sc.log.Info("Fetching statistics")
+	log := requestLogger(c, sc.log)
+	log.Info("Fetching statistics")
 
 	resp, err := sc.getStatsHandler.Execute(c.Request().Context(), queries.GetStatsRequest{})
 	if err != nil {
-		return respondWithError(c, sc.log, "Error fetching statistics", err)
+		return respondWithError(c, log, "Error fetching statistics", err)
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))

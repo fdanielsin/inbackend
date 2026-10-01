@@ -187,7 +187,7 @@ comportement ni de contrat.
   positifs sur le français), `noctx` limité à `httptest.NewRequest` dans les
   `_test.go` (les ids uint sont journalisés avec `slog.Uint64`, sans exclusion
   gosec `G115`), staticcheck `SA1019` sur `middleware.Logger` d'Echo
-  (migration vers `RequestLogger` dans un lot séparé). Redocly (`recommended-strict`, pour que
+  (exclusion retirée au lot 6 : `RequestLoggerWithConfig`). Redocly (`recommended-strict`, pour que
   `operation-4xx-response` soit une erreur bloquante) : `security-defined` (pas d'authentification, décision produit),
   `info-license` (dépôt privé), `no-server-example.com` (serveur localhost du
   contrat) ; `operation-4xx-response` reste active, avec 3 opérations ignorées
@@ -339,6 +339,19 @@ Branche `test/lot3-backend` (worktree `inbackend/.worktrees/lot3-backend`).
 - Un échec laisse la base « dirty » : `make migrate-force version=N` (N = dernière
   version entièrement appliquée), indiqué dans l'erreur.
 
+## Lot 6 : robustesse et outillage (branche `chore/lot6-outillage`)
+
+- `http.Server` avec délais, arrêt gracieux, pool SQL 25/5/30 min, request id
+  maison, `AccessLog` (`RequestLoggerWithConfig`, plus d'exclusion SA1019),
+  CORS par `CORS_ALLOWED_ORIGINS`, `BodyLimit` maison de 1 MiB exacts
+  (`http.MaxBytesReader`, y compris en chunked), `NewErrorHandler` (erreurs d'Echo dans l'enveloppe).
+  Détails dans `architecture.md`, « Serveur HTTP et middlewares ».
+- `Q-04` : `make cover` (minimum `COVERAGE_MIN`, 85 %), étape bloquante du job
+  coverage ; le package `logger` n'est couvert que par le binaire des tests
+  e2e, non instrumenté, donc compté à 0 % (pas d'exclusion).
+- `Q-11` : `.githooks/pre-push` (`make lint`, build, tests unitaires) ; activer
+  avec `git config core.hooksPath .githooks`.
+
 ## Prochaine mission
 
 La conformité locale est vérifiée pour les commandes exécutées ci-dessus,
@@ -389,7 +402,7 @@ Prochaine étape :
 
 ## Dernière mise à jour
 
-2026-10-01 : lot 5 migrations (voir « Lot 5 »), après le lot 4 erreurs et contrat.
+2026-10-01 : lot 6 outillage (voir « Lot 6 »), lot 5 migrations (voir « Lot 5 »), après le lot 4 erreurs et contrat.
 2026-09-30 — outillage lint sur `chore/lint-tooling` (golangci-lint, govulncheck,
 Redocly), sans changement de comportement ; voir « Outillage lint » ci-dessus.
 Le nettoyage backend précédent est détaillé dans « Nettoyage backend ».

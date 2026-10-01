@@ -66,10 +66,10 @@ type testServer struct {
 	db *gorm.DB
 }
 
-func newTestServer(t *testing.T) *testServer {
+func newTestServer(t *testing.T, opts ...app.Option) *testServer {
 	t.Helper()
 	db := pg.NewDB(t)
-	return &testServer{t: t, e: app.NewRouter(db), db: db}
+	return &testServer{t: t, e: app.NewRouter(db, opts...), db: db}
 }
 
 type response struct {
@@ -84,6 +84,15 @@ func (s *testServer) do(method, path, body string) response {
 	s.t.Helper()
 	req, r := s.send(method, path, body)
 	contract.ValidateResponse(s.t, req, r.code, r.header, r.body)
+	return r
+}
+
+// doOutsideOperations sends a request that matches no operation of the contract
+// (unknown route, unsupported method) and checks its body against ErrorResponse.
+func (s *testServer) doOutsideOperations(method, path string) response {
+	s.t.Helper()
+	_, r := s.send(method, path, "")
+	contract.ValidateErrorEnvelope(s.t, r.body)
 	return r
 }
 

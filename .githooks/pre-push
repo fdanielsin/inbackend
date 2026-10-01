@@ -1,42 +1,15 @@
-#!/bin/bash
-# Pre-push hook for Go backend
-# Runs unit tests before pushing (skip integration tests if Docker not available)
+#!/usr/bin/env bash
+# Pre-push : lint, build et tests unitaires. Rapide (aucun Docker) et bloquant :
+# l'intégration, l'e2e et la couverture tournent en CI (`make cover` en local).
+set -euo pipefail
 
-set -e
+cd "$(git rev-parse --show-toplevel)"
 
-echo "🧪 Running pre-push checks..."
+echo "pre-push: lint"
+make lint
+echo "pre-push: build"
+go build ./...
+echo "pre-push: unit tests"
+go test -race -shuffle=on ./tests/units/... ./internal/...
 
-# Check if Docker/Podman is available
-if ! docker ps > /dev/null 2>&1 && ! podman ps > /dev/null 2>&1; then
-  echo "  ⚠️  Docker/Podman not running"
-  echo "  • Skipping integration tests (will run in GitHub Actions)"
-  echo "  • Running format & vet checks only..."
-  
-  # Format check
-  if ! gofmt -l . | grep -q .; then
-    echo "  ✓ Format check passed"
-  else
-    echo "  ❌ Format issues found"
-    exit 1
-  fi
-  
-  # Vet check
-  if go vet ./...; then
-    echo "  ✓ Vet check passed"
-  else
-    echo "  ❌ Vet check failed"
-    exit 1
-  fi
-else
-  echo "  ✓ Docker/Podman detected"
-  echo "  • Running all tests..."
-  
-  if go test -v ./...; then
-    echo "  ✓ All tests passed"
-  else
-    echo "  ⚠️  Some tests failed (GitHub Actions will validate)"
-  fi
-fi
-
-echo "✅ Ready to push"
-exit 0
+echo "pre-push: OK"

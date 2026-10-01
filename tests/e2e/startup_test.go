@@ -100,6 +100,7 @@ func TestStartup_PortInUse_ExitsWithCode1(t *testing.T) {
 	code, out := runUntilExit(t, buildServer(t), serverEnv("DATABASE_URL="+pg.DSN, "PORT="+port))
 
 	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "failed to listen on port "+port)
 	assert.Contains(t, out, "address already in use")
 }
 

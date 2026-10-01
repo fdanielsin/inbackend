@@ -25,7 +25,8 @@ func NewHealthController() *HealthController {
 
 // HealthCheck gère GET /health.
 func (hc *HealthController) HealthCheck(c echo.Context) error {
-	hc.log.Debug("Health check requested")
+	log := requestLogger(c, hc.log)
+	log.Debug("Health check requested")
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(map[string]interface{}{
 		"status":  "ok",
