@@ -24,7 +24,8 @@ make run
 ```
 
 The API listens on `http://localhost:8080`; check it with
-`curl http://localhost:8080/ready`.
+`curl http://localhost:8080/ready`. In development, the contract is browsable at
+`http://localhost:8080/docs`.
 
 To run PostgreSQL and the backend together in containers:
 
@@ -43,6 +44,7 @@ The server reads these environment variables (see `.env.example`):
 | `PORT` | `8080` | HTTP port |
 | `ENV` | `development` | `production` logs JSON at Info level; anything else logs text at Debug level |
 | `CORS_ALLOWED_ORIGINS` | `*` | Allowed origins, comma-separated; restrict it in production |
+| `API_DOCS_ENABLED` | `true`, `false` when `ENV=production` | Serves the contract on `/openapi.yaml` and Swagger UI on `/docs` (loaded from a CDN) |
 
 ## Commands
 
@@ -71,4 +73,4 @@ The server reads these environment variables (see `.env.example`):
 - [Deployment](./docs/deployment.md) and [troubleshooting](./docs/troubleshooting.md)
 - [Changelog](./CHANGELOG.md)
 - [Frontend repository](https://github.com/fdanielsin/infrontend)
-- [Workspace documentation](../docs/README.md)
+- Workspace docs, outside this repository: `../docs/README.md`

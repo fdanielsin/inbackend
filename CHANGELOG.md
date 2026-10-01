@@ -11,6 +11,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- `GET /openapi.yaml` (contrat embarqué) et `GET /docs` (Swagger UI, version épinglée avec empreintes d'intégrité) ; `API_DOCS_ENABLED` (actif par défaut, inactif en production, valeur invalide refusée).
 - Messages `error` et `message` en français ou en anglais selon `Accept-Language` (français pour `fr` et ses variantes, anglais sinon) ; `Content-Language` et `Vary: Accept-Language` sur toutes les réponses.
 - `GET /ready` : disponibilité (base joignable sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`) ; `/health` reste une sonde de vivacité sans base ; réponses des deux sondes non mises en cache.
 - Gabarit « ajouter un endpoint » (`docs/adding-an-endpoint.md`).

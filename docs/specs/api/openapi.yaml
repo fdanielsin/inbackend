@@ -38,6 +38,11 @@ tags:
     description: Création, mise à jour, suppression et liste des tâches.
   - name: Statistics
     description: Compteurs agrégés du service.
+  - name: Documentation
+    description: |
+      Contrat et interface Swagger UI. Ces routes n'existent que si
+      `API_DOCS_ENABLED` les active (par défaut hors production) ; sinon elles
+      répondent `404` `ROUTE_NOT_FOUND`.
 paths:
   /health:
     parameters:
@@ -373,6 +378,70 @@ paths:
                         $ref: '#/components/schemas/Stats'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /openapi.yaml:
+    parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      tags: [Documentation]
+      summary: Télécharger le contrat OpenAPI
+      description: |
+        Renvoie ce fichier tel qu'il est embarqué dans le binaire. Il est en français
+        (`Content-Language: fr`), quelle que soit la valeur de `Accept-Language`.
+        Disponible seulement si `API_DOCS_ENABLED` est actif.
+      operationId: getOpenApiContract
+      responses:
+        '200':
+          description: Contrat OpenAPI au format YAML
+          headers:
+            Content-Language:
+              description: Langue du contenu (descriptions du contrat), indépendante de `Accept-Language`.
+              schema:
+                type: string
+                const: fr
+            Vary:
+              $ref: '#/components/headers/Vary'
+            X-Content-Type-Options:
+              $ref: '#/components/headers/ContentTypeOptionsNoSniff'
+          content:
+            application/yaml:
+              schema:
+                type: object
+                description: Document OpenAPI 3.1 (ce fichier).
+  /docs:
+    parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      tags: [Documentation]
+      summary: Afficher l'interface Swagger UI
+      description: |
+        Page HTML qui charge Swagger UI depuis un CDN (version épinglée,
+        intégrité vérifiée) et affiche `/openapi.yaml`. La page est en anglais
+        (`Content-Language: en`), quelle que soit la valeur de `Accept-Language`.
+        Disponible seulement si
+        `API_DOCS_ENABLED` est actif. Une politique `Content-Security-Policy`
+        limite la page à ce CDN et à cette origine.
+      operationId: getSwaggerUi
+      responses:
+        '200':
+          description: Page Swagger UI
+          headers:
+            Content-Language:
+              description: Langue de la page (interface Swagger UI), indépendante de `Accept-Language`.
+              schema:
+                type: string
+                const: en
+            Vary:
+              $ref: '#/components/headers/Vary'
+            X-Content-Type-Options:
+              $ref: '#/components/headers/ContentTypeOptionsNoSniff'
+            Content-Security-Policy:
+              description: Politique limitant la page à son origine et au CDN de Swagger UI.
+              schema:
+                type: string
+          content:
+            text/html:
+              schema:
+                type: string
 components:
   parameters:
     AcceptLanguage:
@@ -604,6 +673,11 @@ components:
       schema:
         type: string
         const: Accept-Language
+    ContentTypeOptionsNoSniff:
+      description: Interdit au navigateur de deviner le type du contenu.
+      schema:
+        type: string
+        const: nosniff
     CacheControlNoStore:
       description: Interdit toute mise en cache de la réponse (sondes).
       schema:

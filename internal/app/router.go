@@ -28,11 +28,18 @@ type Option func(*routerConfig)
 type routerConfig struct {
 	allowedOrigins []string
 	log            *slog.Logger
+	apiContract    []byte
 }
 
 // WithAllowedOrigins fixe les origines CORS autorisées ("*" par défaut).
 func WithAllowedOrigins(origins []string) Option {
 	return func(cfg *routerConfig) { cfg.allowedOrigins = origins }
+}
+
+// WithAPIDocs sert le contrat OpenAPI donné sur /openapi.yaml et l'interface
+// Swagger UI sur /docs ; sans cette option, ces routes n'existent pas.
+func WithAPIDocs(contract []byte) Option {
+	return func(cfg *routerConfig) { cfg.apiContract = contract }
 }
 
 // WithLogger fixe le logger des controllers et du journal d'accès ; nil garde
@@ -97,6 +104,12 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	e.PUT("/api/v1/tasks/:id", taskCtrl.UpdateTask)
 	e.DELETE("/api/v1/tasks/:id", taskCtrl.DeleteTask)
 	e.GET("/api/v1/stats", statsCtrl.GetStats)
+
+	if cfg.apiContract != nil {
+		docsCtrl := httpapi.NewDocsController(cfg.apiContract)
+		e.GET("/openapi.yaml", docsCtrl.OpenAPI)
+		e.GET("/docs", docsCtrl.SwaggerUI)
+	}
 
 	return e
 }

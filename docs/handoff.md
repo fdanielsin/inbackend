@@ -427,6 +427,15 @@ plus ce que x/text tolère : `q` supérieur à 1, tirets bas). Catalogue
 `httpapi.Language`. Contrat en deux commits : les en-têtes de réponse déclarés
 sont validés par les tests de contrat, ils arrivent donc avec le code.
 
+## Lot docs de l'API (branche `feature/serve-api-docs`)
+
+`openapi.yaml` embarqué (`go:embed` dans `main.go`) et servi sur `/openapi.yaml` ;
+Swagger UI 5.33.1 sur `/docs` via jsDelivr avec SRI et CSP (script en ligne
+autorisé par son hash). `API_DOCS_ENABLED` : actif par défaut hors production,
+`strconv.ParseBool`, valeur invalide = sortie 1. `.dockerignore` laisse passer le
+contrat (sans cela `docker build` échoue). Changer la version de Swagger UI
+impose de recalculer les deux empreintes sha384 de `docs_controller.go`.
+
 ## Prochaine mission
 
 La conformité locale est vérifiée pour les commandes exécutées ci-dessus,

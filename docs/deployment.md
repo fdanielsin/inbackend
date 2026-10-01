@@ -45,6 +45,18 @@ modifiables avec `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` et `PORT`.
 Le job `docker` de la CI exécute cette même séquence. Compose est testé avec
 Docker seulement ; le chemin Podman n'est pas testé.
 
+## Contrat et Swagger UI
+
+`GET /openapi.yaml` sert le contrat embarqué dans le binaire et `GET /docs` la
+page Swagger UI. `API_DOCS_ENABLED` les active : par défaut oui, sauf avec
+`ENV=production` ; `true` ou `false` force le choix, toute autre valeur fait
+refuser le démarrage. Désactivées, ces routes répondent 404 `ROUTE_NOT_FOUND`.
+
+`/docs` charge Swagger UI depuis jsDelivr à une version exacte, avec une
+empreinte d'intégrité par fichier ; une `Content-Security-Policy` limite la page
+à son origine et à ce CDN. Elle demande donc un accès à Internet côté navigateur
+et n'est pas faite pour être exposée en production.
+
 ## Sondes
 
 - `GET /health` : vivacité, sans interroger la base ;

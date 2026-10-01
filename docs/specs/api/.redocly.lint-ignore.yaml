@@ -1,4 +1,4 @@
-# /health, /ready, GET /users et GET /stats n'ont ni paramètre ni corps : elles ne
+# /health, /ready, /openapi.yaml, /docs, GET /users et GET /stats n'ont ni paramètre ni corps : elles ne
 # peuvent renvoyer aucune 4xx, et en déclarer une serait inexact.
 # Toute nouvelle opération sans 4xx doit rester signalée par la règle.
 openapi.yaml:
@@ -7,3 +7,5 @@ openapi.yaml:
     - '#/paths/~1ready/get/responses'
     - '#/paths/~1api~1v1~1users/get/responses'
     - '#/paths/~1api~1v1~1stats/get/responses'
+    - '#/paths/~1openapi.yaml/get/responses'
+    - '#/paths/~1docs/get/responses'

@@ -52,6 +52,8 @@ func LoadContract() (*Contract, error) {
 	if err != nil {
 		return nil, fmt.Errorf("build contract router: %w", err)
 	}
+	// kin-openapi has no decoder for HTML (the Swagger UI page): read it as plain text.
+	openapi3filter.RegisterBodyDecoder("text/html", openapi3filter.PlainBodyDecoder)
 	return &Contract{doc: doc, router: router, produced: map[string]bool{}}, nil
 }
 

@@ -123,6 +123,19 @@ cible.
   `METHOD_NOT_ALLOWED`, 413 `PAYLOAD_TOO_LARGE`, panique 500) sortent dans
   l'enveloppe d'erreur avec leur `error_code`.
 
+### Contrat et Swagger UI
+
+Le contrat `docs/specs/api/openapi.yaml` est embarqué dans `main.go`
+(`go:embed`) et passé au routeur par `app.WithAPIDocs`, qui enregistre
+`GET /openapi.yaml` et `GET /docs` (`httpapi.DocsController`). `main.go` décide
+avec `API_DOCS_ENABLED` : actif par défaut hors `ENV=production`, valeur
+invalide refusée au démarrage. Sans l'option, les routes n'existent pas.
+Leur `Content-Language` est la langue réelle du contenu, sans tenir compte
+d'`Accept-Language` : `fr` pour le contrat, `en` pour la page. `/docs` charge
+Swagger UI depuis un CDN à version et empreintes épinglées ; la
+CSP autorise le script d'initialisation par son hash, calculé au démarrage. Le
+`.dockerignore` laisse passer `openapi.yaml` pour que l'image se construise.
+
 ### Langue des messages
 
 Deux langues, l'anglais par défaut et le français. `shared.NegotiateLanguage`
