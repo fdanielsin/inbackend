@@ -6,8 +6,8 @@ import (
 	"regexp"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 )
 
 const (
@@ -28,7 +28,7 @@ var validRequestID = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
 // des controllers par requestLogger.
 func RequestID(base *slog.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			id := c.Request().Header.Get(echo.HeaderXRequestID)
 			if !validRequestID.MatchString(id) {
 				id = uuid.NewString()
@@ -43,7 +43,7 @@ func RequestID(base *slog.Logger) echo.MiddlewareFunc {
 
 // requestLogger retourne le logger de la requête (avec son request_id), ou
 // fallback hors du middleware RequestID.
-func requestLogger(c echo.Context, fallback *slog.Logger) *slog.Logger {
+func requestLogger(c *echo.Context, fallback *slog.Logger) *slog.Logger {
 	if log, ok := c.Get(loggerKey).(*slog.Logger); ok {
 		return log
 	}
@@ -60,7 +60,7 @@ func AccessLog(base *slog.Logger) echo.MiddlewareFunc {
 		LogStatus:    true,
 		LogLatency:   true,
 		LogRemoteIP:  true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+		LogValuesFunc: func(c *echo.Context, v middleware.RequestLoggerValues) error {
 			level := logLevelForStatus(v.Status)
 			if probeRoutes[v.RoutePath] && v.Status < http.StatusBadRequest {
 				level = slog.LevelDebug
@@ -85,7 +85,7 @@ func AccessLog(base *slog.Logger) echo.MiddlewareFunc {
 // *http.MaxBytesError, reconnu par respondInvalidBody.
 func BodyLimit(maxBytes int64) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
+		return func(c *echo.Context) error {
 			req := c.Request()
 			if req.ContentLength > maxBytes {
 				return echo.ErrStatusRequestEntityTooLarge

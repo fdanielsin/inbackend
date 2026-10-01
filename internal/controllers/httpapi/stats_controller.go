@@ -6,7 +6,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
 	"github.com/fdanielsin/inbackend/internal/shared"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // StatsController gère les routes de statistiques.
@@ -24,7 +24,7 @@ func NewStatsController(log *slog.Logger, getStatsHandler *queries.GetStatsHandl
 }
 
 // GetStats gère GET /api/v1/stats.
-func (sc *StatsController) GetStats(c echo.Context) error {
+func (sc *StatsController) GetStats(c *echo.Context) error {
 	log := requestLogger(c, sc.log)
 	log.Info("Fetching statistics")
 

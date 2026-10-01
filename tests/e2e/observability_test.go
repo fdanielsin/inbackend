@@ -12,7 +12,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/app"
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -65,7 +65,7 @@ func requireGeneratedID(t *testing.T, id string) {
 // GIVEN any response (success, 400, 404 of a handler, 404 of the router, 500) / THEN it carries an X-Request-Id
 func TestRequestID_OnEveryResponse(t *testing.T) {
 	s := newTestServer(t)
-	s.e.GET("/panic", func(echo.Context) error { panic("boom") })
+	s.e.GET("/panic", func(*echo.Context) error { panic("boom") })
 
 	for _, path := range []string{"/health", "/api/v1/users/abc", "/api/v1/users/999", "/api/v1/unknown", "/panic"} {
 		requireGeneratedID(t, s.sendWithRequestID(http.MethodGet, path, "").Header().Get(echo.HeaderXRequestID))
@@ -125,7 +125,7 @@ func TestErrorLogs_LevelAndTypeFollowStatus(t *testing.T) {
 	logs := captureLogs(t)
 	s := newTestServer(t)
 	s.createUser("Ada", "ada@x.io")
-	s.e.GET("/http500", func(echo.Context) error { return echo.NewHTTPError(http.StatusInternalServerError, "secret") })
+	s.e.GET("/http500", func(*echo.Context) error { return echo.NewHTTPError(http.StatusInternalServerError, "secret") })
 
 	s.do(http.MethodPost, "/api/v1/users", `{"name":"Other","email":"ada@x.io"}`)
 	s.doOutsideOperations(http.MethodGet, "/api/v1/unknown")
@@ -155,7 +155,7 @@ func TestErrorLogs_LevelAndTypeFollowStatus(t *testing.T) {
 func TestAccessLog_LevelFollowsStatus(t *testing.T) {
 	logs := captureLogs(t)
 	s := newTestServer(t)
-	s.e.GET("/panic", func(echo.Context) error { panic("boom") })
+	s.e.GET("/panic", func(*echo.Context) error { panic("boom") })
 
 	for _, path := range []string{"/api/v1/stats", "/api/v1/users/abc", "/panic"} {
 		s.sendWithRequestID(http.MethodGet, path, "")

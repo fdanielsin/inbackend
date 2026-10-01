@@ -8,7 +8,7 @@ import (
 	"github.com/fdanielsin/inbackend/internal/application/user/commands"
 	"github.com/fdanielsin/inbackend/internal/application/user/queries"
 	"github.com/fdanielsin/inbackend/internal/shared"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // UserController gère les routes User.
@@ -35,7 +35,7 @@ func NewUserController(
 }
 
 // CreateUser gère POST /api/v1/users.
-func (uc *UserController) CreateUser(c echo.Context) error {
+func (uc *UserController) CreateUser(c *echo.Context) error {
 	log := requestLogger(c, uc.log)
 	var req commands.CreateUserRequest
 	if err := c.Bind(&req); err != nil {
@@ -53,7 +53,7 @@ func (uc *UserController) CreateUser(c echo.Context) error {
 }
 
 // GetUser gère GET /api/v1/users/:id.
-func (uc *UserController) GetUser(c echo.Context) error {
+func (uc *UserController) GetUser(c *echo.Context) error {
 	log := requestLogger(c, uc.log)
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -72,7 +72,7 @@ func (uc *UserController) GetUser(c echo.Context) error {
 }
 
 // ListUsers gère GET /api/v1/users.
-func (uc *UserController) ListUsers(c echo.Context) error {
+func (uc *UserController) ListUsers(c *echo.Context) error {
 	log := requestLogger(c, uc.log)
 	log.Info("Listing all users")
 

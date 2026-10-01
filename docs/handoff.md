@@ -407,6 +407,17 @@ liens). Déploiement et dépannage dans `docs/deployment.md` et
 `docs/troubleshooting.md` ; la mention de licence MIT est retirée (aucun fichier
 `LICENSE`, décision utilisateur).
 
+## Lot Echo v5 (branche `chore/upgrade-echo-v5`)
+
+Echo v4.15.4 → v5.4.0, sans changement visible : mêmes statuts, corps, en-têtes
+et lignes de log d'accès (comparés sur 23 requêtes avant et après).
+`echo.Context` devient `*echo.Context` ; le gestionnaire d'erreurs prend
+`(c, err)` ; `Committed` se lit par `echo.UnwrapResponse`. Piège v5 : les
+erreurs 404/405/413 d'Echo sont un type non exporté, reconnues par l'interface
+`echo.HTTPStatusCoder` (sinon elles sortent en 500). `e.Logger` est notre logger.
+`govulncheck` : 0 vulnérabilité atteignable ; `GO-2026-5932` (`x/crypto`, sans
+correctif) est dans un module requis mais jamais appelé.
+
 ## Prochaine mission
 
 La conformité locale est vérifiée pour les commandes exécutées ci-dessus,

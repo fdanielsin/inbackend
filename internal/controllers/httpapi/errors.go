@@ -7,7 +7,7 @@ import (
 	"net/http"
 
 	"github.com/fdanielsin/inbackend/internal/shared"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // logLevelForStatus : erreur pour un 5xx, avertissement pour un 4xx, sinon information.
@@ -28,7 +28,7 @@ func logLevelForStatus(status int) slog.Level {
 // Le texte de l'erreur n'est jamais journalisé : celui de PostgreSQL ou de
 // GORM peut contenir des valeurs utilisateur (« Key (email)=(…) »). Seuls le
 // code public et, pour une erreur inconnue, son type permettent de diagnostiquer.
-func respondWithError(c echo.Context, log *slog.Logger, action string, err error, attrs ...any) error {
+func respondWithError(c *echo.Context, log *slog.Logger, action string, err error, attrs ...any) error {
 	apiErr := shared.Classify(err)
 
 	level := logLevelForStatus(apiErr.Status)
@@ -46,7 +46,7 @@ func respondWithError(c echo.Context, log *slog.Logger, action string, err error
 // respondInvalidBody répond 400 pour un corps illisible, ou 413 quand c'est la
 // limite de taille qui a interrompu la lecture (Bind enveloppe alors l'erreur
 // de lecture dans un 400).
-func respondInvalidBody(c echo.Context, log *slog.Logger, err error) error {
+func respondInvalidBody(c *echo.Context, log *slog.Logger, err error) error {
 	var tooLarge *http.MaxBytesError
 	if errors.As(err, &tooLarge) {
 		return respondPayloadTooLarge(c, log)
@@ -55,13 +55,13 @@ func respondInvalidBody(c echo.Context, log *slog.Logger, err error) error {
 	return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.CodeInvalidBody, "Invalid request body"))
 }
 
-func respondPayloadTooLarge(c echo.Context, log *slog.Logger) error {
+func respondPayloadTooLarge(c *echo.Context, log *slog.Logger) error {
 	log.Warn("Request body too large", slog.String("error_code", shared.CodePayloadTooLarge))
 	return c.JSON(http.StatusRequestEntityTooLarge,
 		shared.ErrorResponse(shared.CodePayloadTooLarge, "Request body too large"))
 }
 
-func respondInvalidID(c echo.Context, log *slog.Logger, resource, rawID string) error {
+func respondInvalidID(c *echo.Context, log *slog.Logger, resource, rawID string) error {
 	log.Warn("Invalid "+resource+" ID", slog.String("id", rawID))
 	return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.CodeInvalidID, "Invalid "+resource+" ID"))
 }
@@ -70,25 +70,26 @@ func respondInvalidID(c echo.Context, log *slog.Logger, resource, rawID string) 
 // produit lui-même (route inconnue, méthode non supportée, corps trop gros,
 // panique récupérée) sortent dans la même enveloppe que celles des controllers.
 func NewErrorHandler(base *slog.Logger) echo.HTTPErrorHandler {
-	return func(err error, c echo.Context) {
-		if c.Response().Committed {
+	return func(c *echo.Context, err error) {
+		if response, unwrapErr := echo.UnwrapResponse(c.Response()); unwrapErr == nil && response.Committed {
 			return
 		}
 		log := requestLogger(c, base)
 
 		status, code, message := http.StatusInternalServerError, shared.CodeInternalError, "Internal server error"
-		var httpErr *echo.HTTPError
-		if errors.As(err, &httpErr) {
-			switch httpErr.Code {
+		var statusErr echo.HTTPStatusCoder
+		if errors.As(err, &statusErr) {
+			httpStatus := statusErr.StatusCode()
+			switch httpStatus {
 			case http.StatusNotFound:
-				status, code, message = httpErr.Code, shared.CodeRouteNotFound, "Route not found"
+				status, code, message = httpStatus, shared.CodeRouteNotFound, "Route not found"
 			case http.StatusMethodNotAllowed:
-				status, code, message = httpErr.Code, shared.CodeMethodNotAllowed, "Method not allowed"
+				status, code, message = httpStatus, shared.CodeMethodNotAllowed, "Method not allowed"
 			case http.StatusRequestEntityTooLarge:
-				status, code, message = httpErr.Code, shared.CodePayloadTooLarge, "Request body too large"
+				status, code, message = httpStatus, shared.CodePayloadTooLarge, "Request body too large"
 			default:
-				if httpErr.Code < http.StatusInternalServerError {
-					status, code, message = httpErr.Code, shared.CodeInvalidBody, "Invalid request"
+				if httpStatus < http.StatusInternalServerError {
+					status, code, message = httpStatus, shared.CodeInvalidBody, "Invalid request"
 				}
 			}
 		}

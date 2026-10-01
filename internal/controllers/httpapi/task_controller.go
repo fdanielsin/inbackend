@@ -8,7 +8,7 @@ import (
 	"github.com/fdanielsin/inbackend/internal/application/task/commands"
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
 	"github.com/fdanielsin/inbackend/internal/shared"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // TaskController gère les routes Task.
@@ -38,7 +38,7 @@ func NewTaskController(
 }
 
 // CreateTask gère POST /api/v1/tasks.
-func (tc *TaskController) CreateTask(c echo.Context) error {
+func (tc *TaskController) CreateTask(c *echo.Context) error {
 	log := requestLogger(c, tc.log)
 	var req commands.CreateTaskRequest
 	if err := c.Bind(&req); err != nil {
@@ -56,7 +56,7 @@ func (tc *TaskController) CreateTask(c echo.Context) error {
 }
 
 // UpdateTask gère PUT /api/v1/tasks/:id.
-func (tc *TaskController) UpdateTask(c echo.Context) error {
+func (tc *TaskController) UpdateTask(c *echo.Context) error {
 	log := requestLogger(c, tc.log)
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -81,7 +81,7 @@ func (tc *TaskController) UpdateTask(c echo.Context) error {
 }
 
 // DeleteTask gère DELETE /api/v1/tasks/:id.
-func (tc *TaskController) DeleteTask(c echo.Context) error {
+func (tc *TaskController) DeleteTask(c *echo.Context) error {
 	log := requestLogger(c, tc.log)
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
@@ -100,7 +100,7 @@ func (tc *TaskController) DeleteTask(c echo.Context) error {
 }
 
 // ListUserTasks gère GET /api/v1/users/:id/tasks.
-func (tc *TaskController) ListUserTasks(c echo.Context) error {
+func (tc *TaskController) ListUserTasks(c *echo.Context) error {
 	log := requestLogger(c, tc.log)
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)

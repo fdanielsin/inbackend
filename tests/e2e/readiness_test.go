@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/fdanielsin/inbackend/internal/app"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"

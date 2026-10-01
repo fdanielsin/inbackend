@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +18,7 @@ func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 	s := newTestServer(t)
 
 	var got []string
-	for _, r := range s.e.Routes() {
+	for _, r := range s.e.Router().Routes() {
 		got = append(got, r.Method+" "+r.Path)
 	}
 	sort.Strings(got)
@@ -91,7 +91,7 @@ func TestRouter_CORSSimpleRequest(t *testing.T) {
 // GIVEN a handler that panics behind the production middlewares / THEN 500 INTERNAL_ERROR without detail, and the server keeps serving
 func TestRouter_RecoversFromPanics(t *testing.T) {
 	s := newTestServer(t)
-	s.e.GET("/panic", func(echo.Context) error { panic("boom secret detail") })
+	s.e.GET("/panic", func(*echo.Context) error { panic("boom secret detail") })
 
 	r := s.doRaw(http.MethodGet, "/panic", "")
 
@@ -140,7 +140,7 @@ func TestRouter_ErrorBodiesAreJSON(t *testing.T) {
 // GIVEN a handler that returns another 4xx HTTP error / THEN its status is kept, in the envelope with INVALID_BODY
 func TestErrorHandler_OtherClientErrorKeepsItsStatus(t *testing.T) {
 	s := newTestServer(t)
-	s.e.GET("/teapot", func(echo.Context) error { return echo.NewHTTPError(http.StatusTeapot, "secret detail") })
+	s.e.GET("/teapot", func(*echo.Context) error { return echo.NewHTTPError(http.StatusTeapot, "secret detail") })
 
 	r := s.doRaw(http.MethodGet, "/teapot", "")
 
@@ -152,11 +152,11 @@ func TestErrorHandler_OtherClientErrorKeepsItsStatus(t *testing.T) {
 // GIVEN a handler that already answered and then returns an error / THEN the answer is kept as is, nothing is appended
 func TestErrorHandler_LeavesACommittedResponseAlone(t *testing.T) {
 	s := newTestServer(t)
-	s.e.GET("/committed", func(c echo.Context) error {
+	s.e.GET("/committed", func(c *echo.Context) error {
 		if err := c.String(http.StatusAccepted, "done"); err != nil {
 			return err
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError)
+		return echo.NewHTTPError(http.StatusInternalServerError, http.StatusText(http.StatusInternalServerError))
 	})
 
 	r := s.doRaw(http.MethodGet, "/committed", "")

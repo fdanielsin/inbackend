@@ -13,7 +13,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/app"
 	"github.com/fdanielsin/inbackend/tests/testsupport"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 )

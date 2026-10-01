@@ -10,7 +10,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/google/uuid"
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v5"
 )
 
 // readinessTimeout borne la vérification de la base : inférieur au délai d'une
@@ -35,7 +35,7 @@ func NewHealthController(log *slog.Logger, check ReadinessCheck) *HealthControll
 }
 
 // HealthCheck gère GET /health : vivacité, sans dépendance à la base.
-func (hc *HealthController) HealthCheck(c echo.Context) error {
+func (hc *HealthController) HealthCheck(c *echo.Context) error {
 	log := requestLogger(c, hc.log)
 	log.Debug("Health check requested")
 	forbidCaching(c)
@@ -48,7 +48,7 @@ func (hc *HealthController) HealthCheck(c echo.Context) error {
 }
 
 // Ready gère GET /ready : disponibilité, la base doit répondre.
-func (hc *HealthController) Ready(c echo.Context) error {
+func (hc *HealthController) Ready(c *echo.Context) error {
 	log := requestLogger(c, hc.log)
 	forbidCaching(c)
 
@@ -66,6 +66,6 @@ func (hc *HealthController) Ready(c echo.Context) error {
 }
 
 // forbidCaching empêche tout proxy ou client de garder l'état d'une sonde.
-func forbidCaching(c echo.Context) {
+func forbidCaching(c *echo.Context) {
 	c.Response().Header().Set(echo.HeaderCacheControl, "no-store")
 }

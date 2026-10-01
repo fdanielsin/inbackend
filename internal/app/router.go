@@ -14,8 +14,8 @@ import (
 	userqueries "github.com/fdanielsin/inbackend/internal/application/user/queries"
 	"github.com/fdanielsin/inbackend/internal/controllers/httpapi"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v5"
+	"github.com/labstack/echo/v5/middleware"
 	"gorm.io/gorm"
 )
 
@@ -72,6 +72,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	statsCtrl := httpapi.NewStatsController(log, getStatsHandler)
 
 	e := echo.New()
+	e.Logger = log
 
 	e.HTTPErrorHandler = httpapi.NewErrorHandler(log)
 	e.Use(httpapi.RequestID(log))
