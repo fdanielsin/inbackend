@@ -30,6 +30,7 @@ func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 		"GET /api/v1/users/:id",
 		"GET /api/v1/users/:id/tasks",
 		"GET /health",
+		"GET /ready",
 		"POST /api/v1/tasks",
 		"POST /api/v1/users",
 		"PUT /api/v1/tasks/:id",

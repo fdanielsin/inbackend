@@ -148,8 +148,12 @@ de `app` sauf `main.go` et les tests E2E.
 | Commands | `CreateUser`, `CreateTask`, `UpdateTask`, `DeleteTask` |
 | Queries | `GetUser`, `ListUsers`, `ListUserTasks`, `GetStats` |
 
-`GET /health` (`HealthController.HealthCheck`) est un controller sans command
-ni query associée : il ne passe pas par la couche application.
+`GET /health` (vivacité, sans base) et `GET /ready` (disponibilité : la base
+répond sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`) sont servis par
+`HealthController` sans command ni query : ils ne passent pas par la couche
+application. Leurs réponses portent `Cache-Control: no-store` et, réussies,
+leurs lignes d'accès sont journalisées en Debug. Pour ajouter un endpoint :
+[`adding-an-endpoint.md`](./adding-an-endpoint.md).
 
 ## Éléments explicitement exclus
 
@@ -164,3 +168,30 @@ ni query associée : il ne passe pas par la couche application.
 Des Domain Events classiques pourront être ajoutés plus tard si une réaction
 métier réelle, comme un audit ou une notification, le justifie. Ils ne serviront
 pas à reconstruire l'état de la base.
+
+## Références
+
+Le code Go suit deux références, avec les écarts volontaires ci-dessous :
+
+- [Effective Go](https://go.dev/doc/effective_go) ;
+- [Google Go Style, Best practices](https://google.github.io/styleguide/go/best-practices.html)
+  (et, quand elles y renvoient, les pages [Guide](https://google.github.io/styleguide/go/guide.html)
+  et [Decisions](https://google.github.io/styleguide/go/decisions.html)).
+
+Écarts volontaires retenus :
+
+- les ports de persistance (`user.Repository`, `task.Repository`) sont définis
+  côté domaine, pas côté consommateur : architecture hexagonale
+  ([ADR 0001](./decisions/0001-backend-architecture.md)) ;
+- les tests vivent dans `tests/` (unitaires, intégration, e2e), en paquets
+  externes, et non à côté du code ([ADR 0004](./decisions/0004-test-strategy.md)) ;
+- `testify` est utilisé pour les assertions (le guide Google préfère les
+  comparaisons écrites dans le test) ;
+- le logger `slog` global (`slog.SetDefault`) sert à injecter un logger de
+  capture dans les tests ;
+- le paquet `shared` (enveloppe de réponse et table des erreurs) garde son nom,
+  malgré la mise en garde du guide contre les paquets fourre-tout : sa
+  responsabilité est décrite plus haut (« Shared ») ;
+- `app.NewRouter` prend des options variadiques (`app.Option`) bien qu'il n'y en
+  ait qu'une aujourd'hui (`WithAllowedOrigins`) : les appelants existants
+  restent valides quand une option s'ajoute.

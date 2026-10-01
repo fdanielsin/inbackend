@@ -11,6 +11,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- `GET /ready` : disponibilité (base joignable sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`) ; `/health` reste une sonde de vivacité sans base ; réponses des deux sondes non mises en cache.
+- Gabarit « ajouter un endpoint » (`docs/adding-an-endpoint.md`).
 - Identifiant de requête `X-Request-Id` (repris du client s'il est valide), présent dans les logs ; erreurs d'Echo (route inconnue, méthode non supportée, corps trop gros) dans l'enveloppe avec `ROUTE_NOT_FOUND`, `METHOD_NOT_ALLOWED`, `PAYLOAD_TOO_LARGE` (413 au-delà de 1 MiB).
 - Délais du serveur HTTP, arrêt gracieux sur SIGINT/SIGTERM et pool SQL borné.
 - `CORS_ALLOWED_ORIGINS` (`*` par défaut).
@@ -27,6 +29,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- Healthcheck de Docker Compose et job `docker` de la CI sur `/ready` ; lignes d'accès des sondes réussies en Debug.
 - Les logs zap n'ajoutent plus de pile d'appels qu'à partir du niveau Error (en développement, dès Warn, donc à chaque 4xx).
 - `Q-11` : le hook pre-push (lint, build, tests unitaires, sans Docker) bloque réellement en cas d'échec.
 - Logs de requête via `RequestLoggerWithConfig` (méthode, chemin sans query, route, statut, durée, request id) à la place de `middleware.Logger` déprécié ; format de ligne différent.

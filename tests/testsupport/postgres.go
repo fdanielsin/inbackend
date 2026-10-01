@@ -13,6 +13,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
 	_ "github.com/jackc/pgx/v5/stdlib" // pgx driver used by the container readiness check
+	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
@@ -30,9 +31,19 @@ type Postgres struct {
 	startErr  error
 }
 
-// StartPostgres starts the container. A failure is kept and reported by each test
-// through Require, so that TestMain itself never aborts the package.
+// StartPostgres starts the container on a random host port. A failure is kept and
+// reported by each test through Require, so that TestMain itself never aborts the package.
 func StartPostgres() *Postgres {
+	return startPostgres("")
+}
+
+// StartPostgresOnHostPort binds the container to the given host port, which a Stop
+// then Restart keeps: a client configured with DSN reconnects once it is back.
+func StartPostgresOnHostPort(hostPort string) *Postgres {
+	return startPostgres(hostPort)
+}
+
+func startPostgres(hostPort string) *Postgres {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:16-alpine",
@@ -45,6 +56,11 @@ func StartPostgres() *Postgres {
 		WaitingFor: wait.ForSQL("5432/tcp", "pgx", func(host string, port network.Port) string {
 			return fmt.Sprintf("postgres://testuser:testpass@%s:%s/testdb?sslmode=disable", host, port.Port())
 		}).WithStartupTimeout(60 * time.Second),
+	}
+	if hostPort != "" {
+		req.HostConfigModifier = func(hc *container.HostConfig) {
+			hc.PortBindings = network.PortMap{network.MustParsePort("5432/tcp"): {{HostPort: hostPort}}}
+		}
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -73,6 +89,17 @@ func StartPostgres() *Postgres {
 // Available reports whether the container started.
 func (p *Postgres) Available() bool {
 	return p.startErr == nil
+}
+
+// Stop stops the container without removing it, to simulate a database outage.
+func (p *Postgres) Stop(ctx context.Context) error {
+	timeout := 10 * time.Second
+	return p.container.Stop(ctx, &timeout)
+}
+
+// Restart starts a stopped container again.
+func (p *Postgres) Restart(ctx context.Context) error {
+	return p.container.Start(ctx)
 }
 
 // Terminate stops the container, if it was created.

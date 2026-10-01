@@ -32,15 +32,45 @@ paths:
   /health:
     get:
       tags: [Health]
-      summary: Vérifier l'état du service
+      summary: Vérifier que le service est vivant
+      description: |
+        Sonde de vivacité : répond tant que le processus sert des requêtes, sans
+        interroger la base de données. Pour savoir si le service peut répondre
+        aux requêtes métier, utiliser `/ready`.
+        La réponse n'est jamais mise en cache (`Cache-Control: no-store`).
       operationId: healthCheck
       responses:
         '200':
           description: Service disponible
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+  /ready:
+    get:
+      tags: [Health]
+      summary: Vérifier que le service est prêt
+      description: |
+        Sonde de disponibilité : vérifie que la base de données répond (délai
+        maximal de 2 secondes). Répond `503` `DATABASE_UNAVAILABLE`, sans
+        détail technique, sinon. Les réponses ne sont jamais mises en cache
+        (`Cache-Control: no-store`).
+      operationId: readinessCheck
+      responses:
+        '200':
+          description: Service prêt
+          headers:
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReadyResponse'
+        '503':
+          $ref: '#/components/responses/DatabaseUnavailable'
   /api/v1/users:
     get:
       tags: [Users]
@@ -320,6 +350,7 @@ components:
         - ROUTE_NOT_FOUND
         - METHOD_NOT_ALLOWED
         - PAYLOAD_TOO_LARGE
+        - DATABASE_UNAVAILABLE
         - INTERNAL_ERROR
       x-enumDescriptions:
         INVALID_BODY: Corps JSON absent, mal formé ou de mauvais type (400).
@@ -331,6 +362,7 @@ components:
         ROUTE_NOT_FOUND: Route inconnue (404).
         METHOD_NOT_ALLOWED: Méthode non supportée sur cette route (405).
         PAYLOAD_TOO_LARGE: Corps de requête de plus de 1 MiB (413).
+        DATABASE_UNAVAILABLE: La base de données ne répond pas (503, `/ready` seulement).
         INTERNAL_ERROR: Erreur serveur, détails non exposés (500).
     User:
       type: object
@@ -404,6 +436,22 @@ components:
                 id:
                   type: string
                   format: uuid
+    ReadyResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          required: [message, data]
+          properties:
+            message:
+              type: string
+              const: Service is ready
+            data:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  const: ready
     CreateUserRequest:
       type: object
       required: [name, email]
@@ -456,7 +504,22 @@ components:
           type: string
         completed:
           type: boolean
+  headers:
+    CacheControlNoStore:
+      description: Interdit toute mise en cache de la réponse (sondes).
+      schema:
+        type: string
+        const: no-store
   responses:
+    DatabaseUnavailable:
+      description: La base de données ne répond pas (`DATABASE_UNAVAILABLE`)
+      headers:
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
     BadRequest:
       description: Corps invalide (`INVALID_BODY`) ou erreur de validation (`VALIDATION_FAILED`)
       content:

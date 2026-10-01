@@ -3,6 +3,7 @@
 package app
 
 import (
+	"context"
 	"net/http"
 	"strings"
 
@@ -54,7 +55,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	listUserTasksHandler := queries.NewListUserTasksHandler(taskRepo)
 	getStatsHandler := queries.NewGetStatsHandler(userRepo, taskRepo)
 
-	healthCtrl := ctrlhttp.NewHealthController()
+	healthCtrl := ctrlhttp.NewHealthController(databaseReadiness(db))
 	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
 	taskCtrl := ctrlhttp.NewTaskController(createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
 	statsCtrl := ctrlhttp.NewStatsController(getStatsHandler)
@@ -74,6 +75,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	e.Use(ctrlhttp.BodyLimit(maxRequestBody))
 
 	e.GET("/health", healthCtrl.HealthCheck)
+	e.GET("/ready", healthCtrl.Ready)
 	e.GET("/api/v1/users", userCtrl.ListUsers)
 	e.POST("/api/v1/users", userCtrl.CreateUser)
 	e.GET("/api/v1/users/:id", userCtrl.GetUser)
@@ -99,4 +101,15 @@ func ParseAllowedOrigins(value string) []string {
 		return []string{"*"}
 	}
 	return origins
+}
+
+// databaseReadiness vérifie la base à chaque appel (le pool peut se rétablir seul).
+func databaseReadiness(db *gorm.DB) ctrlhttp.ReadinessCheck {
+	return func(ctx context.Context) error {
+		sqlDB, err := db.DB()
+		if err != nil {
+			return err
+		}
+		return sqlDB.PingContext(ctx)
+	}
 }

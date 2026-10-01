@@ -15,6 +15,10 @@ const (
 	loggerKey    = "logger"
 )
 
+// probeRoutes sont les sondes appelées en continu : réussies, elles sont
+// journalisées en Debug pour ne pas noyer le journal ; leurs échecs restent visibles.
+var probeRoutes = map[string]bool{"/health": true, "/ready": true}
+
 // validRequestID borne l'identifiant repris du client : longueur et alphabet
 // limités, pour qu'il ne puisse ni injecter de lignes de log ni les gonfler.
 var validRequestID = regexp.MustCompile(`^[A-Za-z0-9._-]{1,64}$`)
@@ -57,7 +61,11 @@ func AccessLog(base *slog.Logger) echo.MiddlewareFunc {
 		LogLatency:   true,
 		LogRemoteIP:  true,
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			requestLogger(c, base).LogAttrs(c.Request().Context(), logLevelForStatus(v.Status), "Request",
+			level := logLevelForStatus(v.Status)
+			if probeRoutes[v.RoutePath] && v.Status < http.StatusBadRequest {
+				level = slog.LevelDebug
+			}
+			requestLogger(c, base).LogAttrs(c.Request().Context(), level, "Request",
 				slog.String("method", v.Method),
 				slog.String("path", v.URIPath),
 				slog.String("route", v.RoutePath),

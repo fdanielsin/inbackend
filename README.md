@@ -133,7 +133,8 @@ Server runs at `http://localhost:8080`
 - `GET /api/v1/stats` - Get aggregate statistics
 
 ### Health
-- `GET /health` - Server status
+- `GET /health` - Liveness (no database check)
+- `GET /ready` - Readiness (database reachable within 2 s, otherwise 503 `DATABASE_UNAVAILABLE`)
 
 ## Documentation
 
@@ -196,6 +197,7 @@ docker run \
 ```bash
 docker compose up --build --wait   # PostgreSQL 16 + backend, waits for healthchecks
 curl http://localhost:8080/health
+curl http://localhost:8080/ready
 docker compose down -v             # stops and deletes the database volume
 ```
 

@@ -11,16 +11,17 @@ import (
 
 // Codes d'erreur stables exposés dans le champ error_code (voir openapi.yaml).
 const (
-	CodeInvalidBody      = "INVALID_BODY"
-	CodeInvalidID        = "INVALID_ID"
-	CodeValidationFailed = "VALIDATION_FAILED"
-	CodeUserNotFound     = "USER_NOT_FOUND"
-	CodeTaskNotFound     = "TASK_NOT_FOUND"
-	CodeEmailTaken       = "EMAIL_TAKEN"
-	CodeRouteNotFound    = "ROUTE_NOT_FOUND"
-	CodeMethodNotAllowed = "METHOD_NOT_ALLOWED"
-	CodePayloadTooLarge  = "PAYLOAD_TOO_LARGE"
-	CodeInternalError    = "INTERNAL_ERROR"
+	CodeInvalidBody         = "INVALID_BODY"
+	CodeInvalidID           = "INVALID_ID"
+	CodeValidationFailed    = "VALIDATION_FAILED"
+	CodeUserNotFound        = "USER_NOT_FOUND"
+	CodeTaskNotFound        = "TASK_NOT_FOUND"
+	CodeEmailTaken          = "EMAIL_TAKEN"
+	CodeRouteNotFound       = "ROUTE_NOT_FOUND"
+	CodeMethodNotAllowed    = "METHOD_NOT_ALLOWED"
+	CodePayloadTooLarge     = "PAYLOAD_TOO_LARGE"
+	CodeDatabaseUnavailable = "DATABASE_UNAVAILABLE"
+	CodeInternalError       = "INTERNAL_ERROR"
 )
 
 // APIError est la forme publique d'une erreur : statut HTTP, code stable et message.

@@ -190,8 +190,8 @@ comportement ni de contrat.
   (exclusion retirée au lot 6 : `RequestLoggerWithConfig`). Redocly (`recommended-strict`, pour que
   `operation-4xx-response` soit une erreur bloquante) : `security-defined` (pas d'authentification, décision produit),
   `info-license` (dépôt privé), `no-server-example.com` (serveur localhost du
-  contrat) ; `operation-4xx-response` reste active, avec 3 opérations ignorées
-  dans `docs/specs/api/.redocly.lint-ignore.yaml` (`/health`, `GET /users`,
+  contrat) ; `operation-4xx-response` reste active, avec 4 opérations ignorées
+  dans `docs/specs/api/.redocly.lint-ignore.yaml` (`/health`, `/ready`, `GET /users`,
   `GET /stats` : aucune 4xx possible).
 - **Code** : aucun changement de comportement. `main.go` : la logique passe
   dans `run` qui renvoie une erreur, `main` appelle `log.Fatal` (zap vide ses
@@ -218,14 +218,14 @@ Branche `fix/Q03-go126-docker`.
   `-trimpath -ldflags="-s -w"`, utilisateur non root (uid 10001), ~36 MB.
 - **Compose** : PostgreSQL 16 avec healthcheck, `DATABASE_URL` construite avec
   des identifiants de développement, backend derrière `service_healthy`, healthcheck
-  HTTP sur `/health`. `.dockerignore` versionné (retiré du `.gitignore`).
+  HTTP sur `/health` (sur `/ready` depuis le lot 7). `.dockerignore` versionné (retiré du `.gitignore`).
 - **CI** : `codecov-action` passé de v3 à v5 (actionlint signale le runtime de v3
   comme trop ancien). La panne de démarrage de la CI sur inbackend#8 n'est PAS due à
   codecov (réfuté : échec persistant en v5) ; diagnostic en cours côté
   compte/GitHub. `make lint-ci` (actionlint v1.7.7) dans le
   job Lint détecte ce type d'action.
-- **CI** : job `docker` bloquant (build, `compose up -d --wait`, `/health`,
-  logs si échec, `down -v`).
+- **CI** : job `docker` bloquant (build, `compose up -d --wait`, `/health`
+  (puis `/ready` depuis le lot 7), logs si échec, `down -v`).
 - **Non couvert** : Podman/`make docker-run` non testés ; le job CI `docker`
   n'a pas encore tourné sur GitHub (vérifié seulement en local avec Docker).
 
@@ -352,6 +352,15 @@ Branche `test/lot3-backend` (worktree `inbackend/.worktrees/lot3-backend`).
 - `Q-11` : `.githooks/pre-push` (`make lint`, build, tests unitaires) ; activer
   avec `git config core.hooksPath .githooks`.
 
+## Lot 7 : sondes et gabarit (branche `chore/lot7-health`)
+
+- `GET /ready` (ping de la base, délai 2 s, 503 `DATABASE_UNAVAILABLE` sans
+  détail) ; `/health` toujours sans base ; `Cache-Control: no-store` sur les
+  deux ; sondes réussies journalisées en Debug (`probeRoutes`).
+- Compose : healthcheck sur `/ready` (Docker ne redémarre pas un conteneur
+  « unhealthy »). Job `docker` : `/health` puis `/ready`.
+- Gabarit : `docs/adding-an-endpoint.md`.
+
 ## Prochaine mission
 
 La conformité locale est vérifiée pour les commandes exécutées ci-dessus,
@@ -402,7 +411,7 @@ Prochaine étape :
 
 ## Dernière mise à jour
 
-2026-10-01 : lot 6 outillage (voir « Lot 6 »), lot 5 migrations (voir « Lot 5 »), après le lot 4 erreurs et contrat.
+2026-10-01 : lot 7 sondes (voir « Lot 7 »), lot 6 outillage (voir « Lot 6 »), lot 5 migrations (voir « Lot 5 »), après le lot 4 erreurs et contrat.
 2026-09-30 — outillage lint sur `chore/lint-tooling` (golangci-lint, govulncheck,
 Redocly), sans changement de comportement ; voir « Outillage lint » ci-dessus.
 Le nettoyage backend précédent est détaillé dans « Nettoyage backend ».

@@ -116,6 +116,9 @@ jobs:
       - name: "Check /health"
         run: curl --fail --silent --show-error http://localhost:8080/health
 
+      - name: "Check /ready"
+        run: curl --fail --silent --show-error http://localhost:8080/ready
+
       - name: "Show logs on failure"
         if: failure()
         run: docker compose logs

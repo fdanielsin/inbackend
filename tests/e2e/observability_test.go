@@ -3,6 +3,7 @@ package e2e
 import (
 	"bufio"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -156,7 +157,7 @@ func TestAccessLog_LevelFollowsStatus(t *testing.T) {
 	s := newTestServer(t)
 	s.e.GET("/panic", func(echo.Context) error { panic("boom") })
 
-	for _, path := range []string{"/health", "/api/v1/users/abc", "/panic"} {
+	for _, path := range []string{"/api/v1/stats", "/api/v1/users/abc", "/panic"} {
 		s.sendWithRequestID(http.MethodGet, path, "")
 	}
 
@@ -166,6 +167,23 @@ func TestAccessLog_LevelFollowsStatus(t *testing.T) {
 	}
 	assert.Equal(t, []any{"INFO", "WARN", "ERROR"}, levels)
 	assert.NotContains(t, logs.String(), "boom", "no error text in the logs")
+}
+
+// GIVEN the probes / WHEN they succeed / THEN their access log is DEBUG (hidden at INFO); a failed /ready is ERROR
+func TestAccessLog_ProbesAreDebugUnlessTheyFail(t *testing.T) {
+	logs := captureLogs(t)
+	s := newTestServer(t)
+
+	s.sendWithRequestID(http.MethodGet, "/health", "")
+	s.sendWithRequestID(http.MethodGet, "/ready", "")
+	s.closeDatabase()
+	s.sendWithRequestID(http.MethodGet, "/ready", "")
+
+	var levels []string
+	for _, line := range logLines(t, logs, "Request") {
+		levels = append(levels, fmt.Sprintf("%v %v %v", line["route"], line["status"], line["level"]))
+	}
+	assert.Equal(t, []string{"/health 200 DEBUG", "/ready 200 DEBUG", "/ready 503 ERROR"}, levels)
 }
 
 func corsRequest(s *testServer, method, origin string) *httptest.ResponseRecorder {
