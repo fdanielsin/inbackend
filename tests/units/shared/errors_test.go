@@ -13,35 +13,31 @@ import (
 )
 
 // Each domain error must map to its status, stable error_code and public message,
-// also when wrapped by an outer layer: the controllers answer from Classify.
+// also when wrapped (%w) or joined (errors.Join) by an outer layer: the controllers answer from Classify.
 func TestErrorClassification_EveryDomainError(t *testing.T) {
 	cases := []struct {
-		err          error
-		status       int
-		code         string
-		isValidation bool
-		isNotFound   bool
-		message      string
+		err     error
+		status  int
+		code    string
+		message string
 	}{
-		{user.ErrUserNameEmpty, http.StatusBadRequest, "VALIDATION_FAILED", true, false, "User name cannot be empty"},
-		{user.ErrUserEmailEmpty, http.StatusBadRequest, "VALIDATION_FAILED", true, false, "User email cannot be empty"},
-		{user.ErrUserEmailInvalid, http.StatusBadRequest, "VALIDATION_FAILED", true, false, "User email is invalid"},
-		{user.ErrUserEmailTaken, http.StatusConflict, "EMAIL_TAKEN", false, false, "Email already in use"},
-		{user.ErrUserNotFound, http.StatusNotFound, "USER_NOT_FOUND", false, true, "User not found"},
-		{task.ErrTaskTitleEmpty, http.StatusBadRequest, "VALIDATION_FAILED", true, false, "Task title cannot be empty"},
-		{task.ErrTaskUserIDInvalid, http.StatusBadRequest, "VALIDATION_FAILED", true, false, "Task user_id cannot be empty"},
-		{task.ErrTaskNotFound, http.StatusNotFound, "TASK_NOT_FOUND", false, true, "Task not found"},
+		{user.ErrUserNameEmpty, http.StatusBadRequest, "VALIDATION_FAILED", "User name cannot be empty"},
+		{user.ErrUserEmailEmpty, http.StatusBadRequest, "VALIDATION_FAILED", "User email cannot be empty"},
+		{user.ErrUserEmailInvalid, http.StatusBadRequest, "VALIDATION_FAILED", "User email is invalid"},
+		{user.ErrUserEmailTaken, http.StatusConflict, "EMAIL_TAKEN", "Email already in use"},
+		{user.ErrUserNotFound, http.StatusNotFound, "USER_NOT_FOUND", "User not found"},
+		{task.ErrTaskTitleEmpty, http.StatusBadRequest, "VALIDATION_FAILED", "Task title cannot be empty"},
+		{task.ErrTaskUserIDInvalid, http.StatusBadRequest, "VALIDATION_FAILED", "Task user_id cannot be empty"},
+		{task.ErrTaskNotFound, http.StatusNotFound, "TASK_NOT_FOUND", "Task not found"},
 	}
 	for _, tc := range cases {
 		for name, err := range map[string]error{
 			"direct":  tc.err,
 			"wrapped": fmt.Errorf("repository: %w", tc.err),
+			"joined":  errors.Join(errors.New("repository context"), tc.err),
 		} {
 			t.Run(tc.err.Error()+"/"+name, func(t *testing.T) {
 				assert.Equal(t, shared.APIError{Status: tc.status, Code: tc.code, Message: tc.message}, shared.Classify(err))
-				assert.Equal(t, tc.isValidation, shared.IsValidationError(err), "IsValidationError")
-				assert.Equal(t, tc.isNotFound, shared.IsNotFoundError(err), "IsNotFoundError")
-				assert.Equal(t, tc.message, shared.MapErrorToMessage(err), "MapErrorToMessage")
 			})
 		}
 	}
@@ -52,14 +48,4 @@ func TestErrorClassification_TechnicalErrorIsInternal(t *testing.T) {
 	err := errors.New("dial tcp 10.0.0.5:5432: connect: connection refused")
 
 	assert.Equal(t, shared.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Internal server error"}, shared.Classify(err))
-	assert.False(t, shared.IsValidationError(err))
-	assert.False(t, shared.IsNotFoundError(err))
-	assert.Equal(t, "Internal server error", shared.MapErrorToMessage(err))
-}
-
-// GIVEN: No error / THEN: empty message and no classification
-func TestErrorClassification_NilError(t *testing.T) {
-	assert.False(t, shared.IsValidationError(nil))
-	assert.False(t, shared.IsNotFoundError(nil))
-	assert.Equal(t, "", shared.MapErrorToMessage(nil))
 }

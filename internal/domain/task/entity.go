@@ -27,13 +27,3 @@ func NewTask(id, userID uint, title, description string, completed bool) (*Task,
 		Completed:   completed,
 	}, nil
 }
-
-// CompleteTask marque une tâche comme complétée.
-func (t *Task) CompleteTask() {
-	t.Completed = true
-}
-
-// UncompleteTask marque une tâche comme non complétée.
-func (t *Task) UncompleteTask() {
-	t.Completed = false
-}

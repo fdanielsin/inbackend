@@ -21,7 +21,8 @@ func Migrate(dsn string) error {
 }
 
 // MigrateTo amène le schéma à la version donnée, en montant ou en descendant
-// (0 = aucune migration appliquée).
+// (0 = aucune migration appliquée). Le serveur n'en a pas besoin (il appelle
+// Migrate) : elle sert aux tests de migration et aux retours de schéma ciblés.
 func MigrateTo(dsn string, version uint) error {
 	return run(dsn, func(m *migrate.Migrate) error {
 		if version == 0 {

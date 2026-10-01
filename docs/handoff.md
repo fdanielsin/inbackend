@@ -391,6 +391,15 @@ injecté (`main`, `InitDB`, `app.WithLogger`, controllers).
 - Format visible : voir CHANGELOG (Changed). Pas de pile d'appels sur les
   erreurs ; durée `latency` en nanosecondes en JSON.
 
+## Lot code mort (branche `chore/remove-dead-code`)
+
+Retrait, sans appelant en production (mesuré avec `deadcode`) : `MapErrorToMessage`,
+`IsNotFoundError`, `IsValidationError` (`shared`), `Task.CompleteTask` et
+`Task.UncompleteTask`, ainsi que `internal/shared/errors_test.go` ; son seul
+cas encore vivant (`Classify` sur une erreur combinée par `errors.Join`) est
+porté dans `tests/units/shared/errors_test.go`. `database.MigrateTo` est gardée : seuls les
+tests de migration l'appellent, son godoc le dit.
+
 ## Prochaine mission
 
 La conformité locale est vérifiée pour les commandes exécutées ci-dessus,

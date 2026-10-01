@@ -58,21 +58,3 @@ func Classify(err error) APIError {
 	}
 	return internalError
 }
-
-// MapErrorToMessage retourne le message public d'une erreur ("" si err est nil).
-func MapErrorToMessage(err error) string {
-	if err == nil {
-		return ""
-	}
-	return Classify(err).Message
-}
-
-// IsNotFoundError retourne true si l'erreur est une erreur "not found".
-func IsNotFoundError(err error) bool {
-	return err != nil && Classify(err).Status == http.StatusNotFound
-}
-
-// IsValidationError retourne true si l'erreur est une erreur de validation.
-func IsValidationError(err error) bool {
-	return err != nil && Classify(err).Code == CodeValidationFailed
-}

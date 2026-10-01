@@ -35,11 +35,3 @@ func TestNewTask_Valid(t *testing.T) {
 	assert.Equal(t, "Buy milk", tk.Title)
 	assert.Equal(t, false, tk.Completed)
 }
-
-// GIVEN: Task entity / WHEN: Complete task / THEN: Status changes
-func TestCompleteTask(t *testing.T) {
-	tk, _ := task.NewTask(1, 1, "Buy milk", "Get milk", false)
-	assert.Equal(t, false, tk.Completed)
-	tk.CompleteTask()
-	assert.Equal(t, true, tk.Completed)
-}

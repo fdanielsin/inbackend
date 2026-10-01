@@ -144,13 +144,3 @@ func TestNewTask_LongUnicodeFields_AreKeptUnchanged(t *testing.T) {
 	assert.Equal(t, title, tk.Title)
 	assert.Equal(t, description, tk.Description)
 }
-
-// GIVEN: A completed task / WHEN: UncompleteTask / THEN: completed is false, other fields unchanged
-func TestUncompleteTask(t *testing.T) {
-	tk, err := task.NewTask(1, 1, "Buy milk", "Get milk", true)
-	require.NoError(t, err)
-
-	tk.UncompleteTask()
-
-	assert.Equal(t, task.Task{ID: 1, UserID: 1, Title: "Buy milk", Description: "Get milk", Completed: false}, *tk)
-}
