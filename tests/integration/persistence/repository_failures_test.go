@@ -6,7 +6,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -14,8 +14,8 @@ import (
 
 // repositoryCalls runs every repository method once and returns the error of each call.
 func repositoryCalls(ctx context.Context, db *gorm.DB) map[string]error {
-	users := postgres.NewUserRepository(db)
-	tasks := postgres.NewTaskRepository(db)
+	users := pgstore.NewUserRepository(db)
+	tasks := pgstore.NewTaskRepository(db)
 	errs := map[string]error{}
 
 	_, errs["User.Create"] = users.Create(ctx, &user.User{Name: "Ada", Email: "ada@example.com"})
@@ -67,8 +67,8 @@ func TestRepositories_CancelledContext_ReturnContextCanceled(t *testing.T) {
 	}
 
 	var users, tasks int64
-	require.NoError(t, db.Model(&postgres.UserModel{}).Count(&users).Error)
-	require.NoError(t, db.Model(&postgres.TaskModel{}).Count(&tasks).Error)
+	require.NoError(t, db.Model(&pgstore.UserModel{}).Count(&users).Error)
+	require.NoError(t, db.Model(&pgstore.TaskModel{}).Count(&tasks).Error)
 	assert.Zero(t, users, "no user may be written with a cancelled context")
 	assert.Zero(t, tasks, "no task may be written with a cancelled context")
 }

@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -54,7 +54,7 @@ func TestCreateUser_RejectsInvalidPayloads(t *testing.T) {
 			r := s.do(http.MethodPost, "/api/v1/users", tc.body)
 
 			requireError(t, r, http.StatusBadRequest, tc.code, tc.message)
-			assert.Zero(t, s.countRows(&pgimpl.UserModel{}), "nothing may be stored")
+			assert.Zero(t, s.countRows(&pgstore.UserModel{}), "nothing may be stored")
 		})
 	}
 }
@@ -94,7 +94,7 @@ func TestCreateUser_RejectsTakenEmail(t *testing.T) {
 			r := s.do(http.MethodPost, "/api/v1/users", string(body))
 
 			requireError(t, r, http.StatusConflict, "EMAIL_TAKEN", "Email already in use")
-			assert.Equal(t, int64(1), s.countRows(&pgimpl.UserModel{}), "the duplicate must not be stored")
+			assert.Equal(t, int64(1), s.countRows(&pgstore.UserModel{}), "the duplicate must not be stored")
 		})
 	}
 }

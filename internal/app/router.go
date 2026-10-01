@@ -13,7 +13,7 @@ import (
 	usercommands "github.com/fdanielsin/inbackend/internal/application/user/commands"
 	userqueries "github.com/fdanielsin/inbackend/internal/application/user/queries"
 	"github.com/fdanielsin/inbackend/internal/controllers/httpapi"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"gorm.io/gorm"
@@ -53,8 +53,8 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	}
 	log := cfg.log
 
-	userRepo := postgres.NewUserRepository(db)
-	taskRepo := postgres.NewTaskRepository(db)
+	userRepo := pgstore.NewUserRepository(db)
+	taskRepo := pgstore.NewTaskRepository(db)
 
 	createUserHandler := usercommands.NewCreateUserHandler(userRepo)
 	getUserHandler := userqueries.NewGetUserHandler(userRepo)

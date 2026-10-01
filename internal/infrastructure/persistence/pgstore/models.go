@@ -1,5 +1,5 @@
-// Package postgres implémente les ports de persistance avec GORM et PostgreSQL.
-package postgres
+// Package pgstore implémente les ports de persistance avec GORM et PostgreSQL.
+package pgstore
 
 // UserModel is the GORM model used to persist users.
 type UserModel struct {

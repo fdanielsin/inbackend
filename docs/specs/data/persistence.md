@@ -29,7 +29,7 @@
 - Les tests de repository utilisent PostgreSQL via Testcontainers lorsqu'un
   provider Docker/Podman est disponible.
 - Les modèles de persistance sont isolés dans
-  `internal/infrastructure/persistence/postgres/models.go`.
+  `internal/infrastructure/persistence/pgstore/models.go`.
 
 ## Limites connues
 

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/domain/user"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,7 +13,7 @@ import (
 // GIVEN: UserRepository / WHEN: Create valid user / THEN: User saved with ID
 func TestUserRepository_Create_HappyPath(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 
 	u := &user.User{Name: "John Doe", Email: "john@example.com"}
 	id, err := repo.Create(context.Background(), u)
@@ -31,7 +31,7 @@ func TestUserRepository_Create_HappyPath(t *testing.T) {
 // GIVEN: UserRepository / WHEN: Get non-existent user / THEN: Error ErrUserNotFound
 func TestUserRepository_GetByID_SadPath_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 
 	retrieved, err := repo.GetByID(context.Background(), 999)
 
@@ -43,7 +43,7 @@ func TestUserRepository_GetByID_SadPath_NotFound(t *testing.T) {
 // GIVEN: UserRepository with multiple users / WHEN: Get by email / THEN: Return matching user
 func TestUserRepository_GetByEmail_HappyPath(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 
 	u1 := &user.User{Name: "John", Email: "john@example.com"}
 	u2 := &user.User{Name: "Jane", Email: "jane@example.com"}
@@ -63,7 +63,7 @@ func TestUserRepository_GetByEmail_HappyPath(t *testing.T) {
 // GIVEN: UserRepository / WHEN: Get by non-existent email / THEN: ErrUserNotFound
 func TestUserRepository_GetByEmail_SadPath_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 
 	found, err := repo.GetByEmail(context.Background(), "nonexistent@example.com")
 

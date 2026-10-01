@@ -49,7 +49,7 @@ réussie a ensuite utilisé le socket Podman macOS explicite et
 
 - Une branche dédiée `chore/backend-compliance-audit` est utilisée.
 - Les modèles GORM sont maintenant dans
-  `internal/infrastructure/persistence/postgres/models.go`; `APIResponse`
+  `internal/infrastructure/persistence/pgstore/models.go`; `APIResponse`
   reste dans `internal/shared/response.go`.
 - Les comparaisons d'erreurs utilisent `errors.Is`.
 - Les contrôleurs ne renvoient plus les messages d'erreur techniques bruts
@@ -64,7 +64,7 @@ réussie a ensuite utilisé le socket Podman macOS explicite et
 
 ## Correctif Q-12 — Ordre des tâches non garanti
 
-`TaskRepository.ListByUserID` (`internal/infrastructure/persistence/postgres/task_repository.go`)
+`TaskRepository.ListByUserID` (`internal/infrastructure/persistence/pgstore/task_repository.go`)
 ne triait pas explicitement ses résultats ; l'ordre retourné par
 `GET /api/v1/users/{id}/tasks` n'était pas garanti par SQL. Ajout de
 `.Order("id ASC")` ; contrat `openapi.yaml` mis à jour en premier pour

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,7 +15,7 @@ func TestTaskRepository_Update_PersistsCompletedFalse(t *testing.T) {
 	// GIVEN: A completed task stored in PostgreSQL.
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
 	id, err := repo.Create(ctx, &task.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: true})
 	require.NoError(t, err)
@@ -37,7 +37,7 @@ func TestTaskRepository_Update_PersistsEmptyDescription(t *testing.T) {
 	// GIVEN: A task with a description stored in PostgreSQL.
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
 	id, err := repo.Create(ctx, &task.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: true})
 	require.NoError(t, err)
@@ -58,7 +58,7 @@ func TestTaskRepository_Update_PersistsEmptyDescription(t *testing.T) {
 func TestTaskRepository_Update_SadPath_MissingTask(t *testing.T) {
 	// GIVEN: No task with this id.
 	ctx := context.Background()
-	repo := postgres.NewTaskRepository(setupTestDB(t))
+	repo := pgstore.NewTaskRepository(setupTestDB(t))
 
 	// WHEN: The missing task is updated.
 	err := repo.Update(ctx, &task.Task{ID: 999, Title: "Ghost", UserID: 1, Completed: true})

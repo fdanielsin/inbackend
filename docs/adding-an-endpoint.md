@@ -15,7 +15,7 @@ document ne les répète pas.
 4. **Persistance** : méthode du repository ; si le schéma change, une
    migration (`make migrate-new name=...`, jamais de modification d'une
    migration appliquée). Les violations de contrainte sont détectées par code
-   SQLSTATE et nom de contrainte (`persistence/postgres/constraints.go`).
+   SQLSTATE et nom de contrainte (`persistence/pgstore/constraints.go`).
 5. **Erreurs** : chaque erreur domaine est ajoutée à l'unique table de
    `internal/shared/errors.go` (statut, `error_code`, message public).
 6. **Controller** (`internal/controllers/httpapi/`) : `requestLogger(c, ...)`

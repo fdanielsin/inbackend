@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -53,7 +53,7 @@ func TestBodyLimit_UpToOneMiBIsAccepted(t *testing.T) {
 				r := s.sendBody(http.MethodPost, "/api/v1/users", userBodyOfSize(t, size), chunked)
 
 				require.Equal(t, http.StatusCreated, r.code, "body: %.200s", r.body)
-				assert.Equal(t, int64(1), s.countRows(&pgimpl.UserModel{}))
+				assert.Equal(t, int64(1), s.countRows(&pgstore.UserModel{}))
 			})
 		}
 	}
@@ -70,7 +70,7 @@ func TestBodyLimit_OverOneMiBIsRefused(t *testing.T) {
 				r := s.sendBody(http.MethodPost, "/api/v1/users", userBodyOfSize(t, size), chunked)
 
 				requireError(t, r, http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE", "Request body too large")
-				assert.Zero(t, s.countRows(&pgimpl.UserModel{}))
+				assert.Zero(t, s.countRows(&pgstore.UserModel{}))
 			})
 		}
 	}

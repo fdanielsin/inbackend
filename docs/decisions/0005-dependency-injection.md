@@ -73,8 +73,8 @@ db := InitDB(dsn, log)
 e := app.NewRouter(db)
 
 // internal/app/router.go : Repositories
-userRepo := postgres.NewUserRepository(db)
-taskRepo := postgres.NewTaskRepository(db)
+userRepo := pgstore.NewUserRepository(db)
+taskRepo := pgstore.NewTaskRepository(db)
 
 // Handlers (Commands)
 createUserHandler := usercommands.NewCreateUserHandler(userRepo)

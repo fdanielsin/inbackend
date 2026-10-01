@@ -6,7 +6,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -15,12 +15,12 @@ import (
 // createTestUser persists a real user so that task fixtures reference an existing owner.
 func createTestUser(t *testing.T, db *gorm.DB, email string) uint {
 	t.Helper()
-	id, err := postgres.NewUserRepository(db).Create(context.Background(), &user.User{Name: "Owner", Email: email})
+	id, err := pgstore.NewUserRepository(db).Create(context.Background(), &user.User{Name: "Owner", Email: email})
 	require.NoError(t, err)
 	return id
 }
 
-func createTestTask(t *testing.T, repo *postgres.TaskRepository, userID uint, title string) uint {
+func createTestTask(t *testing.T, repo *pgstore.TaskRepository, userID uint, title string) uint {
 	t.Helper()
 	id, err := repo.Create(context.Background(), &task.Task{Title: title, Description: "Desc " + title, UserID: userID})
 	require.NoError(t, err)
@@ -30,7 +30,7 @@ func createTestTask(t *testing.T, repo *postgres.TaskRepository, userID uint, ti
 // GIVEN: TaskRepository / WHEN: Create valid task / THEN: Task saved with ID
 func TestTaskRepository_Create_HappyPath(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
 
 	tsk := &task.Task{Title: "Buy milk", Description: "Get milk from store", UserID: ownerID, Completed: false}
@@ -49,7 +49,7 @@ func TestTaskRepository_Create_HappyPath(t *testing.T) {
 // GIVEN: TaskRepository / WHEN: Get non-existent task / THEN: Error ErrTaskNotFound
 func TestTaskRepository_GetByID_SadPath_NotFound(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 
 	retrieved, err := repo.GetByID(context.Background(), 999)
 
@@ -61,7 +61,7 @@ func TestTaskRepository_GetByID_SadPath_NotFound(t *testing.T) {
 // GIVEN: TaskRepository with multiple tasks / WHEN: List by UserID / THEN: Return only user's tasks
 func TestTaskRepository_ListByUserID_HappyPath(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	aliceID := createTestUser(t, db, "alice@example.com")
 	bobID := createTestUser(t, db, "bob@example.com")
 
@@ -83,7 +83,7 @@ func TestTaskRepository_ListByUserID_HappyPath(t *testing.T) {
 func TestTaskRepository_ListByUserID_OrderedByIDAfterUpdate(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
 	first := createTestTask(t, repo, ownerID, "Task 1")
 	second := createTestTask(t, repo, ownerID, "Task 2")

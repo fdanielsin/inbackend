@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -37,7 +37,7 @@ func newTaskUpdateFixture(t *testing.T) *taskUpdateFixture {
 	t.Helper()
 	s := newTestServer(t)
 
-	user := &pgimpl.UserModel{Name: "Owner", Email: "owner@example.com"}
+	user := &pgstore.UserModel{Name: "Owner", Email: "owner@example.com"}
 	require.NoError(t, s.db.Create(user).Error)
 
 	return &taskUpdateFixture{s: s, userID: user.ID}
@@ -45,7 +45,7 @@ func newTaskUpdateFixture(t *testing.T) *taskUpdateFixture {
 
 func (f *taskUpdateFixture) seedTask(t *testing.T, title, description string, completed bool) uint {
 	t.Helper()
-	model := &pgimpl.TaskModel{Title: title, Description: description, UserID: f.userID}
+	model := &pgstore.TaskModel{Title: title, Description: description, UserID: f.userID}
 	require.NoError(t, f.s.db.Create(model).Error)
 	if completed {
 		require.NoError(t, f.s.db.Model(model).Update("completed", true).Error)

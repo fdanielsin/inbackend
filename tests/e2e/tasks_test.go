@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	pgimpl "github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -84,7 +84,7 @@ func TestCreateTask_RejectsInvalidPayloads(t *testing.T) {
 			s.createUser("Owner", "owner@example.com")
 
 			requireError(t, s.do(http.MethodPost, "/api/v1/tasks", tc.body), http.StatusBadRequest, tc.code, tc.message)
-			assert.Zero(t, s.countRows(&pgimpl.TaskModel{}), "nothing may be stored")
+			assert.Zero(t, s.countRows(&pgstore.TaskModel{}), "nothing may be stored")
 		})
 	}
 }
@@ -99,7 +99,7 @@ func TestCreateTask_UnknownUserIsNotFound(t *testing.T) {
 
 		requireError(t, r, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
 	}
-	assert.Zero(t, s.countRows(&pgimpl.TaskModel{}), "no orphan task may be stored")
+	assert.Zero(t, s.countRows(&pgstore.TaskModel{}), "no orphan task may be stored")
 }
 
 // GIVEN tasks of two users / WHEN GET /api/v1/users/{id}/tasks / THEN only this user's tasks, by ascending id
@@ -254,7 +254,7 @@ func TestUpdateTask_BoundaryIDs(t *testing.T) {
 	} {
 		requireError(t, s.do(http.MethodPut, "/api/v1/tasks/"+id, `{"completed":true}`), want.status, want.code, want.message)
 	}
-	assert.Zero(t, s.countRows(&pgimpl.TaskModel{}), "an update must never create a task")
+	assert.Zero(t, s.countRows(&pgstore.TaskModel{}), "an update must never create a task")
 }
 
 // GIVEN 2 users and 3 tasks / WHEN GET /api/v1/stats / THEN the exact counters

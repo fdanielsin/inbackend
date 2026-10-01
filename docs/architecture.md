@@ -43,7 +43,7 @@ inbackend/
     ├── controllers/
     │   └── httpapi/
     ├── infrastructure/
-    │   ├── persistence/postgres/
+    │   ├── persistence/pgstore/
     │   │   └── models.go
     │   ├── database/             (connexion, migrations SQL embarquées : ADR 0007)
     │   ├── http/    (cible, pas encore créé)

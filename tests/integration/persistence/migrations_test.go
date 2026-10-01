@@ -9,7 +9,7 @@ import (
 	"github.com/fdanielsin/inbackend/internal/domain/task"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/fdanielsin/inbackend/tests/testsupport"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
@@ -149,7 +149,7 @@ func TestMigrateTo_EachDownRestoresThePreviousSchema(t *testing.T) {
 func TestMigration1_MatchesTheFormerAutoMigrateSchema(t *testing.T) {
 	legacyDSN := pg.NewEmptyDatabase(t)
 	legacy := testsupport.OpenDSN(t, legacyDSN)
-	require.NoError(t, legacy.AutoMigrate(&postgres.UserModel{}, &postgres.TaskModel{}))
+	require.NoError(t, legacy.AutoMigrate(&pgstore.UserModel{}, &pgstore.TaskModel{}))
 	_, migrated := migratedTo(t, 1)
 
 	assert.Equal(t, snapshotSchema(t, legacy), snapshotSchema(t, migrated))
@@ -272,7 +272,7 @@ func TestMigrate_AcceptsPostgresqlScheme(t *testing.T) {
 func TestForeignKey_RefusesDeletingAUserWithTasks(t *testing.T) {
 	db := setupTestDB(t)
 	ownerID := createTestUser(t, db, "owner@example.com")
-	createTestTask(t, postgres.NewTaskRepository(db), ownerID, "Keep me")
+	createTestTask(t, pgstore.NewTaskRepository(db), ownerID, "Keep me")
 
 	err := db.Exec("DELETE FROM user_models WHERE id = ?", ownerID).Error
 
@@ -296,7 +296,7 @@ func TestEmailIndex_IsCaseInsensitiveInTheDatabase(t *testing.T) {
 func TestTaskRepository_Create_UnknownUser_ReturnsUserNotFound(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	createTestUser(t, db, "owner@example.com")
 
 	for _, userID := range []uint{999, maxContractID} {
@@ -315,7 +315,7 @@ func TestUserRepository_Create_OtherUniqueViolationIsNotEmailTaken(t *testing.T)
 	db := setupTestDB(t)
 	require.NoError(t, db.Exec("CREATE UNIQUE INDEX qa_unique_name ON user_models (name)").Error)
 	t.Cleanup(func() { _ = db.Exec("DROP INDEX IF EXISTS qa_unique_name").Error })
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 	_, err := repo.Create(ctx, &user.User{Name: "Ada", Email: "ada@x.io"})
 	require.NoError(t, err)
 

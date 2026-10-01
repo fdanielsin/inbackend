@@ -7,7 +7,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,7 +19,7 @@ const maxContractID = uint(4294967295)
 func TestUserRepository_List_ReturnsAllUsers(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 	adaID := createTestUser(t, db, "ada@example.com")
 	bobID, err := repo.Create(ctx, &user.User{Name: "Bob", Email: "bob@example.com"})
 	require.NoError(t, err)
@@ -39,7 +39,7 @@ func TestUserRepository_List_ReturnsAllUsers(t *testing.T) {
 
 // GIVEN no user / WHEN List / THEN an empty, non-nil slice
 func TestUserRepository_List_EmptyTable(t *testing.T) {
-	users, err := postgres.NewUserRepository(setupTestDB(t)).List(context.Background())
+	users, err := pgstore.NewUserRepository(setupTestDB(t)).List(context.Background())
 
 	require.NoError(t, err)
 	assert.NotNil(t, users)
@@ -49,7 +49,7 @@ func TestUserRepository_List_EmptyTable(t *testing.T) {
 // GIVEN a stored user / WHEN GetByID with 0 or the largest contract id / THEN ErrUserNotFound
 func TestUserRepository_GetByID_BoundaryIDs(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 	createTestUser(t, db, "owner@example.com")
 
 	for _, id := range []uint{0, maxContractID} {
@@ -63,7 +63,7 @@ func TestUserRepository_GetByID_BoundaryIDs(t *testing.T) {
 // GIVEN a long Unicode name and an email with special characters / WHEN stored and read back / THEN unchanged
 func TestUserRepository_Create_KeepsLongUnicodeValues(t *testing.T) {
 	ctx := context.Background()
-	repo := postgres.NewUserRepository(setupTestDB(t))
+	repo := pgstore.NewUserRepository(setupTestDB(t))
 	name := strings.Repeat("Zoë 🚀 ' OR 1=1 -- ", 600)
 	email := "zoë.o'brien+tâches@exemple.fr"
 
@@ -83,7 +83,7 @@ func TestUserRepository_Create_KeepsLongUnicodeValues(t *testing.T) {
 func TestTaskRepository_Update_NeverReassignsOwner(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	aliceID := createTestUser(t, db, "alice@example.com")
 	bobID := createTestUser(t, db, "bob@example.com")
 	id := createTestTask(t, repo, aliceID, "Task 1")
@@ -100,7 +100,7 @@ func TestTaskRepository_Update_NeverReassignsOwner(t *testing.T) {
 func TestTaskRepository_Delete_RemovesOnlyTargetedTask(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
 	first := createTestTask(t, repo, ownerID, "Task 1")
 	second := createTestTask(t, repo, ownerID, "Task 2")
@@ -123,7 +123,7 @@ func TestTaskRepository_Delete_RemovesOnlyTargetedTask(t *testing.T) {
 func TestTaskRepository_Delete_AbsentTask_ReturnsNotFound(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
 	kept := createTestTask(t, repo, ownerID, "Keep me")
 	removed := createTestTask(t, repo, ownerID, "Delete me")
@@ -144,7 +144,7 @@ func TestTaskRepository_Delete_AbsentTask_ReturnsNotFound(t *testing.T) {
 func TestUserRepository_Create_DuplicateEmail_ReturnsEmailTaken(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 	_, err := repo.Create(ctx, &user.User{Name: "Ada", Email: "ada@x.io"})
 	require.NoError(t, err)
 
@@ -161,7 +161,7 @@ func TestUserRepository_Create_DuplicateEmail_ReturnsEmailTaken(t *testing.T) {
 func TestUserRepository_Count(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewUserRepository(db)
+	repo := pgstore.NewUserRepository(db)
 
 	empty, err := repo.Count(ctx)
 	require.NoError(t, err)
@@ -179,7 +179,7 @@ func TestUserRepository_Count(t *testing.T) {
 func TestTaskRepository_Count(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 
 	empty, err := repo.Count(ctx)
 	require.NoError(t, err)
@@ -199,7 +199,7 @@ func TestTaskRepository_Count(t *testing.T) {
 // GIVEN a user without tasks while another user has some / WHEN ListByUserID / THEN an empty, non-nil slice
 func TestTaskRepository_ListByUserID_UserWithoutTasks(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	busyID := createTestUser(t, db, "busy@example.com")
 	idleID := createTestUser(t, db, "idle@example.com")
 	createTestTask(t, repo, busyID, "Task 1")
@@ -214,7 +214,7 @@ func TestTaskRepository_ListByUserID_UserWithoutTasks(t *testing.T) {
 // GIVEN a stored task / WHEN GetByID with 0 or the largest contract id / THEN ErrTaskNotFound
 func TestTaskRepository_GetByID_BoundaryIDs(t *testing.T) {
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	createTestTask(t, repo, createTestUser(t, db, "owner@example.com"), "Task 1")
 
 	for _, id := range []uint{0, maxContractID} {
@@ -229,7 +229,7 @@ func TestTaskRepository_GetByID_BoundaryIDs(t *testing.T) {
 func TestTaskRepository_Create_KeepsLongUnicodeValues(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
-	repo := postgres.NewTaskRepository(db)
+	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
 	title := strings.Repeat("Tâche ✅ 日本語 ", 800)
 	description := "Ligne 1\nLigne 2\t<script>alert('x')</script> ; DROP TABLE task_models;"
