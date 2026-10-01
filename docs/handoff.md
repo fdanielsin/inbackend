@@ -400,6 +400,13 @@ cas encore vivant (`Classify` sur une erreur combinée par `errors.Join`) est
 porté dans `tests/units/shared/errors_test.go`. `database.MigrateTo` est gardée : seuls les
 tests de migration l'appellent, son godoc le dit.
 
+## Lot README (branche `chore/slim-readme-essentials`)
+
+README réduit à l'essentiel (projet, prérequis, démarrage, variables, commandes,
+liens). Déploiement et dépannage dans `docs/deployment.md` et
+`docs/troubleshooting.md` ; la mention de licence MIT est retirée (aucun fichier
+`LICENSE`, décision utilisateur).
+
 ## Prochaine mission
 
 La conformité locale est vérifiée pour les commandes exécutées ci-dessus,

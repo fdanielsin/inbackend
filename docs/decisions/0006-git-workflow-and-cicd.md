@@ -136,10 +136,10 @@ Closes #123
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
 | 4 | Security | `make vuln` (govulncheck) | ~20s | Bloquant : échoue si une vulnérabilité est atteignable par le code. Remplace `nancy` (`Q-05`). |
-| 4b | Docker | `docker compose build`, `docker compose up -d --wait`, `curl -f /health`, `docker compose down -v` | ~1-2 min | Bloquant : l'image se construit et la pile démarre avec PostgreSQL (`Q-03`) |
+| 4b | Docker | `docker compose build`, `docker compose up -d --wait`, `curl -f /health`, `curl -f /ready`, `docker compose down -v` | ~1-2 min | Bloquant : l'image se construit et la pile démarre avec PostgreSQL (`Q-03`) |
 | 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 5m` | ~90s | PostgreSQL via Testcontainers |
 | 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 5m` | ~60s | PostgreSQL via Testcontainers, HTTP contract coverage through `app.NewRouter` |
-| 7 | Coverage Report | `go test -coverprofile=coverage.out ./...` | ~30s | Threshold reported, non-blocking |
+| 7 | Coverage | `make cover` puis envoi à Codecov | ~30s | Bloquant : échoue sous 85 % de couverture de `internal/` (même commande qu'en local) |
 
 **Outillage de lint :** `golangci-lint` (v2.14.0, config `.golangci.yml`),
 `govulncheck` (v1.8.0), `actionlint` (v1.7.7) et `@redocly/cli` (v2.55.0, config

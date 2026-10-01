@@ -33,6 +33,10 @@ Structurer TOUS les tests autour de trois catégories :
    - Via `app.NewRouter` sur PostgreSQL (Testcontainers)
    - Location : `tests/e2e/`
 
+Les tests d'intégration et e2e démarrent un conteneur PostgreSQL par paquet de
+tests (Testcontainers) ; chaque test migre le schéma puis vide les tables et
+remet les identifiants à 1 (`tests/testsupport`).
+
 ### Structure des répertoires
 
 ```

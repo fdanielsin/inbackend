@@ -7,6 +7,8 @@ Cette documentation est la source de référence pour le backend Go.
 - [Architecture](./architecture.md)
 - [État de reprise pour les agents](./handoff.md)
 - [Ajouter un endpoint](./adding-an-endpoint.md)
+- [Déploiement](./deployment.md)
+- [Dépannage](./troubleshooting.md)
 - [Roadmap](./roadmap.md)
 - [Décisions](./decisions/)
   - [ADR 0001 — Architecture](./decisions/0001-backend-architecture.md)

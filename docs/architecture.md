@@ -119,7 +119,7 @@ cible.
   (1 MiB exacts, avec ou sans Content-Length : `http.MaxBytesReader` ; le
   `BodyLimit` d'Echo n'est pas utilisé car il laisse passer un JSON complet qui
   dépasse de quelques octets sans Content-Length).
-- `http.NewErrorHandler` : les erreurs d'Echo (404 `ROUTE_NOT_FOUND`, 405
+- `httpapi.NewErrorHandler` : les erreurs d'Echo (404 `ROUTE_NOT_FOUND`, 405
   `METHOD_NOT_ALLOWED`, 413 `PAYLOAD_TOO_LARGE`, panique 500) sortent dans
   l'enveloppe d'erreur avec leur `error_code`.
 
