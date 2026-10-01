@@ -4,18 +4,12 @@ package commands
 import (
 	"context"
 
+	"github.com/fdanielsin/inbackend/internal/application"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
 )
 
 // CreateUserRequest est le DTO de la commande CreateUser.
 type CreateUserRequest struct {
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
-
-// CreateUserResponse est la réponse de la commande CreateUser.
-type CreateUserResponse struct {
-	ID    uint   `json:"id"`
 	Name  string `json:"name"`
 	Email string `json:"email"`
 }
@@ -31,7 +25,7 @@ func NewCreateUserHandler(repo user.Repository) *CreateUserHandler {
 }
 
 // Execute exécute la commande CreateUser.
-func (h *CreateUserHandler) Execute(ctx context.Context, req CreateUserRequest) (*CreateUserResponse, error) {
+func (h *CreateUserHandler) Execute(ctx context.Context, req CreateUserRequest) (*application.UserResponse, error) {
 	u, err := user.NewUser(0, req.Name, req.Email)
 	if err != nil {
 		return nil, err
@@ -42,7 +36,7 @@ func (h *CreateUserHandler) Execute(ctx context.Context, req CreateUserRequest) 
 		return nil, err
 	}
 
-	return &CreateUserResponse{
+	return &application.UserResponse{
 		ID:    id,
 		Name:  u.Name,
 		Email: u.Email,

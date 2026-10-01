@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/fdanielsin/inbackend/internal/application"
 	usercommands "github.com/fdanielsin/inbackend/internal/application/user/commands"
 	userqueries "github.com/fdanielsin/inbackend/internal/application/user/queries"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
@@ -22,7 +23,7 @@ func TestCreateUserHandler_Execute_ReturnsGeneratedID(t *testing.T) {
 		usercommands.CreateUserRequest{Name: "Ada", Email: "ada@example.com"})
 
 	require.NoError(t, err)
-	assert.Equal(t, usercommands.CreateUserResponse{ID: 42, Name: "Ada", Email: "ada@example.com"}, *resp)
+	assert.Equal(t, application.UserResponse{ID: 42, Name: "Ada", Email: "ada@example.com"}, *resp)
 	assert.Equal(t, []user.User{{ID: 0, Name: "Ada", Email: "ada@example.com"}}, repo.created)
 }
 
@@ -70,7 +71,7 @@ func TestGetUserHandler_Execute_ReturnsUser(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, uint(7), requested)
-	assert.Equal(t, userqueries.GetUserResponse{ID: 7, Name: "Ada", Email: "ada@example.com"}, *resp)
+	assert.Equal(t, application.UserResponse{ID: 7, Name: "Ada", Email: "ada@example.com"}, *resp)
 }
 
 // GIVEN the repository fails / WHEN GetUser / THEN not-found and technical errors are propagated
@@ -97,8 +98,8 @@ func TestListUsersHandler_Execute_KeepsRepositoryOrder(t *testing.T) {
 
 	require.NoError(t, err)
 	require.Len(t, resp, 2)
-	assert.Equal(t, userqueries.ListUsersResponse{ID: 2, Name: "Bob", Email: "bob@example.com"}, *resp[0])
-	assert.Equal(t, userqueries.ListUsersResponse{ID: 1, Name: "Ada", Email: "ada@example.com"}, *resp[1])
+	assert.Equal(t, application.UserResponse{ID: 2, Name: "Bob", Email: "bob@example.com"}, *resp[0])
+	assert.Equal(t, application.UserResponse{ID: 1, Name: "Ada", Email: "ada@example.com"}, *resp[1])
 }
 
 // GIVEN no user / WHEN ListUsers / THEN an empty, non-nil slice (serialized as [] and not null)

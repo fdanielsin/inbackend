@@ -22,7 +22,7 @@ inbackend/
 ├── main.go
 └── internal/
     ├── app/               (racine de composition : NewRouter)
-    ├── application/
+    ├── application/       (user_response.go : UserResponse, partagé par les cas d'utilisation)
     │   ├── user/
     │   │   ├── commands/
     │   │   └── queries/
@@ -82,6 +82,9 @@ La couche application contient les cas d'utilisation. Elle sépare :
 
 Il s'agit d'un CQRS applicatif avec une base PostgreSQL commune, pas d'un CQRS
 distribué.
+
+Les cas d'utilisation qui renvoient un utilisateur partagent le type
+`application.UserResponse`.
 
 ### Controllers
 

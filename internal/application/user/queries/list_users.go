@@ -3,18 +3,12 @@ package queries
 import (
 	"context"
 
+	"github.com/fdanielsin/inbackend/internal/application"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
 )
 
 // ListUsersRequest est le DTO de la requête ListUsers.
 type ListUsersRequest struct{}
-
-// ListUsersResponse est la réponse de la requête ListUsers.
-type ListUsersResponse struct {
-	ID    uint   `json:"id"`
-	Name  string `json:"name"`
-	Email string `json:"email"`
-}
 
 // ListUsersHandler exécute la logique de récupération de tous les utilisateurs.
 type ListUsersHandler struct {
@@ -27,15 +21,15 @@ func NewListUsersHandler(repo user.Repository) *ListUsersHandler {
 }
 
 // Execute exécute la requête ListUsers.
-func (h *ListUsersHandler) Execute(ctx context.Context, _ ListUsersRequest) ([]*ListUsersResponse, error) {
+func (h *ListUsersHandler) Execute(ctx context.Context, _ ListUsersRequest) ([]*application.UserResponse, error) {
 	users, err := h.repo.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	responses := make([]*ListUsersResponse, len(users))
+	responses := make([]*application.UserResponse, len(users))
 	for i, u := range users {
-		responses[i] = &ListUsersResponse{
+		responses[i] = &application.UserResponse{
 			ID:    u.ID,
 			Name:  u.Name,
 			Email: u.Email,
