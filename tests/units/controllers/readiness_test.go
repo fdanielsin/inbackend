@@ -31,7 +31,7 @@ func probeServer(t *testing.T, check ctrlhttp.ReadinessCheck) (*echo.Echo, *byte
 	e.HTTPErrorHandler = ctrlhttp.NewErrorHandler(log)
 	e.Use(ctrlhttp.RequestID(log))
 	e.Use(middleware.Recover())
-	e.GET("/ready", ctrlhttp.NewHealthController(check).Ready)
+	e.GET("/ready", ctrlhttp.NewHealthController(log, check).Ready)
 	return e, &logs
 }
 

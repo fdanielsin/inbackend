@@ -3,7 +3,7 @@ package task
 import "context"
 
 // Repository définit le contrat pour l'accès aux données Task.
-// L'implémentation concrète (PostgreSQL/GORM) sera en infrastructure.
+// L'implémentation concrète (PostgreSQL/GORM) est en infrastructure.
 type Repository interface {
 	// Create crée une nouvelle tâche et retourne l'ID généré.
 	Create(ctx context.Context, task *Task) (uint, error)

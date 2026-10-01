@@ -19,7 +19,6 @@ func NewZapHandler(logger *zap.Logger) *ZapHandler {
 
 // Handle traite un enregistrement slog et le délègue vers zap.
 func (h *ZapHandler) Handle(_ context.Context, r slog.Record) error {
-	// Construire les champs zap depuis les attributs slog
 	fields := make([]zap.Field, 0, r.NumAttrs())
 
 	r.Attrs(func(a slog.Attr) bool {

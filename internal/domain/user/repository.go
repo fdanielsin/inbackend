@@ -3,7 +3,7 @@ package user
 import "context"
 
 // Repository définit le contrat pour l'accès aux données User.
-// L'implémentation concrète (PostgreSQL/GORM) sera en infrastructure.
+// L'implémentation concrète (PostgreSQL/GORM) est en infrastructure.
 type Repository interface {
 	// Create crée un nouvel utilisateur et retourne l'ID généré.
 	Create(ctx context.Context, user *User) (uint, error)

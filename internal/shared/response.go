@@ -2,16 +2,16 @@ package shared
 
 // APIResponse est la structure de réponse standard de l'API.
 type APIResponse struct {
-	Success bool        `json:"success"`
-	Message string      `json:"message,omitempty"`
-	Data    interface{} `json:"data,omitempty"`
-	Error   string      `json:"error,omitempty"`
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Data    any    `json:"data,omitempty"`
+	Error   string `json:"error,omitempty"`
 	// ErrorCode est le code stable de l'erreur (voir les constantes Code*).
 	ErrorCode string `json:"error_code,omitempty"`
 }
 
 // SuccessResponse crée une réponse de succès.
-func SuccessResponse(data interface{}, message string) APIResponse {
+func SuccessResponse(data any, message string) APIResponse {
 	return APIResponse{
 		Success: true,
 		Message: message,

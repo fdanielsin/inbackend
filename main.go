@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 	"os"
 	"os/signal"
@@ -18,10 +19,14 @@ import (
 )
 
 func main() {
-	log := logger.InitLogger()
+	log, slogLogger, err := logger.InitLogger()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
+		os.Exit(1)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	err := run(ctx, log)
+	err = run(ctx, log, slogLogger)
 	stop()
 
 	// Fatal vide les buffers de zap avant de quitter : aucun Sync différé n'est nécessaire.
@@ -31,7 +36,7 @@ func main() {
 	log.Info("Server stopped")
 }
 
-func run(ctx context.Context, log *zap.Logger) error {
+func run(ctx context.Context, log *zap.Logger, slogLogger *slog.Logger) error {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		return errors.New("DATABASE_URL not set")
@@ -43,7 +48,7 @@ func run(ctx context.Context, log *zap.Logger) error {
 	}
 	defer closeDB(db, log)
 
-	e := app.NewRouter(db, app.WithAllowedOrigins(app.ParseAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS"))))
+	e := app.NewRouter(db, app.WithLogger(slogLogger), app.WithAllowedOrigins(app.ParseAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS"))))
 
 	port := os.Getenv("PORT")
 	if port == "" {

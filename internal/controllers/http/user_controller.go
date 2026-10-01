@@ -7,7 +7,6 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/application/user/commands"
 	"github.com/fdanielsin/inbackend/internal/application/user/queries"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v4"
 )
@@ -22,6 +21,7 @@ type UserController struct {
 
 // NewUserController crée une nouvelle instance du controller.
 func NewUserController(
+	log *slog.Logger,
 	createUserHandler *commands.CreateUserHandler,
 	getUserHandler *queries.GetUserHandler,
 	listUsersHandler *queries.ListUsersHandler,
@@ -30,7 +30,7 @@ func NewUserController(
 		createUserHandler: createUserHandler,
 		getUserHandler:    getUserHandler,
 		listUsersHandler:  listUsersHandler,
-		log:               logger.GetSlog(),
+		log:               log,
 	}
 }
 

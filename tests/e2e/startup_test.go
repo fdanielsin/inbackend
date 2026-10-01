@@ -89,6 +89,20 @@ func TestStartup_UnreachableDatabase_ExitsWithCode1(t *testing.T) {
 	assert.Contains(t, out, "failed to initialize database")
 }
 
+// GIVEN an unreachable database whose DSN carries a password / WHEN the server starts
+// THEN the failure is logged once, by main, with its wrapped cause, and the password never appears
+func TestStartup_DatabaseFailureIsLoggedOnceWithoutPassword(t *testing.T) {
+	env := serverEnv("DATABASE_URL=postgres://qauser:qa-s3cr3t-pw@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2")
+
+	code, out := runUntilExit(t, buildServer(t), env)
+
+	assert.Equal(t, 1, code)
+	assert.Contains(t, out, "failed to initialize database: migrate database: ")
+	assert.Equal(t, 1, strings.Count(out, "connection refused"), "the cause is logged once:\n%s", out)
+	assert.NotContains(t, out, "Failed to migrate database", "InitDB no longer logs its own failure")
+	assert.NotContains(t, out, "qa-s3cr3t-pw")
+}
+
 // GIVEN the port is already taken / WHEN the server starts / THEN it exits with code 1
 func TestStartup_PortInUse_ExitsWithCode1(t *testing.T) {
 	pg.Require(t)

@@ -131,9 +131,10 @@ devenir un dossier de helpers génériques.
 ```text
 controllers ──> application ──> domain
 infrastructure ────────────────> domain
-controllers ────────────────────> infrastructure/logger
 main ──> app ──> controllers, application, infrastructure
 ```
+
+Les controllers reçoivent un `*slog.Logger` injecté par `app.NewRouter`.
 
 Le domaine définit les contrats. L'infrastructure fournit les implémentations
 (persistance, logger) et ne dépend que du domaine. `internal/app` assemble les
@@ -187,8 +188,10 @@ Le code Go suit deux références, avec les écarts volontaires ci-dessous :
   externes, et non à côté du code ([ADR 0004](./decisions/0004-test-strategy.md)) ;
 - `testify` est utilisé pour les assertions (le guide Google préfère les
   comparaisons écrites dans le test) ;
-- le logger `slog` global (`slog.SetDefault`) sert à injecter un logger de
-  capture dans les tests ;
+- le logger est injecté (`InitLogger` le retourne, `app.WithLogger` et les
+  constructeurs de controllers le reçoivent), mais `InitLogger` appelle aussi
+  `slog.SetDefault` : le repli de `NewRouter` et les tests de capture de logs
+  s'appuient sur `slog.Default` ;
 - le paquet `shared` (enveloppe de réponse et table des erreurs) garde son nom,
   malgré la mise en garde du guide contre les paquets fourre-tout : sa
   responsabilité est décrite plus haut (« Shared ») ;

@@ -5,7 +5,6 @@ import (
 	"net/http"
 
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v4"
 )
@@ -17,10 +16,10 @@ type StatsController struct {
 }
 
 // NewStatsController crée une nouvelle instance du controller.
-func NewStatsController(getStatsHandler *queries.GetStatsHandler) *StatsController {
+func NewStatsController(log *slog.Logger, getStatsHandler *queries.GetStatsHandler) *StatsController {
 	return &StatsController{
 		getStatsHandler: getStatsHandler,
-		log:             logger.GetSlog(),
+		log:             log,
 	}
 }
 

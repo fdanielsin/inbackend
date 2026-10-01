@@ -127,15 +127,16 @@ func TestInitLogger_WritesThroughZapWithStackTracesOnErrorsOnly(t *testing.T) {
 			t.Setenv("ENV", env)
 
 			warnOut := captureStderr(t, func() {
-				zapLogger := logger.InitLogger()
+				zapLogger, slogLogger, err := logger.InitLogger()
+				require.NoError(t, err)
 				require.NotNil(t, zapLogger)
-				assert.Same(t, logger.SlogLog, logger.GetSlog())
-				assert.Same(t, logger.SlogLog, slog.Default())
+				assert.Same(t, slogLogger, slog.Default())
 				slog.Warn("warn-entry")
 				_ = zapLogger.Sync()
 			})
 			errorOut := captureStderr(t, func() {
-				zapLogger := logger.InitLogger()
+				zapLogger, _, err := logger.InitLogger()
+				require.NoError(t, err)
 				slog.Error("error-entry", slog.String("error_code", "INTERNAL_ERROR"))
 				_ = zapLogger.Sync()
 			})
@@ -148,13 +149,4 @@ func TestInitLogger_WritesThroughZapWithStackTracesOnErrorsOnly(t *testing.T) {
 			assert.Contains(t, errorOut, "logger_test.go", "an error carries its stack trace")
 		})
 	}
-}
-
-// GIVEN InitLogger has not run / WHEN GetSlog / THEN slog.Default is returned
-func TestGetSlog_BeforeInitFallsBackToDefault(t *testing.T) {
-	saved := logger.SlogLog
-	logger.SlogLog = nil
-	t.Cleanup(func() { logger.SlogLog = saved })
-
-	assert.Same(t, slog.Default(), logger.GetSlog())
 }

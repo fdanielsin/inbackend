@@ -4,6 +4,7 @@ package app
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -12,7 +13,6 @@ import (
 	usercommands "github.com/fdanielsin/inbackend/internal/application/user/commands"
 	userqueries "github.com/fdanielsin/inbackend/internal/application/user/queries"
 	ctrlhttp "github.com/fdanielsin/inbackend/internal/controllers/http"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -27,6 +27,7 @@ type Option func(*routerConfig)
 
 type routerConfig struct {
 	allowedOrigins []string
+	log            *slog.Logger
 }
 
 // WithAllowedOrigins fixe les origines CORS autorisées ("*" par défaut).
@@ -34,13 +35,23 @@ func WithAllowedOrigins(origins []string) Option {
 	return func(cfg *routerConfig) { cfg.allowedOrigins = origins }
 }
 
+// WithLogger fixe le logger des controllers et du journal d'accès ; nil garde
+// le logger par défaut de slog.
+func WithLogger(log *slog.Logger) Option {
+	return func(cfg *routerConfig) {
+		if log != nil {
+			cfg.log = log
+		}
+	}
+}
+
 // NewRouter construit le routeur de l'API sur la base fournie.
 func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
-	cfg := routerConfig{allowedOrigins: []string{"*"}}
+	cfg := routerConfig{allowedOrigins: []string{"*"}, log: slog.Default()}
 	for _, opt := range opts {
 		opt(&cfg)
 	}
-	log := logger.GetSlog()
+	log := cfg.log
 
 	userRepo := postgres.NewUserRepository(db)
 	taskRepo := postgres.NewTaskRepository(db)
@@ -55,10 +66,10 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	listUserTasksHandler := queries.NewListUserTasksHandler(taskRepo)
 	getStatsHandler := queries.NewGetStatsHandler(userRepo, taskRepo)
 
-	healthCtrl := ctrlhttp.NewHealthController(databaseReadiness(db))
-	userCtrl := ctrlhttp.NewUserController(createUserHandler, getUserHandler, listUsersHandler)
-	taskCtrl := ctrlhttp.NewTaskController(createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
-	statsCtrl := ctrlhttp.NewStatsController(getStatsHandler)
+	healthCtrl := ctrlhttp.NewHealthController(log, databaseReadiness(db))
+	userCtrl := ctrlhttp.NewUserController(log, createUserHandler, getUserHandler, listUsersHandler)
+	taskCtrl := ctrlhttp.NewTaskController(log, createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
+	statsCtrl := ctrlhttp.NewStatsController(log, getStatsHandler)
 
 	e := echo.New()
 

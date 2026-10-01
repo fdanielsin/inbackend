@@ -7,7 +7,6 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/application/task/commands"
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v4"
 )
@@ -23,6 +22,7 @@ type TaskController struct {
 
 // NewTaskController crée une nouvelle instance du controller.
 func NewTaskController(
+	log *slog.Logger,
 	createTaskHandler *commands.CreateTaskHandler,
 	updateTaskHandler *commands.UpdateTaskHandler,
 	deleteTaskHandler *commands.DeleteTaskHandler,
@@ -33,7 +33,7 @@ func NewTaskController(
 		updateTaskHandler:    updateTaskHandler,
 		deleteTaskHandler:    deleteTaskHandler,
 		listUserTasksHandler: listUserTasksHandler,
-		log:                  logger.GetSlog(),
+		log:                  log,
 	}
 }
 
@@ -65,7 +65,7 @@ func (tc *TaskController) UpdateTask(c echo.Context) error {
 	}
 
 	var req commands.UpdateTaskRequest
-	if err := c.Bind(&req); err != nil {
+	if err = c.Bind(&req); err != nil {
 		return respondInvalidBody(c, log, err)
 	}
 	req.ID = uint(id)

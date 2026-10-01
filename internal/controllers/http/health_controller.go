@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
@@ -28,9 +27,9 @@ type HealthController struct {
 }
 
 // NewHealthController crée une nouvelle instance du controller.
-func NewHealthController(check ReadinessCheck) *HealthController {
+func NewHealthController(log *slog.Logger, check ReadinessCheck) *HealthController {
 	return &HealthController{
-		log:   logger.GetSlog(),
+		log:   log,
 		check: check,
 	}
 }
@@ -41,7 +40,7 @@ func (hc *HealthController) HealthCheck(c echo.Context) error {
 	log.Debug("Health check requested")
 	forbidCaching(c)
 
-	return c.JSON(http.StatusOK, shared.SuccessResponse(map[string]interface{}{
+	return c.JSON(http.StatusOK, shared.SuccessResponse(map[string]any{
 		"status":  "ok",
 		"version": "1.0.0",
 		"id":      uuid.New().String(),

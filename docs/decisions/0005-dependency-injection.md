@@ -15,7 +15,7 @@ L'injection de dépendances doit être centralisée mais rester simple et explic
 
 ## Décision
 
-**Centraliser l'assemblage de TOUTES les dépendances dans `internal/app` (`app.NewRouter(db *gorm.DB) *echo.Echo`).** `main.go` ne garde que le logger, la configuration (`DATABASE_URL`, `PORT`), `InitDB`, l'appel à `app.NewRouter(db)` et le démarrage du serveur.
+**Centraliser l'assemblage de TOUTES les dépendances dans `internal/app` (`app.NewRouter(db *gorm.DB, opts ...Option) *echo.Echo`, options `WithAllowedOrigins` et `WithLogger`).** `main.go` ne garde que la création des loggers, la configuration (`DATABASE_URL`, `PORT`), `InitDB`, l'appel à `app.NewRouter(db)` et le démarrage du serveur.
 
 ### Structure d'assemblage
 

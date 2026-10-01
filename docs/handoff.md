@@ -110,7 +110,7 @@ comportement ni de contrat.
   vrais fichiers de test ailleurs).
 - **Supprimé** : `GetZap()`/`ZapLog` (`internal/infrastructure/logger/logger.go`)
   et `zapLevelForSlog()` (`slog_handler.go`) — zéro appelant vérifié.
-  `InitLogger()`, `GetSlog()`/`SlogLog` conservés intacts (utilisés partout).
+  `InitLogger()`, `GetSlog()`/`SlogLog` conservés alors (`GetSlog`/`SlogLog` supprimés en E1, voir « Lot E1 »).
 - **Supprimé** : `Delete` de l'interface `user.Repository` et de son
   implémentation PostgreSQL — zéro appelant, aucune route `DELETE /users`,
   absent du tableau CQRS d'`architecture.md`.
@@ -360,6 +360,25 @@ Branche `test/lot3-backend` (worktree `inbackend/.worktrees/lot3-backend`).
 - Compose : healthcheck sur `/ready` (Docker ne redémarre pas un conteneur
   « unhealthy »). Job `docker` : `/health` puis `/ready`.
 - Gabarit : `docs/adding-an-endpoint.md`.
+
+## Lot E1 : conformité Go (branche `refactor/e1-go-style`)
+
+Sans changement de comportement HTTP ni de contrat.
+
+- `InitLogger() (*zap.Logger, *slog.Logger, error)` ; `SlogLog` et `GetSlog`
+  supprimés. `main` affiche l'échec et sort avec le code 1. Pas de moyen
+  d'obtenir une config zap invalide par l'environnement (`ENV` choisit entre
+  deux configs valides) : l'erreur de `Build` n'est pas testable sans API
+  ajoutée pour ça, limite assumée.
+- Logger injecté : `app.WithLogger` (nil garde `slog.Default()` lu à
+  `NewRouter`) ; constructeurs de controllers `New…Controller(log, …)`.
+- `InitDB` garde sa signature mais ne journalise plus ses échecs : erreurs
+  enveloppées (`migrate database`, `open database`, `access SQL connection
+  pool`), journalisées une fois par `main`.
+- `interface{}` → `any`, shadow corrigé dans `UpdateTask`, commentaires
+  paraphrasés ou périmés retirés.
+- Suite prévue (un plan par lot) : E2 code mort, E3 renommages, E4 tests,
+  règles de lint (dont `shadow`, qui signale aussi `tests/testsupport/contract.go:46`).
 
 ## Prochaine mission
 

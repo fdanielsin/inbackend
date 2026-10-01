@@ -2,6 +2,7 @@
 package database
 
 import (
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -19,12 +20,12 @@ const (
 )
 
 // InitDB applique les migrations en attente, puis ouvre la connexion PostgreSQL.
-func InitDB(dsn string, logger *zap.Logger) (*gorm.DB, error) {
-	logger.Info("Initializing PostgreSQL database")
+// Les échecs sont retournés, enveloppés, sans être journalisés : c'est à l'appelant de le faire.
+func InitDB(dsn string, log *zap.Logger) (*gorm.DB, error) {
+	log.Info("Initializing PostgreSQL database")
 
 	if err := Migrate(dsn); err != nil {
-		logger.Error("Failed to migrate database", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("migrate database: %w", err)
 	}
 
 	// Silent : le logger GORM imprime les requêtes avec leurs valeurs (emails, noms) et le
@@ -34,19 +35,17 @@ func InitDB(dsn string, logger *zap.Logger) (*gorm.DB, error) {
 		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
 	})
 	if err != nil {
-		logger.Error("Failed to connect to database", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("open database: %w", err)
 	}
 
 	sqlDB, err := db.DB()
 	if err != nil {
-		logger.Error("Failed to access the SQL connection pool", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("access SQL connection pool: %w", err)
 	}
 	sqlDB.SetMaxOpenConns(maxOpenConns)
 	sqlDB.SetMaxIdleConns(maxIdleConns)
 	sqlDB.SetConnMaxLifetime(connMaxLifetime)
 
-	logger.Info("Database initialized successfully")
+	log.Info("Database initialized successfully")
 	return db, nil
 }

@@ -43,8 +43,6 @@ func (h *UpdateTaskHandler) Execute(ctx context.Context, req UpdateTaskRequest) 
 		return nil, err
 	}
 
-	// Mettre à jour uniquement les propriétés fournies dans la requête.
-	// Un champ absent (pointeur nil) laisse la valeur existante inchangée.
 	if req.Title != nil {
 		if *req.Title == "" {
 			return nil, task.ErrTaskTitleEmpty
