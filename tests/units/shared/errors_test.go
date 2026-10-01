@@ -37,7 +37,10 @@ func TestErrorClassification_EveryDomainError(t *testing.T) {
 			"joined":  errors.Join(errors.New("repository context"), tc.err),
 		} {
 			t.Run(tc.err.Error()+"/"+name, func(t *testing.T) {
-				assert.Equal(t, shared.APIError{Status: tc.status, Code: tc.code, Message: tc.message}, shared.Classify(err))
+				got := shared.Classify(err)
+				assert.Equal(t, tc.status, got.Status)
+				assert.Equal(t, tc.code, got.Code)
+				assert.Equal(t, tc.message, got.Message(shared.LangEnglish))
 			})
 		}
 	}
@@ -47,5 +50,8 @@ func TestErrorClassification_EveryDomainError(t *testing.T) {
 func TestErrorClassification_TechnicalErrorIsInternal(t *testing.T) {
 	err := errors.New("dial tcp 10.0.0.5:5432: connect: connection refused")
 
-	assert.Equal(t, shared.APIError{Status: http.StatusInternalServerError, Code: "INTERNAL_ERROR", Message: "Internal server error"}, shared.Classify(err))
+	got := shared.Classify(err)
+	assert.Equal(t, http.StatusInternalServerError, got.Status)
+	assert.Equal(t, "INTERNAL_ERROR", got.Code)
+	assert.Equal(t, "Internal server error", got.Message(shared.LangEnglish))
 }

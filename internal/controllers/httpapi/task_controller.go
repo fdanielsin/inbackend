@@ -52,7 +52,7 @@ func (tc *TaskController) CreateTask(c *echo.Context) error {
 		return respondWithError(c, log, "Error creating task", err, slog.Uint64("userID", uint64(req.UserID)))
 	}
 
-	return c.JSON(http.StatusCreated, shared.SuccessResponse(resp, "Task created"))
+	return c.JSON(http.StatusCreated, shared.SuccessResponse(resp, shared.Message(requestLanguage(c), shared.MsgTaskCreated)))
 }
 
 // UpdateTask gère PUT /api/v1/tasks/:id.
@@ -61,7 +61,7 @@ func (tc *TaskController) UpdateTask(c *echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		return respondInvalidID(c, log, "task", idStr)
+		return respondInvalidID(c, log, shared.MsgInvalidTaskID, idStr)
 	}
 
 	var req commands.UpdateTaskRequest
@@ -77,7 +77,7 @@ func (tc *TaskController) UpdateTask(c *echo.Context) error {
 		return respondWithError(c, log, "Error updating task", err, slog.Uint64("id", id))
 	}
 
-	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, "Task updated"))
+	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, shared.Message(requestLanguage(c), shared.MsgTaskUpdated)))
 }
 
 // DeleteTask gère DELETE /api/v1/tasks/:id.
@@ -86,7 +86,7 @@ func (tc *TaskController) DeleteTask(c *echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		return respondInvalidID(c, log, "task", idStr)
+		return respondInvalidID(c, log, shared.MsgInvalidTaskID, idStr)
 	}
 
 	log.Info("Deleting task", slog.Uint64("id", id))
@@ -96,7 +96,7 @@ func (tc *TaskController) DeleteTask(c *echo.Context) error {
 		return respondWithError(c, log, "Error deleting task", err, slog.Uint64("id", id))
 	}
 
-	return c.JSON(http.StatusOK, shared.SuccessResponseEmpty("Task deleted"))
+	return c.JSON(http.StatusOK, shared.SuccessResponseEmpty(shared.Message(requestLanguage(c), shared.MsgTaskDeleted)))
 }
 
 // ListUserTasks gère GET /api/v1/users/:id/tasks.
@@ -105,7 +105,7 @@ func (tc *TaskController) ListUserTasks(c *echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		return respondInvalidID(c, log, "user", idStr)
+		return respondInvalidID(c, log, shared.MsgInvalidUserID, idStr)
 	}
 
 	log.Info("Listing user tasks", slog.Uint64("userID", id))

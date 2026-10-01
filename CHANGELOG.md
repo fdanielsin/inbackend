@@ -11,6 +11,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Messages `error` et `message` en français ou en anglais selon `Accept-Language` (français pour `fr` et ses variantes, anglais sinon) ; `Content-Language` et `Vary: Accept-Language` sur toutes les réponses.
 - `GET /ready` : disponibilité (base joignable sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`) ; `/health` reste une sonde de vivacité sans base ; réponses des deux sondes non mises en cache.
 - Gabarit « ajouter un endpoint » (`docs/adding-an-endpoint.md`).
 - Identifiant de requête `X-Request-Id` (repris du client s'il est valide), présent dans les logs ; erreurs d'Echo (route inconnue, méthode non supportée, corps trop gros) dans l'enveloppe avec `ROUTE_NOT_FOUND`, `METHOD_NOT_ALLOWED`, `PAYLOAD_TOO_LARGE` (413 au-delà de 1 MiB).
@@ -29,6 +30,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- Contrat : `message` et `version` des réponses de santé ne sont plus des constantes ; `Stats` sans `format: int64` ; la réponse de `DELETE /tasks/{id}` déclare `message`.
 - Healthcheck de Docker Compose et job `docker` de la CI sur `/ready` ; lignes d'accès des sondes réussies en Debug.
 - Logs par `slog` seul (zap retiré) : JSON au niveau Info en production, texte au niveau Debug en développement, position du code source sur chaque ligne.
 - Logs JSON de production : `ts` devient `time` (RFC 3339), `level` en majuscules, `caller` devient l'objet `source` ; la durée `latency` est en nanosecondes ; plus de pile d'appels sur les erreurs.

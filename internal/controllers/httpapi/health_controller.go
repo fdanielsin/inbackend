@@ -44,7 +44,7 @@ func (hc *HealthController) HealthCheck(c *echo.Context) error {
 		"status":  "ok",
 		"version": "1.0.0",
 		"id":      uuid.New().String(),
-	}, "Service is healthy"))
+	}, shared.Message(requestLanguage(c), shared.MsgServiceHealthy)))
 }
 
 // Ready gère GET /ready : disponibilité, la base doit répondre.
@@ -59,10 +59,10 @@ func (hc *HealthController) Ready(c *echo.Context) error {
 			slog.String("error_code", shared.CodeDatabaseUnavailable),
 			slog.String("error_type", fmt.Sprintf("%T", err)))
 		return c.JSON(http.StatusServiceUnavailable,
-			shared.ErrorResponse(shared.CodeDatabaseUnavailable, "Database unavailable"))
+			shared.ErrorResponse(shared.CodeDatabaseUnavailable, shared.Message(requestLanguage(c), shared.MsgDatabaseDown)))
 	}
 
-	return c.JSON(http.StatusOK, shared.SuccessResponse(map[string]string{"status": "ready"}, "Service is ready"))
+	return c.JSON(http.StatusOK, shared.SuccessResponse(map[string]string{"status": "ready"}, shared.Message(requestLanguage(c), shared.MsgServiceReady)))
 }
 
 // forbidCaching empêche tout proxy ou client de garder l'état d'une sonde.

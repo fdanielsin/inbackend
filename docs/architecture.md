@@ -112,7 +112,7 @@ cible.
   `WriteTimeout` 30 s, `IdleTimeout` 60 s ; SIGINT/SIGTERM déclenchent un arrêt
   gracieux (10 s pour les requêtes en cours), puis fermeture du pool SQL.
 - Pool SQL : 25 connexions ouvertes au plus, 5 inactives, durée de vie 30 min.
-- Ordre des middlewares : `RequestID` (X-Request-Id repris s'il correspond à
+- Ordre des middlewares : `Language` (négocie la langue, voir ci-dessous), `RequestID` (X-Request-Id repris s'il correspond à
   `[A-Za-z0-9._-]{1,64}`, sinon UUID ; logger de requête porté par le contexte),
   `AccessLog` (méthode, chemin sans query, route, statut, durée ; jamais de
   corps), `Recover`, CORS (`CORS_ALLOWED_ORIGINS`, `*` par défaut), `BodyLimit`
@@ -122,6 +122,21 @@ cible.
 - `httpapi.NewErrorHandler` : les erreurs d'Echo (404 `ROUTE_NOT_FOUND`, 405
   `METHOD_NOT_ALLOWED`, 413 `PAYLOAD_TOO_LARGE`, panique 500) sortent dans
   l'enveloppe d'erreur avec leur `error_code`.
+
+### Langue des messages
+
+Deux langues, l'anglais par défaut et le français. `shared.NegotiateLanguage`
+lit `Accept-Language` : le français si la langue prise en charge la plus
+demandée (`q` le plus haut, RFC 9110) est une variante de `fr`, l'anglais sinon
+et pour un en-tête absent ou invalide ; jamais de 400. Chaque élément doit
+respecter la RFC 9110 (x/text tolère `q` supérieur à 1 et tirets bas, pas nous :
+un élément invalide invalide tout l'en-tête), et un en-tête de plus de
+1024 octets, qu'aucun client réel n'envoie, donne l'anglais sans être analysé. Le middleware `Language`
+met la langue dans le contexte et pose `Content-Language` et
+`Vary: Accept-Language` sur toute réponse, avant CORS pour couvrir le préflight.
+Les textes `error` et `message` viennent du catalogue `shared/messages.go`
+(clés `Msg*`, un texte par langue, test de complétude) ; les `error_code`, les
+valeurs machine et les logs restent en anglais et ne dépendent pas de la langue.
 
 ### Shared
 

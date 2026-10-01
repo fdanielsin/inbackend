@@ -418,6 +418,15 @@ erreurs 404/405/413 d'Echo sont un type non exporté, reconnues par l'interface
 `govulncheck` : 0 vulnérabilité atteignable ; `GO-2026-5932` (`x/crypto`, sans
 correctif) est dans un module requis mais jamais appelé.
 
+## Lot messages localisés (branche `feature/localized-api-messages`)
+
+`Accept-Language` : français pour `fr` et ses variantes, anglais sinon, `q` le
+plus haut l'emporte, jamais de 400 (`shared.NegotiateLanguage`, qui rejette en
+plus ce que x/text tolère : `q` supérieur à 1, tirets bas). Catalogue
+`shared/messages.go` (23 clés), `APIError` porte une clé, middleware
+`httpapi.Language`. Contrat en deux commits : les en-têtes de réponse déclarés
+sont validés par les tests de contrat, ils arrivent donc avec le code.
+
 ## Prochaine mission
 
 La conformité locale est vérifiée pour les commandes exécutées ci-dessus,

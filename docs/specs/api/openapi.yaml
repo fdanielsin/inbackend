@@ -16,6 +16,16 @@ info:
       l'en-tête `Allow`), tous deux dans l'enveloppe d'erreur ;
     - un corps de requête de plus de 1 MiB (1 048 576 octets) répond `413`
       `PAYLOAD_TOO_LARGE`.
+
+    Langue des messages : le serveur parle deux langues, l'anglais (par défaut)
+    et le français. Si l'en-tête `Accept-Language` demande le français
+    (`fr`, `fr-FR`, `fr-CA`, toute variante de `fr`), les textes `message` et
+    `error` sont en français ; pour toute autre langue, un en-tête absent ou
+    invalide, ils sont en anglais, sans jamais répondre `400`. Quand plusieurs
+    langues sont demandées, la préférence `q` la plus haute l'emporte (RFC 9110).
+    Chaque réponse porte `Content-Language` (`en` ou `fr`) et
+    `Vary: Accept-Language`. Les codes `error_code` et les valeurs machine
+    (par exemple `status`) ne dépendent pas de la langue.
 servers:
   - url: http://localhost:8080
     description: Développement local
@@ -30,6 +40,8 @@ tags:
     description: Compteurs agrégés du service.
 paths:
   /health:
+    parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
     get:
       tags: [Health]
       summary: Vérifier que le service est vivant
@@ -43,6 +55,10 @@ paths:
         '200':
           description: Service disponible
           headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
             Cache-Control:
               $ref: '#/components/headers/CacheControlNoStore'
           content:
@@ -50,6 +66,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
   /ready:
+    parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
     get:
       tags: [Health]
       summary: Vérifier que le service est prêt
@@ -63,6 +81,10 @@ paths:
         '200':
           description: Service prêt
           headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
             Cache-Control:
               $ref: '#/components/headers/CacheControlNoStore'
           content:
@@ -72,6 +94,8 @@ paths:
         '503':
           $ref: '#/components/responses/DatabaseUnavailable'
   /api/v1/users:
+    parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
     get:
       tags: [Users]
       summary: Lister les utilisateurs
@@ -79,6 +103,11 @@ paths:
       responses:
         '200':
           description: Liste des utilisateurs
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
           content:
             application/json:
               schema:
@@ -106,6 +135,11 @@ paths:
       responses:
         '201':
           description: Utilisateur créé
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
           content:
             application/json:
               schema:
@@ -127,6 +161,7 @@ paths:
   /api/v1/users/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/AcceptLanguage'
     get:
       tags: [Users]
       summary: Récupérer un utilisateur
@@ -134,6 +169,11 @@ paths:
       responses:
         '200':
           description: Utilisateur trouvé
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
           content:
             application/json:
               schema:
@@ -153,6 +193,7 @@ paths:
   /api/v1/users/{id}/tasks:
     parameters:
       - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/AcceptLanguage'
     get:
       tags: [Tasks]
       summary: Lister les tâches d'un utilisateur
@@ -163,6 +204,11 @@ paths:
       responses:
         '200':
           description: Liste des tâches, triée par `id` croissant.
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
           content:
             application/json:
               schema:
@@ -180,6 +226,8 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/v1/tasks:
+    parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
     post:
       tags: [Tasks]
       summary: Créer une tâche
@@ -197,6 +245,11 @@ paths:
       responses:
         '201':
           description: Tâche créée
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
           content:
             application/json:
               schema:
@@ -218,6 +271,7 @@ paths:
   /api/v1/tasks/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/AcceptLanguage'
     put:
       tags: [Tasks]
       summary: Mettre à jour une tâche (mise à jour partielle)
@@ -238,6 +292,11 @@ paths:
       responses:
         '200':
           description: Tâche mise à jour ; la réponse reflète l'état réellement persisté.
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
           content:
             application/json:
               schema:
@@ -266,6 +325,11 @@ paths:
       responses:
         '200':
           description: Tâche supprimée
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
           content:
             application/json:
               schema:
@@ -283,6 +347,8 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /api/v1/stats:
+    parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
     get:
       tags: [Statistics]
       summary: Récupérer les statistiques
@@ -290,6 +356,11 @@ paths:
       responses:
         '200':
           description: Statistiques agrégées
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
           content:
             application/json:
               schema:
@@ -304,6 +375,20 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   parameters:
+    AcceptLanguage:
+      name: Accept-Language
+      in: header
+      required: false
+      description: |
+        Langue des messages : le français pour `fr` et ses variantes, l'anglais
+        sinon. Chaque élément doit respecter la RFC 9110 (plage de langue avec
+        tirets, `q` de 0 à 1) : un élément invalide, un en-tête absent ou de plus
+        de 1024 octets donnent l'anglais, jamais une erreur. Voir la description
+        de l'API.
+      schema:
+        type: string
+        maxLength: 1024
+        examples: ['fr-FR,fr;q=0.9,en;q=0.8']
     Id:
       name: id
       in: path
@@ -323,6 +408,7 @@ components:
           const: true
         message:
           type: string
+          description: Texte lisible et localisé, destiné à l'affichage ; ne pas le comparer.
         data: {}
     ErrorResponse:
       type: object
@@ -333,7 +419,7 @@ components:
           const: false
         error:
           type: string
-          description: Message lisible, destiné à l'affichage ; sa formulation peut évoluer.
+          description: Message lisible et localisé, destiné à l'affichage ; sa formulation peut évoluer.
         error_code:
           $ref: '#/components/schemas/ErrorCode'
     ErrorCode:
@@ -508,6 +594,16 @@ components:
         completed:
           type: boolean
   headers:
+    ContentLanguage:
+      description: Langue des textes de la réponse.
+      schema:
+        type: string
+        enum: [en, fr]
+    Vary:
+      description: La réponse dépend de la langue demandée.
+      schema:
+        type: string
+        const: Accept-Language
     CacheControlNoStore:
       description: Interdit toute mise en cache de la réponse (sondes).
       schema:
@@ -517,6 +613,10 @@ components:
     DatabaseUnavailable:
       description: La base de données ne répond pas (`DATABASE_UNAVAILABLE`)
       headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
         Cache-Control:
           $ref: '#/components/headers/CacheControlNoStore'
       content:
@@ -525,48 +625,88 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     BadRequest:
       description: Corps invalide (`INVALID_BODY`) ou erreur de validation (`VALIDATION_FAILED`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     InvalidUserId:
       description: Identifiant utilisateur invalide (`INVALID_ID`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     InvalidTaskId:
       description: Identifiant tâche invalide (`INVALID_ID`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     UserNotFound:
       description: Utilisateur introuvable (`USER_NOT_FOUND`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     TaskNotFound:
       description: Tâche introuvable (`TASK_NOT_FOUND`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     EmailTaken:
       description: Un utilisateur avec cet email existe déjà (`EMAIL_TAKEN`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     PayloadTooLarge:
       description: Corps de requête de plus de 1 MiB (`PAYLOAD_TOO_LARGE`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
     InternalServerError:
       description: Erreur interne (`INTERNAL_ERROR`) ; les détails techniques ne sont pas exposés
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
       content:
         application/json:
           schema:

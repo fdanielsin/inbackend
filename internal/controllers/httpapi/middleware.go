@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"regexp"
 
+	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/google/uuid"
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
@@ -13,6 +14,10 @@ import (
 const (
 	requestIDKey = "request_id"
 	loggerKey    = "logger"
+	languageKey  = "language"
+
+	headerAcceptLanguage  = "Accept-Language"
+	headerContentLanguage = "Content-Language"
 )
 
 // probeRoutes sont les sondes appelées en continu : réussies, elles sont
@@ -39,6 +44,33 @@ func RequestID(base *slog.Logger) echo.MiddlewareFunc {
 			return next(c)
 		}
 	}
+}
+
+// Language choisit la langue des messages d'après Accept-Language (voir
+// shared.NegotiateLanguage), la met dans le contexte et signale sur toute
+// réponse, y compris celles qui court-circuitent la suite (préflight CORS, 404),
+// la langue choisie et la dépendance à l'en-tête. Vary est ajouté, pas remplacé :
+// le middleware CORS y met Origin.
+func Language() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			lang := shared.NegotiateLanguage(c.Request().Header.Values(headerAcceptLanguage))
+			c.Set(languageKey, lang)
+			header := c.Response().Header()
+			header.Set(headerContentLanguage, string(lang))
+			header.Add(echo.HeaderVary, headerAcceptLanguage)
+			return next(c)
+		}
+	}
+}
+
+// requestLanguage retourne la langue négociée pour la requête (anglais hors du
+// middleware Language).
+func requestLanguage(c *echo.Context) shared.Lang {
+	if lang, ok := c.Get(languageKey).(shared.Lang); ok {
+		return lang
+	}
+	return shared.LangEnglish
 }
 
 // requestLogger retourne le logger de la requête (avec son request_id), ou

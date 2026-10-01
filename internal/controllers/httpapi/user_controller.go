@@ -49,7 +49,7 @@ func (uc *UserController) CreateUser(c *echo.Context) error {
 		return respondWithError(c, log, "Error creating user", err)
 	}
 
-	return c.JSON(http.StatusCreated, shared.SuccessResponse(resp, "User created"))
+	return c.JSON(http.StatusCreated, shared.SuccessResponse(resp, shared.Message(requestLanguage(c), shared.MsgUserCreated)))
 }
 
 // GetUser gère GET /api/v1/users/:id.
@@ -58,7 +58,7 @@ func (uc *UserController) GetUser(c *echo.Context) error {
 	idStr := c.Param("id")
 	id, err := strconv.ParseUint(idStr, 10, 32)
 	if err != nil {
-		return respondInvalidID(c, log, "user", idStr)
+		return respondInvalidID(c, log, shared.MsgInvalidUserID, idStr)
 	}
 
 	log.Info("Fetching user", slog.Uint64("id", id))

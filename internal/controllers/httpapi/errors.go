@@ -40,7 +40,7 @@ func respondWithError(c *echo.Context, log *slog.Logger, action string, err erro
 	}
 	log.Log(c.Request().Context(), level, action, append(attrs, slog.String("error_code", apiErr.Code))...)
 
-	return c.JSON(apiErr.Status, shared.ErrorResponse(apiErr.Code, apiErr.Message))
+	return c.JSON(apiErr.Status, shared.ErrorResponse(apiErr.Code, apiErr.Message(requestLanguage(c))))
 }
 
 // respondInvalidBody répond 400 pour un corps illisible, ou 413 quand c'est la
@@ -52,18 +52,18 @@ func respondInvalidBody(c *echo.Context, log *slog.Logger, err error) error {
 		return respondPayloadTooLarge(c, log)
 	}
 	log.Warn("Invalid request body")
-	return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.CodeInvalidBody, "Invalid request body"))
+	return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.CodeInvalidBody, shared.Message(requestLanguage(c), shared.MsgInvalidBody)))
 }
 
 func respondPayloadTooLarge(c *echo.Context, log *slog.Logger) error {
 	log.Warn("Request body too large", slog.String("error_code", shared.CodePayloadTooLarge))
 	return c.JSON(http.StatusRequestEntityTooLarge,
-		shared.ErrorResponse(shared.CodePayloadTooLarge, "Request body too large"))
+		shared.ErrorResponse(shared.CodePayloadTooLarge, shared.Message(requestLanguage(c), shared.MsgPayloadTooLarge)))
 }
 
-func respondInvalidID(c *echo.Context, log *slog.Logger, resource, rawID string) error {
-	log.Warn("Invalid "+resource+" ID", slog.String("id", rawID))
-	return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.CodeInvalidID, "Invalid "+resource+" ID"))
+func respondInvalidID(c *echo.Context, log *slog.Logger, key shared.MessageKey, rawID string) error {
+	log.Warn(shared.Message(shared.LangEnglish, key), slog.String("id", rawID))
+	return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.CodeInvalidID, shared.Message(requestLanguage(c), key)))
 }
 
 // NewErrorHandler renvoie le HTTPErrorHandler d'Echo : les erreurs qu'Echo
@@ -76,20 +76,20 @@ func NewErrorHandler(base *slog.Logger) echo.HTTPErrorHandler {
 		}
 		log := requestLogger(c, base)
 
-		status, code, message := http.StatusInternalServerError, shared.CodeInternalError, "Internal server error"
+		status, code, key := http.StatusInternalServerError, shared.CodeInternalError, shared.MsgInternalError
 		var statusErr echo.HTTPStatusCoder
 		if errors.As(err, &statusErr) {
 			httpStatus := statusErr.StatusCode()
 			switch httpStatus {
 			case http.StatusNotFound:
-				status, code, message = httpStatus, shared.CodeRouteNotFound, "Route not found"
+				status, code, key = httpStatus, shared.CodeRouteNotFound, shared.MsgRouteNotFound
 			case http.StatusMethodNotAllowed:
-				status, code, message = httpStatus, shared.CodeMethodNotAllowed, "Method not allowed"
+				status, code, key = httpStatus, shared.CodeMethodNotAllowed, shared.MsgMethodNotAllowed
 			case http.StatusRequestEntityTooLarge:
-				status, code, message = httpStatus, shared.CodePayloadTooLarge, "Request body too large"
+				status, code, key = httpStatus, shared.CodePayloadTooLarge, shared.MsgPayloadTooLarge
 			default:
 				if httpStatus < http.StatusInternalServerError {
-					status, code, message = httpStatus, shared.CodeInvalidBody, "Invalid request"
+					status, code, key = httpStatus, shared.CodeInvalidBody, shared.MsgInvalidRequest
 				}
 			}
 		}
@@ -104,7 +104,7 @@ func NewErrorHandler(base *slog.Logger) echo.HTTPErrorHandler {
 		if c.Request().Method == http.MethodHead {
 			sendErr = c.NoContent(status)
 		} else {
-			sendErr = c.JSON(status, shared.ErrorResponse(code, message))
+			sendErr = c.JSON(status, shared.ErrorResponse(code, shared.Message(requestLanguage(c), key)))
 		}
 		if sendErr != nil {
 			log.Error("Failed to write error response", slog.String("error_type", fmt.Sprintf("%T", sendErr)))

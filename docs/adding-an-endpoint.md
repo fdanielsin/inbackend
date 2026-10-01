@@ -17,7 +17,9 @@ document ne les répète pas.
    migration appliquée). Les violations de contrainte sont détectées par code
    SQLSTATE et nom de contrainte (`persistence/pgstore/constraints.go`).
 5. **Erreurs** : chaque erreur domaine est ajoutée à l'unique table de
-   `internal/shared/errors.go` (statut, `error_code`, message public).
+   `internal/shared/errors.go` (statut, `error_code`, clé de message). Tout texte
+   de réponse (erreur ou succès) est une clé de `internal/shared/messages.go`,
+   avec son texte anglais et français.
 6. **Controller** (`internal/controllers/httpapi/`) : `requestLogger(c, ...)`
    pour les logs, `respondWithError` pour toute erreur, jamais le texte d'une
    erreur dans une réponse ni un log (il peut contenir des données).
