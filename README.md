@@ -26,7 +26,7 @@ inbackend/
 
 - **Framework**: Echo (high-performance HTTP)
 - **Database**: PostgreSQL with GORM ORM
-- **Logging**: slog structured logging delegated to zap
+- **Logging**: slog structured logging (JSON in production, text in development)
 - **Testing**: Testcontainers, stdlib testing
 - **Security**: govulncheck dependency scanning in the backend CI/CD workflow
 - **Container**: Docker + Podman support
@@ -35,7 +35,7 @@ inbackend/
 
 - ✅ Full REST API (Users, Tasks CRUD)
 - ✅ PostgreSQL with versioned migrations (golang-migrate, ADR 0007)
-- ✅ Structured logging with slog delegated to Zap
+- ✅ Structured logging with slog (JSON in production, text in development)
 - ✅ CORS middleware configured
 - ✅ Comprehensive test suite (unit, integration, E2E)
 - ✅ Testcontainers for isolated database tests

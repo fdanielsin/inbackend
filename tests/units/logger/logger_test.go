@@ -1,8 +1,9 @@
-// Package logger tests the zap initialisation and the slog handler that delegates to zap.
+// Package logger tests the construction of the application's slog logger.
 package logger
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
 	"io"
 	"log/slog"
 	"os"
@@ -13,89 +14,142 @@ import (
 	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 )
 
-func observed() (*slog.Logger, *observer.ObservedLogs) {
-	core, logs := observer.New(zapcore.DebugLevel)
-	return slog.New(logger.NewZapHandler(zap.New(core))), logs
+// lines splits the output into its lines, failing if the last one is not terminated.
+func lines(t *testing.T, out *bytes.Buffer) []string {
+	t.Helper()
+	text := out.String()
+	require.True(t, strings.HasSuffix(text, "\n"), "every entry ends with a newline: %q", text)
+	return strings.Split(strings.TrimSuffix(text, "\n"), "\n")
 }
 
-// GIVEN slog levels, standard or in between / WHEN logged / THEN each is written at the zap level of its range, none is lost
-func TestZapHandler_MapsEveryLevel(t *testing.T) {
-	log, logs := observed()
+// jsonEntry decodes a single JSON log line.
+func jsonEntry(t *testing.T, line string) map[string]any {
+	t.Helper()
+	var entry map[string]any
+	require.NoError(t, json.Unmarshal([]byte(line), &entry), "not a JSON line: %s", line)
+	return entry
+}
+
+// GIVEN ENV=production / WHEN an entry is logged / THEN one JSON line with time, level, source, msg and typed attributes
+func TestNew_ProductionWritesJSONLines(t *testing.T) {
+	var out bytes.Buffer
+	log := logger.New(&out, "production")
+
+	log.Info("entry", slog.String("s", "text"), slog.Int("n", 3), slog.Bool("b", true))
+
+	got := lines(t, &out)
+	require.Len(t, got, 1)
+	entry := jsonEntry(t, got[0])
+	_, err := time.Parse(time.RFC3339Nano, entry["time"].(string))
+	require.NoError(t, err, "time is RFC 3339")
+	assert.Equal(t, "INFO", entry["level"])
+	assert.Equal(t, "entry", entry["msg"])
+	assert.Equal(t, "text", entry["s"])
+	assert.InDelta(t, 3, entry["n"], 0)
+	assert.Equal(t, true, entry["b"])
+	source, ok := entry["source"].(map[string]any)
+	require.True(t, ok, "source is an object: %v", entry["source"])
+	assert.True(t, strings.HasSuffix(source["file"].(string), "logger_test.go"), "source points to the caller: %v", source)
+	assert.Positive(t, source["line"])
+}
+
+// GIVEN ENV=development / WHEN an entry is logged / THEN one key=value text line, not JSON, with its source
+func TestNew_DevelopmentWritesText(t *testing.T) {
+	var out bytes.Buffer
+	log := logger.New(&out, "development")
+
+	log.Info("entry", slog.String("s", "text"))
+
+	got := lines(t, &out)
+	require.Len(t, got, 1)
+	assert.True(t, strings.HasPrefix(got[0], "time="), got[0])
+	assert.Contains(t, got[0], " level=INFO ")
+	assert.Contains(t, got[0], "logger_test.go:")
+	assert.Contains(t, got[0], " msg=entry ")
+	assert.Contains(t, got[0], " s=text")
+}
+
+// GIVEN each ENV value / WHEN Debug and Info entries are logged
+// THEN only exactly "production" gives JSON without Debug; any other value (empty, other case, prefix) is development
+func TestNew_FormatAndLevelFollowEnv(t *testing.T) {
 	cases := []struct {
-		level slog.Level
-		want  zapcore.Level
+		env       string
+		json      bool
+		showDebug bool
 	}{
-		{slog.Level(-8), zapcore.DebugLevel},
-		{slog.LevelDebug, zapcore.DebugLevel},
-		{slog.Level(-1), zapcore.DebugLevel},
-		{slog.LevelInfo, zapcore.InfoLevel},
-		{slog.Level(2), zapcore.InfoLevel},
-		{slog.LevelWarn, zapcore.WarnLevel},
-		{slog.Level(6), zapcore.WarnLevel},
-		{slog.LevelError, zapcore.ErrorLevel},
-		{slog.Level(12), zapcore.ErrorLevel},
+		{"production", true, false},
+		{"development", false, true},
+		{"", false, true},
+		{"PRODUCTION", false, true},
+		{"Production", false, true},
+		{"prod", false, true},
+		{" production", false, true},
 	}
-
 	for _, c := range cases {
-		log.Log(context.Background(), c.level, "entry")
-	}
+		t.Run("env="+c.env, func(t *testing.T) {
+			var out bytes.Buffer
+			log := logger.New(&out, c.env)
 
-	entries := logs.All()
-	require.Len(t, entries, len(cases), "no entry may be dropped")
-	for i, c := range cases {
-		assert.Equal(t, c.want, entries[i].Level, "slog level %d", c.level)
+			log.Debug("debug-entry")
+			log.Info("info-entry")
+
+			got := lines(t, &out)
+			assert.Equal(t, c.showDebug, strings.Contains(out.String(), "debug-entry"), "Debug shown")
+			assert.Contains(t, got[len(got)-1], "info-entry", "Info is always shown")
+			assert.Equal(t, c.json, strings.HasPrefix(got[0], "{"), "JSON format")
+		})
 	}
 }
 
-// GIVEN attributes of every kind / WHEN logged / THEN they reach zap with their type
-func TestZapHandler_KeepsTypedAttributes(t *testing.T) {
-	log, logs := observed()
-	at := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
+// GIVEN attribute values with newlines, quotes and JSON / WHEN logged in either format
+// THEN each entry stays on one line and the value comes back intact (no log line injection)
+func TestNew_SpecialCharactersStayOnOneLine(t *testing.T) {
+	value := "line1\nline2 \"quoted\" {\"level\":\"ERROR\"}\r\ttab"
+	for _, env := range []string{"production", "development"} {
+		t.Run(env, func(t *testing.T) {
+			var out bytes.Buffer
+			log := logger.New(&out, env)
 
-	log.Info("typed",
-		slog.String("s", "text"),
-		slog.Int64("i", -3),
-		slog.Uint64("u", 7),
-		slog.Float64("f", 1.5),
-		slog.Bool("b", true),
-		slog.Duration("d", 2*time.Second),
-		slog.Time("t", at),
-		slog.Any("a", []int{1, 2}),
-	)
+			log.Warn("special", slog.String("v", value))
 
-	fields := logs.All()[0].ContextMap()
-	assert.Equal(t, "text", fields["s"])
-	assert.Equal(t, int64(-3), fields["i"])
-	assert.Equal(t, uint64(7), fields["u"])
-	assert.InDelta(t, 1.5, fields["f"], 0)
-	assert.Equal(t, true, fields["b"])
-	assert.Equal(t, 2*time.Second, fields["d"])
-	assert.Equal(t, at, fields["t"])
-	assert.Equal(t, []any{1, 2}, fields["a"], "zap.Any keeps the values")
+			got := lines(t, &out)
+			require.Len(t, got, 1, "one entry, one line")
+			if env == "production" {
+				assert.Equal(t, value, jsonEntry(t, got[0])["v"])
+			} else {
+				assert.Contains(t, got[0], `v="line1\nline2 \"quoted\"`)
+			}
+		})
+	}
 }
 
-// GIVEN a logger with attributes and a group / WHEN logged / THEN the attributes are kept and the group namespaces the rest
-func TestZapHandler_WithAttrsAndGroup(t *testing.T) {
-	log, logs := observed()
+// GIVEN a logger with attributes and a group / WHEN logged in production / THEN the attributes are kept and the group nests the rest
+func TestNew_WithAttrsAndGroup(t *testing.T) {
+	var out bytes.Buffer
+	log := logger.New(&out, "production")
 
 	log.With(slog.String("request_id", "r-1")).WithGroup("http").Info("grouped", slog.Int("status", 200))
 
-	fields := logs.All()[0].ContextMap()
-	assert.Equal(t, "r-1", fields["request_id"])
-	assert.Equal(t, map[string]any{"status": int64(200)}, fields["http"])
+	entry := jsonEntry(t, lines(t, &out)[0])
+	assert.Equal(t, "r-1", entry["request_id"])
+	assert.Equal(t, map[string]any{"status": float64(200)}, entry["http"])
 }
 
-// GIVEN any level / THEN the handler reports it enabled and lets zap filter
-func TestZapHandler_EnabledForEveryLevel(t *testing.T) {
-	handler := logger.NewZapHandler(zap.NewNop())
+// GIVEN an Error entry / WHEN logged in either format / THEN a single line, without stack trace (accepted with slog, E1b)
+func TestNew_ErrorEntryHasNoStackTrace(t *testing.T) {
+	for _, env := range []string{"production", "development"} {
+		t.Run(env, func(t *testing.T) {
+			var out bytes.Buffer
+			log := logger.New(&out, env)
 
-	for _, level := range []slog.Level{slog.LevelDebug, slog.LevelInfo, slog.LevelWarn, slog.LevelError} {
-		assert.True(t, handler.Enabled(context.Background(), level))
+			log.Error("failure", slog.String("error_code", "INTERNAL_ERROR"))
+
+			assert.Len(t, lines(t, &out), 1)
+			assert.Contains(t, out.String(), "ERROR")
+			assert.NotContains(t, out.String(), "goroutine")
+		})
 	}
 }
 
@@ -116,37 +170,18 @@ func captureStderr(t *testing.T, fn func()) string {
 	return string(out)
 }
 
-// GIVEN ENV=development or production / WHEN InitLogger / THEN slog is set up to write through zap,
-// with a stack trace on errors only (not on the warnings of every 4xx)
-func TestInitLogger_WritesThroughZapWithStackTracesOnErrorsOnly(t *testing.T) {
+// GIVEN ENV=production / WHEN InitLogger / THEN the logger writes JSON to stderr and becomes slog's default
+func TestInitLogger_WritesToStderrAndBecomesTheDefault(t *testing.T) {
 	previous := slog.Default()
 	t.Cleanup(func() { slog.SetDefault(previous) })
+	t.Setenv("ENV", "production")
 
-	for _, env := range []string{"development", "production"} {
-		t.Run(env, func(t *testing.T) {
-			t.Setenv("ENV", env)
+	stderr := captureStderr(t, func() {
+		log := logger.InitLogger()
+		assert.Same(t, log, slog.Default())
+		slog.Info("default-entry")
+	})
 
-			warnOut := captureStderr(t, func() {
-				zapLogger, slogLogger, err := logger.InitLogger()
-				require.NoError(t, err)
-				require.NotNil(t, zapLogger)
-				assert.Same(t, slogLogger, slog.Default())
-				slog.Warn("warn-entry")
-				_ = zapLogger.Sync()
-			})
-			errorOut := captureStderr(t, func() {
-				zapLogger, _, err := logger.InitLogger()
-				require.NoError(t, err)
-				slog.Error("error-entry", slog.String("error_code", "INTERNAL_ERROR"))
-				_ = zapLogger.Sync()
-			})
-
-			assert.Equal(t, env == "production", strings.HasPrefix(warnOut, "{"), "JSON lines in production only:\n%s", warnOut)
-			assert.Contains(t, warnOut, "warn-entry")
-			assert.NotContains(t, warnOut, "logger_test.go", "no stack trace on a warning")
-			assert.Contains(t, errorOut, "error-entry")
-			assert.Contains(t, errorOut, "INTERNAL_ERROR")
-			assert.Contains(t, errorOut, "logger_test.go", "an error carries its stack trace")
-		})
-	}
+	assert.True(t, strings.HasPrefix(stderr, "{"), "JSON in production:\n%s", stderr)
+	assert.Contains(t, stderr, `"msg":"default-entry"`)
 }

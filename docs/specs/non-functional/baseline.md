@@ -19,7 +19,7 @@ ci-dessous constituent la baseline actuelle, pas une promesse de production.
 
 ## Observabilité
 
-- Les logs sont structurés avec `slog`, délégué à `zap`.
+- Les logs sont structurés avec `slog` : JSON en production, texte en développement, position du code source sur chaque ligne.
 - Les détails techniques restent dans les logs serveur.
 - Les réponses HTTP 500 ne doivent pas exposer les erreurs internes.
 

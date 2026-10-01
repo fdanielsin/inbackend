@@ -59,8 +59,8 @@ réussie a ensuite utilisé le socket Podman macOS explicite et
   `docs/specs/api/openapi.yaml` et couvre les neuf routes enregistrées.
 - Les spécifications fonctionnelles, data, non fonctionnelles et de test sont
   indexées dans `docs/specs/`.
-- Le logging `slog` délégué à `zap` est conservé comme choix explicite de la
-  phase 6.
+- Le logging `slog` délégué à `zap` a été conservé en phase 6, puis remplacé
+  par `slog` seul au lot E1b.
 
 ## Correctif Q-12 — Ordre des tâches non garanti
 
@@ -194,8 +194,8 @@ comportement ni de contrat.
   dans `docs/specs/api/.redocly.lint-ignore.yaml` (`/health`, `/ready`, `GET /users`,
   `GET /stats` : aucune 4xx possible).
 - **Code** : aucun changement de comportement. `main.go` : la logique passe
-  dans `run` qui renvoie une erreur, `main` appelle `log.Fatal` (zap vide ses
-  buffers avant de quitter, le `defer log.Sync()` est supprimé) ; le message de
+  dans `run` qui renvoie une erreur, `main` appelle `log.Fatal` (zap vidait ses
+  buffers avant de quitter ; remplacé par `log.Error` et `os.Exit(1)` en E1b) ; le message de
   log d'échec au démarrage change de libellé, le code de sortie reste 1.
   Paramètres inutilisés renommés `_`, commentaires de package et godoc
   ajoutés. Les 8 corrections dans `tests/` ont été faites par `qa`.
@@ -365,11 +365,8 @@ Branche `test/lot3-backend` (worktree `inbackend/.worktrees/lot3-backend`).
 
 Sans changement de comportement HTTP ni de contrat.
 
-- `InitLogger() (*zap.Logger, *slog.Logger, error)` ; `SlogLog` et `GetSlog`
-  supprimés. `main` affiche l'échec et sort avec le code 1. Pas de moyen
-  d'obtenir une config zap invalide par l'environnement (`ENV` choisit entre
-  deux configs valides) : l'erreur de `Build` n'est pas testable sans API
-  ajoutée pour ça, limite assumée.
+- `InitLogger` ; `SlogLog` et `GetSlog` supprimés (signature finale en E1b,
+  ci-dessous).
 - Logger injecté : `app.WithLogger` (nil garde `slog.Default()` lu à
   `NewRouter`) ; constructeurs de controllers `New…Controller(log, …)`.
 - `InitDB` garde sa signature mais ne journalise plus ses échecs : erreurs
@@ -379,6 +376,20 @@ Sans changement de comportement HTTP ni de contrat.
   paraphrasés ou périmés retirés.
 - Suite prévue (un plan par lot) : E2 code mort, E3 renommages, E4 tests,
   règles de lint (dont `shadow`, qui signale aussi `tests/testsupport/contract.go:46`).
+
+## Lot slog : slog seul (branche `chore/replace-zap-with-slog`)
+
+Décision utilisateur : zap et `ZapHandler` supprimés, un seul logger `*slog.Logger`
+injecté (`main`, `InitDB`, `app.WithLogger`, controllers).
+
+- `logger.New(w io.Writer, env string)` : JSON au niveau Info si
+  `env == "production"`, texte au niveau Debug sinon, `AddSource` dans les deux
+  cas. `InitLogger() *slog.Logger` l'appelle sur stderr avec `ENV` et fait
+  `slog.SetDefault` ; il ne retourne plus d'erreur.
+- `main` : `log.Error("Server failed", ...)` puis `os.Exit(1)`.
+- `InitDB(dsn, log *slog.Logger)`.
+- Format visible : voir CHANGELOG (Changed). Pas de pile d'appels sur les
+  erreurs ; durée `latency` en nanosecondes en JSON.
 
 ## Prochaine mission
 

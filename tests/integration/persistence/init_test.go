@@ -1,7 +1,10 @@
 package persistence
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -10,16 +13,13 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"go.uber.org/zap/zaptest/observer"
 )
 
 // GIVEN an empty database / WHEN InitDB (application startup) / THEN every migration is applied before the connection is returned
 func TestInitDB_MigratesAnEmptyDatabase(t *testing.T) {
 	dsn := pg.NewEmptyDatabase(t)
 
-	db, err := database.InitDB(dsn, zap.NewNop())
+	db, err := database.InitDB(dsn, slog.New(slog.DiscardHandler))
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func TestInitDB_MigratesAnEmptyDatabase(t *testing.T) {
 
 // GIVEN an unreachable database / WHEN InitDB / THEN an error is returned instead of a usable connection
 func TestInitDB_UnreachableDatabase(t *testing.T) {
-	db, err := database.InitDB("postgres://testuser:testpass@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2", zap.NewNop())
+	db, err := database.InitDB("postgres://testuser:testpass@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2", slog.New(slog.DiscardHandler))
 
 	assert.Error(t, err)
 	assert.Nil(t, db)
@@ -45,11 +45,22 @@ func TestInitDB_UnreachableDatabase(t *testing.T) {
 // initDBObserved runs InitDB with a logger that records every entry.
 func initDBObserved(t *testing.T, dsn string) error {
 	t.Helper()
-	core, logs := observer.New(zapcore.DebugLevel)
-	db, err := database.InitDB(dsn, zap.New(core))
+	var out bytes.Buffer
+	db, err := database.InitDB(dsn, slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	assert.Nil(t, db)
-	assert.Equal(t, 1, logs.FilterMessage("Initializing PostgreSQL database").Len())
-	assert.Zero(t, logs.FilterLevelExact(zapcore.ErrorLevel).Len(), "InitDB returns its failure, the caller logs it")
+	initializing, errorEntries := 0, 0
+	for _, line := range bytes.Split(bytes.TrimSpace(out.Bytes()), []byte("\n")) {
+		var entry map[string]any
+		require.NoError(t, json.Unmarshal(line, &entry), "%s", line)
+		if entry["msg"] == "Initializing PostgreSQL database" {
+			initializing++
+		}
+		if entry["level"] == slog.LevelError.String() {
+			errorEntries++
+		}
+	}
+	assert.Equal(t, 1, initializing)
+	assert.Zero(t, errorEntries, "InitDB returns its failure, the caller logs it")
 	return err
 }
 

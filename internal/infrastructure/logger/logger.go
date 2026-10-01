@@ -1,30 +1,27 @@
-// Package logger initialise zap et le logger slog qui lui délègue.
+// Package logger construit le logger slog de l'application.
 package logger
 
 import (
-	"fmt"
+	"io"
 	"log/slog"
 	"os"
-
-	"go.uber.org/zap"
 )
 
-// InitLogger construit le logger zap (production si ENV=production) et le
-// logger slog qui lui délègue, puis fait de ce dernier le logger par défaut de
-// slog. Les deux loggers sont retournés pour être injectés.
-func InitLogger() (*zap.Logger, *slog.Logger, error) {
-	config := zap.NewDevelopmentConfig()
-	if os.Getenv("ENV") == "production" {
-		config = zap.NewProductionConfig()
-	}
-	// Pile d'appels seulement à partir d'Error : en développement zap en ajoute
-	// par défaut dès Warn, donc à chaque 4xx du journal d'accès.
-	zapLogger, err := config.Build(zap.AddStacktrace(zap.ErrorLevel))
-	if err != nil {
-		return nil, nil, fmt.Errorf("build zap logger: %w", err)
-	}
+const productionEnv = "production"
 
-	slogLogger := slog.New(NewZapHandler(zapLogger))
-	slog.SetDefault(slogLogger)
-	return zapLogger, slogLogger, nil
+// New construit le logger : JSON au niveau Info quand env vaut "production",
+// texte au niveau Debug sinon. Chaque ligne porte sa position dans le code source.
+func New(w io.Writer, env string) *slog.Logger {
+	if env == productionEnv {
+		return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{AddSource: true, Level: slog.LevelInfo}))
+	}
+	return slog.New(slog.NewTextHandler(w, &slog.HandlerOptions{AddSource: true, Level: slog.LevelDebug}))
+}
+
+// InitLogger construit le logger de l'application sur stderr, selon ENV, et en
+// fait le logger par défaut de slog.
+func InitLogger() *slog.Logger {
+	log := New(os.Stderr, os.Getenv("ENV"))
+	slog.SetDefault(log)
+	return log
 }

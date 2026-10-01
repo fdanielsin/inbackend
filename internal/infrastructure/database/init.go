@@ -3,9 +3,9 @@ package database
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
-	"go.uber.org/zap"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
@@ -21,7 +21,7 @@ const (
 
 // InitDB applique les migrations en attente, puis ouvre la connexion PostgreSQL.
 // Les échecs sont retournés, enveloppés, sans être journalisés : c'est à l'appelant de le faire.
-func InitDB(dsn string, log *zap.Logger) (*gorm.DB, error) {
+func InitDB(dsn string, log *slog.Logger) (*gorm.DB, error) {
 	log.Info("Initializing PostgreSQL database")
 
 	if err := Migrate(dsn); err != nil {

@@ -30,7 +30,9 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 ### Changed
 
 - Healthcheck de Docker Compose et job `docker` de la CI sur `/ready` ; lignes d'accès des sondes réussies en Debug.
-- Les logs zap n'ajoutent plus de pile d'appels qu'à partir du niveau Error (en développement, dès Warn, donc à chaque 4xx).
+- Logs par `slog` seul (zap retiré) : JSON au niveau Info en production, texte au niveau Debug en développement, position du code source sur chaque ligne.
+- Logs JSON de production : `ts` devient `time` (RFC 3339), `level` en majuscules, `caller` devient l'objet `source` ; la durée `latency` est en nanosecondes ; plus de pile d'appels sur les erreurs.
+- Échec au démarrage journalisé en ERROR (« Server failed »), code de sortie 1 inchangé.
 - `Q-11` : le hook pre-push (lint, build, tests unitaires, sans Docker) bloque réellement en cas d'échec.
 - Logs de requête via `RequestLoggerWithConfig` (méthode, chemin sans query, route, statut, durée, request id) à la place de `middleware.Logger` déprécié ; format de ligne différent.
 - `DATABASE_URL` doit être une URL `postgres://` (le format `clé=valeur` est refusé au démarrage avec un message clair) ; `.env.example` mis à jour.

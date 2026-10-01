@@ -44,9 +44,14 @@ main (production-ready)
   ↓ (merge only after CR + all CI checks pass)
 develop (integration branch)
   ↓ (merge feature branches here first)
-feature/USER-[issue-id]-[short-name]  (e.g., feature/USER-123-add-task-endpoint)
-bugfix/USER-[issue-id]-[short-name]   (e.g., bugfix/USER-456-fix-user-validation)
+feature/<subject>   (e.g., feature/localized-api-messages)
+chore/<subject>     (e.g., chore/replace-zap-with-slog)
 ```
+
+**Branch names ([Conventional Branch](https://conventional-branch.github.io/),
+user decision of 2026-10-01):** `feature/`, `bugfix/`, `hotfix/`, `release/` or
+`chore/` (refactoring and tests are `chore/`), then a subject of 3 to 4
+lowercase words separated by hyphens, with no batch or ticket number.
 
 **Rules:**
 - Feature branches branch off `develop`
@@ -71,15 +76,22 @@ bugfix/USER-[issue-id]-[short-name]   (e.g., bugfix/USER-456-fix-user-validation
 
 ### 2. Commit Message Convention
 
-**Format (conventional commits):**
+**Format ([Conventional Commits 1.0.0](https://www.conventionalcommits.org/en/v1.0.0/),
+in English, user decision of 2026-10-01):**
 
 ```
-<type>(<scope>): <subject>
+<type>(<scope>): <description>
 
 <body>
 
 <footer>
 ```
+
+The description is lowercase, imperative, without a final period, about 50
+characters (72 at most). A breaking change adds `!` after the type or scope
+and/or a `BREAKING CHANGE:` footer (e.g. `refactor(logger)!: replace zap with
+slog`). The body is optional (what and why, at most 3 lines of 72 characters);
+tests and measurements go in the pull request. One commit per logical change.
 
 **Types:**
 - `feat`: New feature
@@ -92,20 +104,17 @@ bugfix/USER-[issue-id]-[short-name]   (e.g., bugfix/USER-456-fix-user-validation
 
 **Example:**
 ```
-feat(user): add email validation to CreateUser command
+feat(user): validate email in create command
 
-- Validate email format using standard regex
-- Return 400 Bad Request on invalid email
-- Add unit tests for valid/invalid cases
+Return 400 on a malformed email instead of storing it.
 
 Closes #123
 ```
 
 **Critical Rule:**
 - NO `Co-authored-by` trailers in ANY commits, for new commits going forward.
-  No CI check enforces this today ; 7 existing commits on `origin/develop`
-  (e.g. `66335a8`) contain the trailer. A history rewrite to remove them is
-  planned.
+  No CI check enforces this. The existing trailers were removed by the history
+  rewrite of 2026-10-01.
 - Each commit represents work by the actual author only
 - If pair programming: both developers have their own commits, or one takes attribution
 
@@ -277,9 +286,9 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 ## Implementation Checklist
 
 - [x] Branching strategy documented
-- [ ] Commit convention (no Co-authored-by) documented for new commits ;
-      non enforced by any check ; 7 existing commits on `origin/develop`
-      contain the trailer, history rewrite planned
+- [x] Commit convention (Conventional Commits, no Co-authored-by) documented ;
+      not enforced by any check ; the trailers of existing commits were
+      removed by the history rewrite of 2026-10-01
 - [x] CI/CD pipeline contains seven jobs plus a summary
 - [x] A successful remote run is independently verified for the current commit
 - [ ] Branch protection rules are independently verified in GitHub

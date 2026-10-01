@@ -14,29 +14,24 @@ import (
 	"github.com/fdanielsin/inbackend/internal/app"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
-	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
 func main() {
-	log, slogLogger, err := logger.InitLogger()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to initialize logger: %v\n", err)
-		os.Exit(1)
-	}
+	log := logger.InitLogger()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	err = run(ctx, log, slogLogger)
+	err := run(ctx, log)
 	stop()
 
-	// Fatal vide les buffers de zap avant de quitter : aucun Sync différé n'est nécessaire.
 	if err != nil {
-		log.Fatal("Server failed", zap.Error(err))
+		log.Error("Server failed", slog.Any("error", err))
+		os.Exit(1)
 	}
 	log.Info("Server stopped")
 }
 
-func run(ctx context.Context, log *zap.Logger, slogLogger *slog.Logger) error {
+func run(ctx context.Context, log *slog.Logger) error {
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		return errors.New("DATABASE_URL not set")
@@ -48,7 +43,7 @@ func run(ctx context.Context, log *zap.Logger, slogLogger *slog.Logger) error {
 	}
 	defer closeDB(db, log)
 
-	e := app.NewRouter(db, app.WithLogger(slogLogger), app.WithAllowedOrigins(app.ParseAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS"))))
+	e := app.NewRouter(db, app.WithLogger(log), app.WithAllowedOrigins(app.ParseAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS"))))
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -59,16 +54,16 @@ func run(ctx context.Context, log *zap.Logger, slogLogger *slog.Logger) error {
 		return fmt.Errorf("failed to listen on port %s: %w", port, err)
 	}
 
-	log.Info("Starting server", zap.String("port", port))
+	log.Info("Starting server", slog.String("port", port))
 	return app.Serve(ctx, e, listener)
 }
 
-func closeDB(db *gorm.DB, log *zap.Logger) {
+func closeDB(db *gorm.DB, log *slog.Logger) {
 	sqlDB, err := db.DB()
 	if err == nil {
 		err = sqlDB.Close()
 	}
 	if err != nil {
-		log.Warn("Failed to close the database", zap.Error(err))
+		log.Warn("Failed to close the database", slog.Any("error", err))
 	}
 }
