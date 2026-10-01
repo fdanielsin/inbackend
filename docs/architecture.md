@@ -41,7 +41,7 @@ inbackend/
     │       ├── repository.go
     │       └── service.go       (cible, pas encore créé)
     ├── controllers/
-    │   └── http/
+    │   └── httpapi/
     ├── infrastructure/
     │   ├── persistence/postgres/
     │   │   └── models.go
@@ -95,7 +95,7 @@ serveur; les réponses 500 n'exposent qu'un message générique.
 L'infrastructure implémente les ports du domaine et contient aujourd'hui
 PostgreSQL, GORM et le logger. Elle n'utilise pas Echo et ne contient pas le
 router : Echo est utilisé directement par les controllers
-(`internal/controllers/http`) et par `internal/app`, où le router est
+(`internal/controllers/httpapi`) et par `internal/app`, où le router est
 assemblé (`app.NewRouter`). Un package `infrastructure/http/` qui engloberait Echo et
 le routage est une cible (voir Structure cible), pas l'état actuel. Il
 n'existe pas non plus de package de configuration dédié : les variables
@@ -198,3 +198,11 @@ Le code Go suit deux références, avec les écarts volontaires ci-dessous :
 - `app.NewRouter` prend des options variadiques (`app.Option`) bien qu'il n'y en
   ait qu'une aujourd'hui (`WithAllowedOrigins`) : les appelants existants
   restent valides quand une option s'ajoute.
+
+## Nommage des paquets
+
+Un paquet ne reprend ni le nom d'un paquet de la bibliothèque standard ni celui
+d'une dépendance importée : `httpapi` et non `http` (`net/http`), `pgstore` et
+non `postgres` (driver GORM). Un alias d'import n'est admis que pour une vraie
+collision entre deux imports (`usercommands` et `userqueries`, deux paquets
+`commands`), jamais pour contourner le nom d'un de nos propres paquets.

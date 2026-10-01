@@ -12,7 +12,7 @@ import (
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
 	usercommands "github.com/fdanielsin/inbackend/internal/application/user/commands"
 	userqueries "github.com/fdanielsin/inbackend/internal/application/user/queries"
-	ctrlhttp "github.com/fdanielsin/inbackend/internal/controllers/http"
+	"github.com/fdanielsin/inbackend/internal/controllers/httpapi"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/postgres"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -66,16 +66,16 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	listUserTasksHandler := queries.NewListUserTasksHandler(taskRepo)
 	getStatsHandler := queries.NewGetStatsHandler(userRepo, taskRepo)
 
-	healthCtrl := ctrlhttp.NewHealthController(log, databaseReadiness(db))
-	userCtrl := ctrlhttp.NewUserController(log, createUserHandler, getUserHandler, listUsersHandler)
-	taskCtrl := ctrlhttp.NewTaskController(log, createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
-	statsCtrl := ctrlhttp.NewStatsController(log, getStatsHandler)
+	healthCtrl := httpapi.NewHealthController(log, databaseReadiness(db))
+	userCtrl := httpapi.NewUserController(log, createUserHandler, getUserHandler, listUsersHandler)
+	taskCtrl := httpapi.NewTaskController(log, createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
+	statsCtrl := httpapi.NewStatsController(log, getStatsHandler)
 
 	e := echo.New()
 
-	e.HTTPErrorHandler = ctrlhttp.NewErrorHandler(log)
-	e.Use(ctrlhttp.RequestID(log))
-	e.Use(ctrlhttp.AccessLog(log))
+	e.HTTPErrorHandler = httpapi.NewErrorHandler(log)
+	e.Use(httpapi.RequestID(log))
+	e.Use(httpapi.AccessLog(log))
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:  cfg.allowedOrigins,
@@ -83,7 +83,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 		AllowHeaders:  []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 		ExposeHeaders: []string{echo.HeaderXRequestID},
 	}))
-	e.Use(ctrlhttp.BodyLimit(maxRequestBody))
+	e.Use(httpapi.BodyLimit(maxRequestBody))
 
 	e.GET("/health", healthCtrl.HealthCheck)
 	e.GET("/ready", healthCtrl.Ready)
@@ -115,7 +115,7 @@ func ParseAllowedOrigins(value string) []string {
 }
 
 // databaseReadiness vérifie la base à chaque appel (le pool peut se rétablir seul).
-func databaseReadiness(db *gorm.DB) ctrlhttp.ReadinessCheck {
+func databaseReadiness(db *gorm.DB) httpapi.ReadinessCheck {
 	return func(ctx context.Context) error {
 		sqlDB, err := db.DB()
 		if err != nil {

@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	ctrlhttp "github.com/fdanielsin/inbackend/internal/controllers/http"
+	"github.com/fdanielsin/inbackend/internal/controllers/httpapi"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +19,7 @@ import (
 )
 
 // probeServer mounts /ready on the production error handler and middlewares, with the given check.
-func probeServer(t *testing.T, check ctrlhttp.ReadinessCheck) (*echo.Echo, *bytes.Buffer) {
+func probeServer(t *testing.T, check httpapi.ReadinessCheck) (*echo.Echo, *bytes.Buffer) {
 	t.Helper()
 	var logs bytes.Buffer
 	previous := slog.Default()
@@ -28,10 +28,10 @@ func probeServer(t *testing.T, check ctrlhttp.ReadinessCheck) (*echo.Echo, *byte
 
 	log := slog.Default()
 	e := echo.New()
-	e.HTTPErrorHandler = ctrlhttp.NewErrorHandler(log)
-	e.Use(ctrlhttp.RequestID(log))
+	e.HTTPErrorHandler = httpapi.NewErrorHandler(log)
+	e.Use(httpapi.RequestID(log))
 	e.Use(middleware.Recover())
-	e.GET("/ready", ctrlhttp.NewHealthController(log, check).Ready)
+	e.GET("/ready", httpapi.NewHealthController(log, check).Ready)
 	return e, &logs
 }
 

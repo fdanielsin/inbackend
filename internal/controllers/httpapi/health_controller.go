@@ -1,5 +1,5 @@
-// Package http expose les controllers HTTP Echo de l'API.
-package http
+// Package httpapi expose les controllers HTTP Echo de l'API.
+package httpapi
 
 import (
 	"context"

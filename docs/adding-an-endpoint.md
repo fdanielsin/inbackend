@@ -18,7 +18,7 @@ document ne les répète pas.
    SQLSTATE et nom de contrainte (`persistence/postgres/constraints.go`).
 5. **Erreurs** : chaque erreur domaine est ajoutée à l'unique table de
    `internal/shared/errors.go` (statut, `error_code`, message public).
-6. **Controller** (`internal/controllers/http/`) : `requestLogger(c, ...)`
+6. **Controller** (`internal/controllers/httpapi/`) : `requestLogger(c, ...)`
    pour les logs, `respondWithError` pour toute erreur, jamais le texte d'une
    erreur dans une réponse ni un log (il peut contenir des données).
 7. **Route** : une ligne dans `internal/app/router.go`.

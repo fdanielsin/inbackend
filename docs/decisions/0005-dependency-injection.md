@@ -85,7 +85,7 @@ getUserHandler := userqueries.NewGetUserHandler(userRepo)
 getStatsHandler := queries.NewGetStatsHandler(userRepo, taskRepo)
 
 // Controllers
-userCtrl := ctrlhttp.NewUserController(
+userCtrl := httpapi.NewUserController(
   createUserHandler,
   getUserHandler,
   listUsersHandler,
@@ -156,7 +156,7 @@ func TestUserController_CreateUser(t *testing.T) {
 Ajouter un nouveau feature :
 
 1. Créer le handler dans `application/`
-2. Créer le controller dans `controllers/http/`
+2. Créer le controller dans `controllers/httpapi/`
 3. Wirer dans `internal/app/router.go`
 4. Enregistrer la route dans `internal/app/router.go`
 
