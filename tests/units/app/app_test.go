@@ -3,6 +3,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net"
 	"net/http"
@@ -25,7 +26,9 @@ func TestParseAllowedOrigins(t *testing.T) {
 		"*": {"*"},
 	}
 	for value, want := range cases {
-		assert.Equal(t, want, app.ParseAllowedOrigins(value), "%q", value)
+		t.Run(fmt.Sprintf("%q", value), func(t *testing.T) {
+			assert.Equal(t, want, app.ParseAllowedOrigins(value), "%q", value)
+		})
 	}
 }
 
@@ -115,6 +118,8 @@ func TestServe_LetsARequestInProgressFinish(t *testing.T) {
 	}
 
 	cancel()
+	// Showing that Serve does not return needs a bounded wait: a return that ignored the request
+	// would come at once, far within these 200 ms; the real return is checked below.
 	select {
 	case err := <-done:
 		t.Fatalf("Serve returned before the request finished: %v", err)

@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
@@ -41,11 +42,13 @@ func TestNewUser_NormalizesEmailOnly(t *testing.T) {
 		"\nÉLODIE@EXEMPLE.FR ": "élodie@exemple.fr",
 		"ada@mail.example.co":  "ada@mail.example.co",
 	} {
-		u, err := user.NewUser(0, "Ada LOVELACE", raw)
+		t.Run(fmt.Sprintf("%q", raw), func(t *testing.T) {
+			u, err := user.NewUser(0, "Ada LOVELACE", raw)
 
-		require.NoError(t, err, raw)
-		assert.Equal(t, want, u.Email, raw)
-		assert.Equal(t, "Ada LOVELACE", u.Name, raw)
+			require.NoError(t, err, raw)
+			assert.Equal(t, want, u.Email, raw)
+			assert.Equal(t, "Ada LOVELACE", u.Name, raw)
+		})
 	}
 }
 
@@ -74,10 +77,12 @@ func TestNewUser_MalformedEmail_IsInvalid(t *testing.T) {
 		"ada\x00@x.io",      // control character
 		"\x00ada@x.io",      // control character first (not removed by the trim)
 	} {
-		u, err := user.NewUser(0, "Ada", email)
+		t.Run(fmt.Sprintf("%q", email), func(t *testing.T) {
+			u, err := user.NewUser(0, "Ada", email)
 
-		assert.Nil(t, u, email)
-		assert.ErrorIs(t, err, user.ErrUserEmailInvalid, email)
+			assert.Nil(t, u, email)
+			assert.ErrorIs(t, err, user.ErrUserEmailInvalid, email)
+		})
 	}
 }
 
