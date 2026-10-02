@@ -38,28 +38,30 @@ L'image est construite en deux étapes (`golang:1.26.8-alpine` puis
 ## Image publiée (GHCR)
 
 Le job `publish-image` de la CI pousse l'image sur `ghcr.io/fdanielsin/inbackend`
-(paquet privé) après un run vert, pour chaque push sur `develop` et sur un tag
-`v*`, jamais depuis une PR, une autre branche ni un `workflow_dispatch`. Tags :
-sha complet du commit, `develop` (push sur la branche) et le nom du tag (push de
-tag). L'image est un manifeste unique linux/amd64, sans attestation, et porte les
-labels OCI `source`, `title` et `description`. Elle fait environ 37 Mo
-décompressée et 10 Mo compressée (mesure locale `docker image ls` et
-`docker save | gzip`, arm64 ; la CI construit en amd64, taille proche).
+(paquet privé), destinée au futur déploiement du backend, après un run vert, pour
+chaque push sur `develop` et sur un tag `v*`, jamais depuis une PR, une autre
+branche ni un `workflow_dispatch`. Tags : sha complet du commit, `develop` (push
+sur la branche) et le nom du tag (push de tag). L'image est un manifeste unique
+linux/amd64, sans attestation, et porte les labels OCI `source`, `title` et
+`description`. Elle fait environ 37 Mo décompressée et 10 Mo compressée (mesure
+locale `docker image ls` et `docker save | gzip`, arm64 ; la CI construit en
+amd64, taille proche).
 
 Le job n'utilise que le `GITHUB_TOKEN` du run avec `packages: write`, limité à
 ce job et à `prune-image` ; le reste du workflow n'a que `contents: read`. Lire
-l'image demande un jeton avec `read:packages`, ou l'accès en lecture au paquet
-donné au dépôt qui la consomme (réglages du paquet).
+l'image demande un jeton avec `read:packages` (ou l'accès en lecture au paquet,
+réglages du paquet). Aucun autre dépôt ne la tire aujourd'hui : elle sert au
+futur déploiement.
 
-Usage par un autre dépôt (par exemple les tests E2E du frontend) : démarrer
-l'image avec PostgreSQL et lire le contrat sur `GET /openapi.yaml`.
+Pour la démarrer, il faut un PostgreSQL ; le contrat de ce commit se lit sur
+`GET /openapi.yaml`.
 
 | Variable | À donner | Remarque |
 | --- | --- | --- |
-| `DATABASE_URL` | URL du PostgreSQL (`...?sslmode=disable` en CI) | obligatoire ; les migrations s'appliquent au démarrage |
+| `DATABASE_URL` | URL du PostgreSQL (`sslmode=require` si la base l'impose) | obligatoire ; les migrations s'appliquent au démarrage |
 | `PORT` | `8080` par défaut | le `HEALTHCHECK` de l'image suit cette variable |
-| `CORS_ALLOWED_ORIGINS` | origine du client de test | `*` par défaut hors production |
-| `ENV` | laisser vide ou `development` | avec `production`, `/openapi.yaml` est coupé sauf `API_DOCS_ENABLED=true` et les origines CORS sont obligatoires |
+| `CORS_ALLOWED_ORIGINS` | origines autorisées, séparées par des virgules | `*` par défaut hors production |
+| `ENV` | `production` pour un déploiement, `development` par défaut | avec `production`, `/openapi.yaml` est coupé sauf `API_DOCS_ENABLED=true` et les origines CORS sont obligatoires |
 | `API_DOCS_ENABLED` | `true` pour forcer | actif par défaut hors production |
 
 Le `HEALTHCHECK` appelle `/ready`, donc l'image devient saine quand la base
@@ -69,8 +71,21 @@ répond. Pour figer le contrat, tirer le tag sha : `develop` change à chaque pu
 
 - Le stockage et la bande passante du Container registry (`ghcr.io`) sont
   actuellement gratuits, et GitHub annonce un préavis d'un mois avant tout
-  changement ([GitHub Packages, facturation](https://docs.github.com/en/billing/concepts/product-billing/github-packages)).
-  La rétention reste utile par hygiène.
+  changement ([GitHub Packages,
+  facturation](https://docs.github.com/en/billing/concepts/product-billing/github-packages)
+  : « Container image storage and bandwidth for the Container registry is
+  currently free. If you use Container registry, you'll be informed at least one
+  month in advance of any change to this policy. »). La rétention reste utile par
+  hygiène.
+- La suppression de versions par un workflow (job `prune-image`) est une fonction
+  en préversion publique, donc sujette à changement : « The ability for GitHub
+  Actions workflows to delete and restore packages using the REST API is currently
+  in public preview and subject to change. » ([suppression et restauration d'un
+  paquet](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package),
+  même phrase sur la page [Working with the Container
+  registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry),
+  lues le 2026-10-03). Si l'API change, le job échoue et la suppression se fait à
+  la main ; la publication de l'image n'en dépend pas.
 - Le `GITHUB_TOKEN` peut supprimer des versions parce que le dépôt dont le workflow
   publie le paquet reçoit par défaut le rôle admin sur lui
   ([suppression et restauration d'un paquet](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package)).

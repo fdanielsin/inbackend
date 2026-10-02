@@ -4,6 +4,21 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+> **À vérifier avant de mettre à jour (de 1.0.0 vers 1.1.0).** Changements qui
+> peuvent casser un déploiement ou un client existant :
+>
+> - `ENV=production` : le serveur refuse de démarrer si `CORS_ALLOWED_ORIGINS` est absente, vide ou contient `*` ; lister les origines.
+> - `ENV=production` : `/openapi.yaml` et `/docs` répondent 404 sauf `API_DOCS_ENABLED=true`.
+> - Logs : `slog` seul ; en production, JSON avec `time`, `level` en majuscules, objet `source`, `latency` en nanosecondes ; adapter les parseurs et alertes de logs.
+> - `DATABASE_URL` : URL `postgres://` ou `postgresql://` obligatoire, le format `clé=valeur` est refusé.
+> - Migrations : elles s'appliquent au démarrage et la migration 2 réécrit les emails existants en minuscules (espaces retirés). Elles peuvent bloquer le démarrage (emails en doublon une fois normalisés, tâches orphelines) et une migration refusée laisse la base « dirty » : corriger les données ne suffit pas, il faut ensuite `make migrate-force version=N` (N donné par le message d'erreur), lancé depuis un checkout du dépôt avec Go (l'image ne l'a pas), voir `docs/troubleshooting.md`. Rien n'est supprimé ; sauvegarder la base avant.
+> - Corps de requête : v1.0.0 ne validait rien. Seul `application/json` est accepté, une propriété inconnue ou `null` sur une propriété facultative est refusée (400 `INVALID_BODY`). Répondent 400 `VALIDATION_FAILED` : nom, email et titre absents ou faits d'espaces, format d'email invalide, `user_id` absent ou 0, valeur trop longue. Nom, titre et description sont rognés et l'email est mis en minuscules à la création : la valeur relue diffère de celle envoyée.
+> - Codes de statut : 409 `EMAIL_TAKEN` (au lieu de 500) ; 404 `TASK_NOT_FOUND` sur `DELETE /tasks/{id}` (au lieu de 200) et sur `PUT /tasks/{id}` (v1.0.0 insérait une nouvelle tâche, réponse 200) ; 404 `USER_NOT_FOUND` à la création d'une tâche ; 400 `INVALID_ID` pour un identifiant de chemin non numérique ou au-delà de 4 294 967 295 (v1.0.0 : 404 sur `GET /users/{id}`, 500 ailleurs) ; 413 `PAYLOAD_TOO_LARGE` au-delà de 1 MiB.
+> - Messages `error` et `message` en français ou en anglais selon `Accept-Language` ; ne pas comparer les textes, utiliser `error_code`.
+> - Listes d'utilisateurs et de tâches triées par `id` croissant.
+> - `/ready` (base joignable) s'ajoute à `/health` ; les healthchecks d'orchestration doivent viser `/ready`.
+> - Nouvelle image Docker `ghcr.io/fdanielsin/inbackend` (privée), non utilisée tant qu'aucun déploiement ne la tire.
+
 ### Security
 
 - Go 1.26.8 : corrige les vulnérabilités atteignables de la stdlib 1.25.0 (`Q-03`).
@@ -44,7 +59,6 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 - Healthcheck de Docker Compose et job `docker` de la CI sur `/ready` ; lignes d'accès des sondes réussies en Debug.
 - Logs par `slog` seul (zap retiré) : JSON au niveau Info en production, texte au niveau Debug en développement, position du code source sur chaque ligne.
 - Logs JSON de production : `ts` devient `time` (RFC 3339), `level` en majuscules, `caller` devient l'objet `source` ; la durée `latency` est en nanosecondes ; plus de pile d'appels sur les erreurs.
-- Échec au démarrage journalisé en ERROR (« Server failed »), code de sortie 1 inchangé.
 - `Q-11` : le hook pre-push (lint, build, tests unitaires, sans Docker) bloque réellement en cas d'échec.
 - Logs de requête via `RequestLoggerWithConfig` (méthode, chemin sans query, route, statut, durée, request id) à la place de `middleware.Logger` déprécié ; format de ligne différent.
 - `DATABASE_URL` doit être une URL `postgres://` (le format `clé=valeur` est refusé au démarrage avec un message clair) ; `.env.example` mis à jour.
@@ -59,12 +73,11 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 - `Q-03` : CI, nouveau job `docker` bloquant (image, pile compose, `/health`).
 - Backend restructuré en couches domain/application/infrastructure/controllers
   (DDD/Clean Architecture), CQRS applicatif introduit.
-- Logging migré vers `slog` (délégué à `zap`), réponses HTTP standardisées.
+- Réponses HTTP standardisées.
 - Tests réorganisés en unit/integration/e2e (ADR 0004).
 - Documentation d'architecture et ADR 0006 alignées sur l'état réel du code.
 - `make lint` et `make fmt` utilisent golangci-lint, gofumpt et goimports.
-- Échec au démarrage : le log fatal devient « Server failed » avec un champ
-  `error` ; le code de sortie reste 1.
+- Échec au démarrage journalisé en ERROR (« Server failed », champ `error`) ; le code de sortie reste 1.
 - Contrat OpenAPI : descriptions de tags ajoutées, schéma inutilisé retiré.
 
 ### Fixed

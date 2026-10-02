@@ -38,7 +38,8 @@ docker compose down -v
 
 Every push to `develop` and every `v*` tag publishes a private image to
 `ghcr.io/fdanielsin/inbackend`, tagged with the full commit sha, `develop` (branch
-pushes) and the tag name (tag pushes). To run it against PostgreSQL:
+pushes) and the tag name (tag pushes). It is built for the future deployment of
+the backend; no other project pulls it today. To run it against PostgreSQL:
 
 ```bash
 echo "$GITHUB_TOKEN" | docker login ghcr.io -u <user> --password-stdin   # token with read:packages
