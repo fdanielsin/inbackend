@@ -88,27 +88,27 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	e.Use(middleware.Recover())
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:  cfg.allowedOrigins,
-		AllowMethods:  []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete},
+		AllowMethods:  []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodDelete},
 		AllowHeaders:  []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 		ExposeHeaders: []string{echo.HeaderXRequestID},
 	}))
 	e.Use(httpapi.BodyLimit(maxRequestBody))
 
-	e.GET("/health", healthCtrl.HealthCheck)
-	e.GET("/ready", healthCtrl.Ready)
-	e.GET("/api/v1/users", userCtrl.ListUsers)
+	getAndHead(e, "/health", healthCtrl.HealthCheck)
+	getAndHead(e, "/ready", healthCtrl.Ready)
+	getAndHead(e, "/api/v1/users", userCtrl.ListUsers)
 	e.POST("/api/v1/users", userCtrl.CreateUser)
-	e.GET("/api/v1/users/:id", userCtrl.GetUser)
-	e.GET("/api/v1/users/:id/tasks", taskCtrl.ListUserTasks)
+	getAndHead(e, "/api/v1/users/:id", userCtrl.GetUser)
+	getAndHead(e, "/api/v1/users/:id/tasks", taskCtrl.ListUserTasks)
 	e.POST("/api/v1/tasks", taskCtrl.CreateTask)
 	e.PUT("/api/v1/tasks/:id", taskCtrl.UpdateTask)
 	e.DELETE("/api/v1/tasks/:id", taskCtrl.DeleteTask)
-	e.GET("/api/v1/stats", statsCtrl.GetStats)
+	getAndHead(e, "/api/v1/stats", statsCtrl.GetStats)
 
 	if cfg.apiContract != nil {
 		docsCtrl := httpapi.NewDocsController(cfg.apiContract)
-		e.GET("/openapi.yaml", docsCtrl.OpenAPI)
-		e.GET("/docs", docsCtrl.SwaggerUI)
+		getAndHead(e, "/openapi.yaml", docsCtrl.OpenAPI)
+		getAndHead(e, "/docs", docsCtrl.SwaggerUI)
 	}
 
 	return e
@@ -127,6 +127,12 @@ func ParseAllowedOrigins(value string) []string {
 		return []string{"*"}
 	}
 	return origins
+}
+
+// getAndHead enregistre une route lecture pour GET et HEAD : HEAD répond comme
+// GET, sans corps (RFC 9110, section 9.3.2). Le serveur net/http écarte le corps.
+func getAndHead(e *echo.Echo, path string, handler echo.HandlerFunc) {
+	e.Match([]string{http.MethodGet, http.MethodHead}, path, handler)
 }
 
 // databaseReadiness vérifie la base à chaque appel (le pool peut se rétablir seul).

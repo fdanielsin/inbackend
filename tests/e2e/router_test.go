@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// GIVEN the production router / THEN exactly the 9 routes of the contract are registered (QP-01)
+// GIVEN the production router / THEN exactly the routes of the contract are registered, HEAD with every GET (QP-01)
 func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 	s := newTestServer(t)
 
@@ -31,6 +31,12 @@ func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 		"GET /api/v1/users/:id/tasks",
 		"GET /health",
 		"GET /ready",
+		"HEAD /api/v1/stats",
+		"HEAD /api/v1/users",
+		"HEAD /api/v1/users/:id",
+		"HEAD /api/v1/users/:id/tasks",
+		"HEAD /health",
+		"HEAD /ready",
 		"POST /api/v1/tasks",
 		"POST /api/v1/users",
 		"PUT /api/v1/tasks/:id",
@@ -45,22 +51,22 @@ func TestRouter_UnknownRouteAndMethod(t *testing.T) {
 
 	notAllowed := s.doOutsideOperations(http.MethodPatch, "/api/v1/users")
 	requireError(t, notAllowed, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed")
-	assert.Equal(t, "OPTIONS, GET, POST", notAllowed.header.Get("Allow"))
+	assert.Equal(t, "OPTIONS, GET, HEAD, POST", notAllowed.header.Get("Allow"))
 
 	requireError(t, s.doOutsideOperations(http.MethodPost, "/health"), http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed")
 }
 
-// GIVEN HEAD on an unknown path / THEN 404 without a body
+// GIVEN HEAD on an unknown path, on a real server / THEN 404 without a body
 func TestRouter_HeadOnUnknownRouteHasNoBody(t *testing.T) {
-	s := newTestServer(t)
+	base := liveServer(t, newTestServer(t))
 
-	r := s.doRaw(http.MethodHead, "/api/v1/unknown", "")
+	r := call(t, http.MethodHead, base+"/api/v1/unknown", "", nil)
 
-	assert.Equal(t, http.StatusNotFound, r.code)
+	assert.Equal(t, http.StatusNotFound, r.status)
 	assert.Empty(t, r.body)
 }
 
-// GIVEN a browser preflight from any origin / THEN CORS allows the four methods of the API
+// GIVEN a browser preflight from any origin / THEN CORS allows the five methods of the API
 func TestRouter_CORSPreflightAllowsAnyOrigin(t *testing.T) {
 	s := newTestServer(t)
 	req := httptest.NewRequest(http.MethodOptions, "/api/v1/tasks/1", nil)
@@ -72,7 +78,7 @@ func TestRouter_CORSPreflightAllowsAnyOrigin(t *testing.T) {
 
 	assert.Equal(t, http.StatusNoContent, rec.Code)
 	assert.Equal(t, "*", rec.Header().Get(echo.HeaderAccessControlAllowOrigin))
-	assert.Equal(t, "GET,POST,PUT,DELETE", rec.Header().Get(echo.HeaderAccessControlAllowMethods))
+	assert.Equal(t, "GET,HEAD,POST,PUT,DELETE", rec.Header().Get(echo.HeaderAccessControlAllowMethods))
 }
 
 // GIVEN a simple cross-origin request / THEN the response carries the CORS origin header

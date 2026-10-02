@@ -209,12 +209,12 @@ func TestLanguage_EveryResponseIsLocalized(t *testing.T) {
 	}
 }
 
-// GIVEN a router error, a HEAD on an unknown route and a CORS preflight / WHEN asked in French
+// GIVEN a router error, a HEAD on an unknown route (real server) and a CORS preflight / WHEN asked in French
 // THEN Content-Language and Vary are set too, and Vary keeps the values set by CORS
 func TestLanguage_HeadersOutsideTheOperations(t *testing.T) {
 	s := newTestServer(t)
 
-	head := s.sendWithLanguages(http.MethodHead, "/api/v1/unknown", "", false, "fr")
+	head := call(t, http.MethodHead, liveServer(t, s)+"/api/v1/unknown", "", map[string]string{headerAcceptLanguage: "fr"}).asResponse()
 	assert.Equal(t, http.StatusNotFound, head.code)
 	assert.Empty(t, head.body)
 	requireLanguageHeaders(t, head, "fr")

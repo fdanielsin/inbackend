@@ -171,7 +171,7 @@ func TestAPIDocs_ContentLanguageIsTheRealOne(t *testing.T) {
 	}
 }
 
-// GIVEN a router without the docs option / THEN /openapi.yaml and /docs do not exist (404), and with it exactly two routes more
+// GIVEN a router without the docs option / THEN /openapi.yaml and /docs do not exist (404), and with it exactly these two paths more, for GET and HEAD
 func TestAPIDocs_RoutesExistOnlyWithTheOption(t *testing.T) {
 	routes := func(s *testServer) []string {
 		var got []string
@@ -189,8 +189,8 @@ func TestAPIDocs_RoutesExistOnlyWithTheOption(t *testing.T) {
 		contract.ValidateErrorEnvelope(t, r.body)
 		requireError(t, r, http.StatusNotFound, "ROUTE_NOT_FOUND", "Route not found")
 	}
-	assert.Len(t, routes(without), 10)
-	assert.ElementsMatch(t, append(routes(without), "GET /docs", "GET /openapi.yaml"), routes(with))
+	assert.Len(t, routes(without), 16)
+	assert.ElementsMatch(t, append(routes(without), "GET /docs", "GET /openapi.yaml", "HEAD /docs", "HEAD /openapi.yaml"), routes(with))
 }
 
 // docsStatus starts the real binary with the given settings and returns the status of GET /docs and the

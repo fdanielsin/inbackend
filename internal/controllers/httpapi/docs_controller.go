@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/labstack/echo/v5"
@@ -69,13 +70,15 @@ func NewDocsController(spec []byte) *DocsController {
 	}
 }
 
-// OpenAPI gère GET /openapi.yaml.
+// OpenAPI gère GET et HEAD /openapi.yaml. Content-Length est posé explicitement
+// pour que HEAD annonce la taille du contrat.
 func (dc *DocsController) OpenAPI(c *echo.Context) error {
 	setDocsHeaders(c, shared.LangFrench)
+	c.Response().Header().Set(echo.HeaderContentLength, strconv.Itoa(len(dc.spec)))
 	return c.Blob(http.StatusOK, "application/yaml", dc.spec)
 }
 
-// SwaggerUI gère GET /docs.
+// SwaggerUI gère GET et HEAD /docs.
 func (dc *DocsController) SwaggerUI(c *echo.Context) error {
 	setDocsHeaders(c, shared.LangEnglish)
 	c.Response().Header().Set("Content-Security-Policy", dc.csp)

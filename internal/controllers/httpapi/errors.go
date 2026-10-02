@@ -100,13 +100,7 @@ func NewErrorHandler(base *slog.Logger) echo.HTTPErrorHandler {
 		}
 		log.Log(c.Request().Context(), logLevelForStatus(status), "Request failed", attrs...)
 
-		var sendErr error
-		if c.Request().Method == http.MethodHead {
-			sendErr = c.NoContent(status)
-		} else {
-			sendErr = c.JSON(status, shared.ErrorResponse(code, shared.Message(requestLanguage(c), key)))
-		}
-		if sendErr != nil {
+		if sendErr := c.JSON(status, shared.ErrorResponse(code, shared.Message(requestLanguage(c), key))); sendErr != nil {
 			log.Error("Failed to write error response", slog.String("error_type", fmt.Sprintf("%T", sendErr)))
 		}
 	}

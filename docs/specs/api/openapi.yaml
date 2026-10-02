@@ -14,6 +14,8 @@ info:
     - une route inconnue répond `404` `ROUTE_NOT_FOUND` et une méthode non
       supportée sur une route connue répond `405` `METHOD_NOT_ALLOWED` (avec
       l'en-tête `Allow`), tous deux dans l'enveloppe d'erreur ;
+    - HEAD est accepté sur toute route GET et répond comme elle, sans corps
+      (RFC 9110, section 9.3.2) ;
     - un corps de requête de plus de 1 MiB (1 048 576 octets) répond `413`
       `PAYLOAD_TOO_LARGE`.
 
@@ -72,6 +74,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HealthResponse'
+    head:
+      tags: [Health]
+      summary: Vérifier que le service est vivant, sans corps
+      description: Répond comme `GET /health`, sans corps (RFC 9110, section 9.3.2).
+      operationId: healthCheckHead
+      responses:
+        '200':
+          description: Service disponible
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
   /ready:
     parameters:
       - $ref: '#/components/parameters/AcceptLanguage'
@@ -100,6 +117,23 @@ paths:
                 $ref: '#/components/schemas/ReadyResponse'
         '503':
           $ref: '#/components/responses/DatabaseUnavailable'
+    head:
+      tags: [Health]
+      summary: Vérifier que le service est prêt, sans corps
+      description: Répond comme `GET /ready`, sans corps (RFC 9110, section 9.3.2).
+      operationId: readinessCheckHead
+      responses:
+        '200':
+          description: Service prêt
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+        '503':
+          $ref: '#/components/responses/HeadDatabaseUnavailable'
   /api/v1/users:
     parameters:
       - $ref: '#/components/parameters/AcceptLanguage'
@@ -165,6 +199,21 @@ paths:
           $ref: '#/components/responses/PayloadTooLarge'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    head:
+      tags: [Users]
+      summary: Lister les utilisateurs, sans corps
+      description: Répond comme `GET /api/v1/users`, sans corps (RFC 9110, section 9.3.2).
+      operationId: listUsersHead
+      responses:
+        '200':
+          description: Liste des utilisateurs
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+        '500':
+          $ref: '#/components/responses/HeadInternalServerError'
   /api/v1/users/{id}:
     parameters:
       - $ref: '#/components/parameters/Id'
@@ -197,6 +246,25 @@ paths:
           $ref: '#/components/responses/UserNotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    head:
+      tags: [Users]
+      summary: Récupérer un utilisateur, sans corps
+      description: Répond comme `GET /api/v1/users/{id}`, sans corps (RFC 9110, section 9.3.2).
+      operationId: getUserHead
+      responses:
+        '200':
+          description: Utilisateur trouvé
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+        '400':
+          $ref: '#/components/responses/HeadInvalidUserId'
+        '404':
+          $ref: '#/components/responses/HeadUserNotFound'
+        '500':
+          $ref: '#/components/responses/HeadInternalServerError'
   /api/v1/users/{id}/tasks:
     parameters:
       - $ref: '#/components/parameters/Id'
@@ -232,6 +300,23 @@ paths:
           $ref: '#/components/responses/InvalidUserId'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    head:
+      tags: [Tasks]
+      summary: Lister les tâches d'un utilisateur, sans corps
+      description: Répond comme `GET /api/v1/users/{id}/tasks`, sans corps (RFC 9110, section 9.3.2).
+      operationId: listUserTasksHead
+      responses:
+        '200':
+          description: Liste des tâches
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+        '400':
+          $ref: '#/components/responses/HeadInvalidUserId'
+        '500':
+          $ref: '#/components/responses/HeadInternalServerError'
   /api/v1/tasks:
     parameters:
       - $ref: '#/components/parameters/AcceptLanguage'
@@ -380,6 +465,21 @@ paths:
                         $ref: '#/components/schemas/Stats'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    head:
+      tags: [Statistics]
+      summary: Récupérer les statistiques, sans corps
+      description: Répond comme `GET /api/v1/stats`, sans corps (RFC 9110, section 9.3.2).
+      operationId: getStatsHead
+      responses:
+        '200':
+          description: Statistiques agrégées
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+        '500':
+          $ref: '#/components/responses/HeadInternalServerError'
   /openapi.yaml:
     parameters:
       - $ref: '#/components/parameters/AcceptLanguage'
@@ -409,6 +509,24 @@ paths:
               schema:
                 type: object
                 description: Document OpenAPI 3.1 (ce fichier).
+    head:
+      tags: [Documentation]
+      summary: Télécharger le contrat OpenAPI, sans corps
+      description: Répond comme `GET /openapi.yaml`, sans corps (RFC 9110, section 9.3.2).
+      operationId: getOpenApiContractHead
+      responses:
+        '200':
+          description: Contrat OpenAPI (sans corps)
+          headers:
+            Content-Language:
+              description: Langue du contenu (descriptions du contrat), indépendante de `Accept-Language`.
+              schema:
+                type: string
+                const: fr
+            Vary:
+              $ref: '#/components/headers/Vary'
+            X-Content-Type-Options:
+              $ref: '#/components/headers/ContentTypeOptionsNoSniff'
   /docs:
     parameters:
       - $ref: '#/components/parameters/AcceptLanguage'
@@ -442,6 +560,28 @@ paths:
                 type: string
           content:
             text/html:
+              schema:
+                type: string
+    head:
+      tags: [Documentation]
+      summary: Afficher l'interface Swagger UI, sans corps
+      description: Répond comme `GET /docs`, sans corps (RFC 9110, section 9.3.2).
+      operationId: getSwaggerUiHead
+      responses:
+        '200':
+          description: Page Swagger UI (sans corps)
+          headers:
+            Content-Language:
+              description: Langue de la page (interface Swagger UI), indépendante de `Accept-Language`.
+              schema:
+                type: string
+                const: en
+            Vary:
+              $ref: '#/components/headers/Vary'
+            X-Content-Type-Options:
+              $ref: '#/components/headers/ContentTypeOptionsNoSniff'
+            Content-Security-Policy:
+              description: Politique limitant la page à son origine et au CDN de Swagger UI.
               schema:
                 type: string
 components:
@@ -787,3 +927,33 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    HeadDatabaseUnavailable:
+      description: Base de données indisponible (`DATABASE_UNAVAILABLE`), sans corps
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
+        Cache-Control:
+          $ref: '#/components/headers/CacheControlNoStore'
+    HeadInvalidUserId:
+      description: Identifiant utilisateur invalide (`INVALID_ID`), sans corps
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
+    HeadUserNotFound:
+      description: Utilisateur introuvable (`USER_NOT_FOUND`), sans corps
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
+    HeadInternalServerError:
+      description: Erreur interne (`INTERNAL_ERROR`), sans corps
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'

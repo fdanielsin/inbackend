@@ -68,6 +68,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
   ([#3](https://github.com/fdanielsin/inbackend/pull/3)).
 - Jobs CI d'intégration et E2E ciblent désormais leurs packages réels.
 - `B-06` : `make lint` exécute réellement golangci-lint, comme l'annonce `make help`.
+- `HEAD` répond comme `GET` (sans corps) sur chaque route de lecture, au lieu de 405 ; déclaré dans le contrat, autorisé par CORS ([#22](https://github.com/fdanielsin/inbackend/pull/22)).
 
 ### Removed
 
