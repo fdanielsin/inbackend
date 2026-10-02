@@ -8,7 +8,7 @@ import (
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
+	"gorm.io/gorm/logger"
 )
 
 // Pool de connexions : borne la charge sur PostgreSQL (100 connexions par
@@ -32,7 +32,7 @@ func InitDB(dsn string, log *slog.Logger) (*gorm.DB, error) {
 	// texte brut des erreurs PostgreSQL ; les erreurs sont journalisées par les controllers
 	// avec leur seul code.
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)

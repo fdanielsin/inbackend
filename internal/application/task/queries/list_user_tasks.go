@@ -32,13 +32,13 @@ func NewListUserTasksHandler(repo tasks.Repository) *ListUserTasksHandler {
 
 // Execute exécute la requête ListUserTasks.
 func (h *ListUserTasksHandler) Execute(ctx context.Context, req ListUserTasksRequest) ([]*ListUserTasksResponse, error) {
-	tasks, err := h.repo.ListByUserID(ctx, req.UserID)
+	listed, err := h.repo.ListByUserID(ctx, req.UserID)
 	if err != nil {
 		return nil, err
 	}
 
-	responses := make([]*ListUserTasksResponse, len(tasks))
-	for i, t := range tasks {
+	responses := make([]*ListUserTasksResponse, len(listed))
+	for i, t := range listed {
 		responses[i] = &ListUserTasksResponse{
 			ID:          t.ID,
 			Title:       t.Title,

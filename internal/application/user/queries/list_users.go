@@ -22,13 +22,13 @@ func NewListUsersHandler(repo users.Repository) *ListUsersHandler {
 
 // Execute exécute la requête ListUsers.
 func (h *ListUsersHandler) Execute(ctx context.Context, _ ListUsersRequest) ([]*application.UserResponse, error) {
-	users, err := h.repo.List(ctx)
+	listed, err := h.repo.List(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	responses := make([]*application.UserResponse, len(users))
-	for i, u := range users {
+	responses := make([]*application.UserResponse, len(listed))
+	for i, u := range listed {
 		responses[i] = &application.UserResponse{
 			ID:    u.ID,
 			Name:  u.Name,
