@@ -1,4 +1,4 @@
-.PHONY: help build run test test-unit test-integration test-e2e cover mutate migrate-up migrate-down migrate-force migrate-new lint lint-api lint-ci fmt vuln clean docker-build docker-run
+.PHONY: help build run test test-unit test-integration test-e2e cover mutate migrate-up migrate-down migrate-force migrate-new lint lint-packages lint-api lint-ci fmt vuln clean docker-build docker-run
 
 # Outils épinglés, lancés avec `go run` pour ne pas modifier go.mod (ADR 0006).
 GOLANGCI_LINT := go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
@@ -27,6 +27,7 @@ help:
 	@echo "  make cover           - Run all tests with coverage of internal/ and fail under COVERAGE_MIN (default 85)"
 	@echo "  make mutate          - Mutation testing on the diff against MUTATION_BASE (default develop), not run in CI"
 	@echo "  make lint            - Run golangci-lint and check formatting (gofumpt, goimports)"
+	@echo "  make lint-packages   - Refuse package names that clash with the standard library or a dependency"
 	@echo "  make lint-api        - Lint the OpenAPI contract with Redocly (requires Node)"
 	@echo "  make lint-ci         - Lint GitHub Actions workflows with actionlint"
 	@echo "  make fmt             - Format code and tidy modules"
@@ -91,6 +92,11 @@ lint:
 	@echo "🔍 Linting and checking formatting..."
 	$(GOLANGCI_LINT) run ./...
 	$(GOLANGCI_LINT) fmt --diff ./...
+	@$(MAKE) --no-print-directory lint-packages
+
+lint-packages:
+	@echo "📦 Checking package names..."
+	@scripts/check-package-names.sh
 
 lint-api:
 	@echo "📜 Linting OpenAPI contract..."

@@ -14,15 +14,36 @@ linters:
     - gosec
     - revive
     - gocritic
+    - importas
+    - forbidigo
+    - testifylint
   # misspell est volontairement absent : son dictionnaire est anglais et signale
   # à tort des mots français (« pointeur », « attributs », « existant »).
   settings:
+    govet:
+      enable:
+        - shadow
+    importas:
+      no-unaliased: false
+      no-extra-aliases: true
+      alias:
+        # Deux paquets s'appellent commands et deux queries (utilisateur et tâche) :
+        # l'alias lève l'ambiguïté. Aucun autre alias n'est admis.
+        - pkg: github.com/fdanielsin/inbackend/internal/application/user/commands
+          alias: usercommands
+        - pkg: github.com/fdanielsin/inbackend/internal/application/user/queries
+          alias: userqueries
+    forbidigo:
+      forbid:
+        - pattern: ^os\.Exit$
+          msg: "os.Exit est réservé à main.go ; dans TestMain, retourner suffit, sauf pour forcer un code non nul après m.Run (nolint justifié)"
     gocritic:
       enabled-tags:
         - diagnostic
     revive:
       rules:
         - name: blank-imports
+        - name: import-shadowing
         - name: context-as-argument
         - name: dot-imports
         - name: error-naming
@@ -38,6 +59,10 @@ linters:
         - name: var-naming
   exclusions:
     rules:
+      # main() termine le processus avec le code de sortie de run.
+      - linters: [forbidigo]
+        text: "os.Exit"
+        path: ^main\.go$
       # noctx impose un contexte aux requêtes HTTP ; les tests e2e utilisent
       # httptest.NewRequest, sans réseau, où le contexte n'apporte rien.
       - linters: [noctx]

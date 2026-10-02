@@ -1,0 +1,5 @@
+# Exceptions à la règle de l'ADR 0008 : un paquet du module ne porte pas le nom d'un
+# paquet de la bibliothèque standard ni d'une dépendance.
+# Une ligne par exception : « chemin/du/paquet : justification » (justification
+# obligatoire). Une exception qui ne correspond plus à une collision est refusée.
+# Vide au départ : aucune collision aujourd'hui.
