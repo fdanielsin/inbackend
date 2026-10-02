@@ -15,9 +15,10 @@ type User struct {
 }
 
 // NewUser crée une nouvelle entité User avec validation basique.
-// L'email est normalisé (espaces retirés, minuscules) : c'est la forme
-// normalisée qui est unique.
+// Le nom et l'email sont débarrassés des espaces de début et de fin, l'email
+// est en plus passé en minuscules : c'est sa forme normalisée qui est unique.
 func NewUser(id uint, name, email string) (*User, error) {
+	name = strings.TrimSpace(name)
 	if name == "" {
 		return nil, ErrUserNameEmpty
 	}

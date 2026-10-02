@@ -44,13 +44,14 @@ func (h *UpdateTaskHandler) Execute(ctx context.Context, req UpdateTaskRequest) 
 	}
 
 	if req.Title != nil {
-		if *req.Title == "" {
-			return nil, task.ErrTaskTitleEmpty
+		title, err := task.NormalizeTitle(*req.Title)
+		if err != nil {
+			return nil, err
 		}
-		t.Title = *req.Title
+		t.Title = title
 	}
 	if req.Description != nil {
-		t.Description = *req.Description
+		t.Description = task.NormalizeDescription(*req.Description)
 	}
 	if req.Completed != nil {
 		t.Completed = *req.Completed

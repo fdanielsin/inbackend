@@ -147,10 +147,12 @@ de `POST /api/v1/users`, `POST /api/v1/tasks` et `PUT /api/v1/tasks/{id}`
 
 Le validateur est partiel volontairement. Il applique : propriété inconnue,
 casse comprise (400 `INVALID_BODY`), `null` sur une propriété facultative (400
-`INVALID_BODY`), `maxLength` en caractères Unicode de la valeur reçue, et `maximum` d'un nombre (400 `VALIDATION_FAILED`). Le reste
+`INVALID_BODY`), `maxLength` en caractères Unicode de la valeur reçue avant le
+retrait des espaces, et `maximum` d'un nombre (400 `VALIDATION_FAILED`). Le reste
 garde ses codes et textes, rendus par `Bind` et le domaine : type, corps absent
 ou `null`, champ obligatoire, vide, `minLength: 1`, `minimum: 1` de `user_id`,
-format d'email.
+format d'email. Le domaine retire aussi les espaces de début et de fin du nom, de
+l'email, du titre et de la description.
 
 Un validateur générique (`openapi3filter` de kin-openapi) n'a pas été retenu :
 pour un contrat OpenAPI 3.1 il ne rend que du texte anglais, sans mot-clé ni

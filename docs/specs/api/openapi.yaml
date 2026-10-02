@@ -23,7 +23,8 @@ info:
       `INVALID_BODY` ; une valeur texte plus longue que
       `maxLength`, ou un nombre au-dessus de `maximum`, répond `400`
       `VALIDATION_FAILED`. La longueur compte les
-      caractères Unicode (points de code) de la valeur reçue. Les réponses, elles, peuvent gagner des
+      caractères Unicode (points de code) de la valeur reçue, avant le retrait
+      des espaces de début et de fin. Les réponses, elles, peuvent gagner des
       propriétés sans changer de version.
 
     Langue des messages : le serveur parle deux langues, l'anglais (par défaut)
@@ -377,10 +378,10 @@ paths:
       description: |
         Met à jour une tâche existante. Chaque propriété de `UpdateTaskRequest`
         est optionnelle : une propriété absente du corps JSON n'est pas
-        modifiée. Une propriété présente avec une valeur, y compris une
-        valeur "vide" (`completed: false`, `description: ""`), est appliquée
-        telle quelle ; `null` est refusé. `title`, si présent, ne peut pas être
-        une chaîne vide (voir `400`).
+        modifiée. Une propriété présente est appliquée, y compris
+        `completed: false` et `description: ""`, après retrait des espaces de
+        début et de fin des textes ; `null` est refusé. `title`, si présent, ne
+        peut être ni vide ni fait d'espaces (voir `400`).
       operationId: updateTask
       requestBody:
         required: true
@@ -662,7 +663,7 @@ components:
       x-enumDescriptions:
         INVALID_BODY: Corps JSON absent, mal formé, de mauvais type ou contenant une propriété inconnue (400).
         INVALID_ID: Identifiant de chemin non numérique ou hors de la plage uint32 (400).
-        VALIDATION_FAILED: Règle de validation violée (titre, nom ou email vide, format d'email invalide, user_id absent, valeur trop longue) ; `error` précise laquelle (400).
+        VALIDATION_FAILED: Règle de validation violée (titre, nom ou email vide ou fait d'espaces, format d'email invalide, user_id absent, valeur trop longue) ; `error` précise laquelle (400).
         USER_NOT_FOUND: Utilisateur introuvable (404).
         TASK_NOT_FOUND: Tâche introuvable (404).
         EMAIL_TAKEN: Un utilisateur avec cet email (une fois normalisé) existe déjà (409).
@@ -768,6 +769,7 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+          description: Espaces de début et de fin retirés ; un nom fait d'espaces est refusé (400 `VALIDATION_FAILED`).
         email:
           type: string
           minLength: 1
@@ -797,9 +799,11 @@ components:
           type: string
           minLength: 1
           maxLength: 200
+          description: Espaces de début et de fin retirés ; un titre fait d'espaces est refusé (400 `VALIDATION_FAILED`).
         description:
           type: string
           maxLength: 2000
+          description: Espaces de début et de fin retirés ; une description faite d'espaces devient `""`.
         completed:
           type: boolean
           default: false
@@ -809,18 +813,20 @@ components:
       description: |
         Toutes les propriétés sont optionnelles. Une propriété absente du
         corps JSON laisse la valeur existante inchangée en base ; une
-        propriété présente est appliquée telle quelle, y compris une valeur
-        "vide" (`false`, `""`). `null` est refusé (400 `INVALID_BODY`), de même
-        qu'un titre vide (400 `VALIDATION_FAILED`).
+        propriété présente est appliquée, y compris `false` pour `completed` et
+        une description vide (`""`) ou faite d'espaces, qui devient `""`.
+        `null` est refusé (400 `INVALID_BODY`), de même qu'un titre vide ou
+        fait d'espaces (400 `VALIDATION_FAILED`).
       properties:
         title:
           type: string
           minLength: 1
           maxLength: 200
-          description: Si fourni, ne peut pas être une chaîne vide (400 sinon).
+          description: Si fourni, ne peut être ni vide ni fait d'espaces (400 sinon) ; espaces de début et de fin retirés.
         description:
           type: string
           maxLength: 2000
+          description: Espaces de début et de fin retirés ; une description faite d'espaces devient `""`.
         completed:
           type: boolean
   headers:

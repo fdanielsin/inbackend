@@ -34,6 +34,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 - Seul `application/json` est accepté pour un corps de requête : XML et formulaire répondent 400 `INVALID_BODY` ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
 - `null` sur une propriété facultative (`description`, `completed`, `title` en `PUT`) répond 400 `INVALID_BODY` au lieu d'être ignoré ; `user_id` au-dessus de 4 294 967 295 répond 400 au lieu de 404 ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
+- Nom, titre et description sont débarrassés de leurs espaces de début et de fin ; un nom ou un titre fait d'espaces est refusé (400 `VALIDATION_FAILED`) ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
 - Contrat : `message` et `version` des réponses de santé ne sont plus des constantes ; `Stats` sans `format: int64` ; la réponse de `DELETE /tasks/{id}` déclare `message`.
 - Healthcheck de Docker Compose et job `docker` de la CI sur `/ready` ; lignes d'accès des sondes réussies en Debug.
 - Logs par `slog` seul (zap retiré) : JSON au niveau Info en production, texte au niveau Debug en développement, position du code source sur chaque ligne.

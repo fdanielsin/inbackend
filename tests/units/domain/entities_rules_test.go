@@ -90,7 +90,7 @@ func TestNewUser_EmptyNameAndMalformedEmail_ReportsNameFirst(t *testing.T) {
 
 // GIVEN: Long Unicode values / WHEN: NewUser / THEN: kept byte for byte
 func TestNewUser_LongUnicodeFields_AreKeptUnchanged(t *testing.T) {
-	name := strings.Repeat("Élodie 🚀 ", 1000)
+	name := strings.TrimSpace(strings.Repeat("Élodie 🚀 ", 1000))
 	email := "élodie+tâches@exemple.fr"
 
 	u, err := user.NewUser(7, name, email)
@@ -135,7 +135,7 @@ func TestNewTask_BoundaryValues_AreAccepted(t *testing.T) {
 
 // GIVEN: Long Unicode title and description / WHEN: NewTask / THEN: kept byte for byte
 func TestNewTask_LongUnicodeFields_AreKeptUnchanged(t *testing.T) {
-	title := strings.Repeat("Tâche ✅ ", 1000)
+	title := strings.TrimSpace(strings.Repeat("Tâche ✅ ", 1000))
 	description := "Ligne 1\nLigne 2 <b>gras</b> ' OR 1=1 --"
 
 	tk, err := task.NewTask(3, 2, title, description, false)
