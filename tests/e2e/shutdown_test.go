@@ -90,12 +90,18 @@ func TestShutdown_LetsARequestInProgressFinish(t *testing.T) {
 	require.NoError(t, conn.SetDeadline(time.Now().Add(30*time.Second)))
 	chunk := func(data string) string { return fmt.Sprintf("%x\r\n%s\r\n", len(data), data) }
 
-	_, err = fmt.Fprintf(conn, "POST /api/v1/users HTTP/1.1\r\nHost: %s\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n%s",
-		s.addr, chunk(`{"name":"Slow",`))
+	reply := bufio.NewReader(conn)
+	_, err = fmt.Fprintf(conn, "POST /api/v1/users HTTP/1.1\r\nHost: %s\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\nExpect: 100-continue\r\n\r\n",
+		s.addr)
 	require.NoError(t, err)
-	// Nothing observable from outside tells that the handler has started reading the body: the
-	// server logs a request only once it is answered. A short pause stands in for that signal.
-	time.Sleep(300 * time.Millisecond)
+	// net/http sends "100 Continue" only when the handler first reads the body: from then on the
+	// request is in progress, which is the moment to send part of the body and the signal.
+	interim, err := http.ReadResponse(reply, nil)
+	require.NoError(t, err)
+	require.NoError(t, interim.Body.Close())
+	require.Equal(t, http.StatusContinue, interim.StatusCode)
+	_, err = fmt.Fprint(conn, chunk(`{"name":"Slow",`))
+	require.NoError(t, err)
 
 	require.NoError(t, s.cmd.Process.Signal(syscall.SIGTERM))
 	// Showing that the server does not exit needs a bounded wait: an exit that ignored the request
@@ -108,7 +114,7 @@ func TestShutdown_LetsARequestInProgressFinish(t *testing.T) {
 	_, err = fmt.Fprint(conn, chunk(`"email":"slow@x.io"}`)+"0\r\n\r\n")
 	require.NoError(t, err)
 
-	resp, err := http.ReadResponse(bufio.NewReader(conn), nil)
+	resp, err := http.ReadResponse(reply, nil)
 	require.NoError(t, err, "the request in progress must be answered")
 	_ = resp.Body.Close()
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
