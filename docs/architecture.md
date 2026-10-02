@@ -48,7 +48,7 @@ inbackend/
     │   ├── database/             (connexion, migrations SQL embarquées : ADR 0007)
     │   ├── http/    (cible, pas encore créé)
     │   ├── config/  (cible, pas encore créé)
-    │   └── logger/
+    │   └── applog/
     └── shared/
         ├── errors/              (cible, pas encore créé)
         ├── pagination/          (cible, pas encore créé)
@@ -103,7 +103,7 @@ le router (`app.NewRouter`). Un package `infrastructure/http/` qui engloberait
 Echo et le routage est une cible (voir Structure cible), pas l'état actuel. Il
 n'existe pas non plus de package de configuration dédié : `main.go` lit
 `DATABASE_URL`, `PORT`, `ENV`, `CORS_ALLOWED_ORIGINS` et `API_DOCS_ENABLED`, et
-`internal/infrastructure/logger` lit `ENV` ; un package `config/` est la cible.
+`internal/infrastructure/applog` lit `ENV` ; un package `config/` est la cible.
 
 ### Serveur HTTP et middlewares
 

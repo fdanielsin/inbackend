@@ -1,5 +1,5 @@
-// Package logger tests the construction of the application's slog logger.
-package logger
+// Package applog tests the construction of the application's slog logger.
+package applog
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/applog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,7 +35,7 @@ func jsonEntry(t *testing.T, line string) map[string]any {
 // GIVEN ENV=production / WHEN an entry is logged / THEN one JSON line with time, level, source, msg and typed attributes
 func TestNew_ProductionWritesJSONLines(t *testing.T) {
 	var out bytes.Buffer
-	log := logger.New(&out, "production")
+	log := applog.New(&out, "production")
 
 	log.Info("entry", slog.String("s", "text"), slog.Int("n", 3), slog.Bool("b", true))
 
@@ -58,7 +58,7 @@ func TestNew_ProductionWritesJSONLines(t *testing.T) {
 // GIVEN ENV=development / WHEN an entry is logged / THEN one key=value text line, not JSON, with its source
 func TestNew_DevelopmentWritesText(t *testing.T) {
 	var out bytes.Buffer
-	log := logger.New(&out, "development")
+	log := applog.New(&out, "development")
 
 	log.Info("entry", slog.String("s", "text"))
 
@@ -90,7 +90,7 @@ func TestNew_FormatAndLevelFollowEnv(t *testing.T) {
 	for _, c := range cases {
 		t.Run("env="+c.env, func(t *testing.T) {
 			var out bytes.Buffer
-			log := logger.New(&out, c.env)
+			log := applog.New(&out, c.env)
 
 			log.Debug("debug-entry")
 			log.Info("info-entry")
@@ -110,7 +110,7 @@ func TestNew_SpecialCharactersStayOnOneLine(t *testing.T) {
 	for _, env := range []string{"production", "development"} {
 		t.Run(env, func(t *testing.T) {
 			var out bytes.Buffer
-			log := logger.New(&out, env)
+			log := applog.New(&out, env)
 
 			log.Warn("special", slog.String("v", value))
 
@@ -128,7 +128,7 @@ func TestNew_SpecialCharactersStayOnOneLine(t *testing.T) {
 // GIVEN a logger with attributes and a group / WHEN logged in production / THEN the attributes are kept and the group nests the rest
 func TestNew_WithAttrsAndGroup(t *testing.T) {
 	var out bytes.Buffer
-	log := logger.New(&out, "production")
+	log := applog.New(&out, "production")
 
 	log.With(slog.String("request_id", "r-1")).WithGroup("http").Info("grouped", slog.Int("status", 200))
 
@@ -142,7 +142,7 @@ func TestNew_ErrorEntryHasNoStackTrace(t *testing.T) {
 	for _, env := range []string{"production", "development"} {
 		t.Run(env, func(t *testing.T) {
 			var out bytes.Buffer
-			log := logger.New(&out, env)
+			log := applog.New(&out, env)
 
 			log.Error("failure", slog.String("error_code", "INTERNAL_ERROR"))
 
@@ -177,7 +177,7 @@ func TestInitLogger_WritesToStderrAndBecomesTheDefault(t *testing.T) {
 	t.Setenv("ENV", "production")
 
 	stderr := captureStderr(t, func() {
-		log := logger.InitLogger()
+		log := applog.InitLogger()
 		assert.Same(t, log, slog.Default())
 		slog.Info("default-entry")
 	})

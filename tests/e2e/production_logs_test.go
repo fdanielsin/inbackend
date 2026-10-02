@@ -37,7 +37,7 @@ func TestServerOutput_ProductionIsJSONWithoutDebug(t *testing.T) {
 		}
 		assert.NotEqual(t, "DEBUG", entry["level"], line)
 		if source, ok := entry["source"].(map[string]any); assert.True(t, ok, line) {
-			assert.NotContains(t, source["file"], "infrastructure/logger", "source is the real caller: %s", line)
+			assert.NotContains(t, source["file"], "infrastructure/applog", "source is the real caller: %s", line)
 		}
 		if entry["msg"] == "Request" {
 			routes = append(routes, fmt.Sprintf("%v %v %v", entry["route"], entry["status"], entry["level"]))

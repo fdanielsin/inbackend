@@ -1,5 +1,5 @@
-// Package logger construit le logger slog de l'application.
-package logger
+// Package applog construit le logger slog de l'application.
+package applog
 
 import (
 	"io"

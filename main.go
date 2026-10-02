@@ -15,8 +15,8 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/app"
 	"github.com/fdanielsin/inbackend/internal/controllers/httpapi"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/applog"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"gorm.io/gorm"
 )
 
@@ -27,7 +27,7 @@ import (
 var apiContract []byte
 
 func main() {
-	log := logger.InitLogger()
+	log := applog.InitLogger()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	err := run(ctx, log)
