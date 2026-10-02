@@ -11,6 +11,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Image Docker du backend publiée sur `ghcr.io/fdanielsin/inbackend` (privée) à chaque push sur `develop` et sur les tags `v*` (tags sha complet, `develop`, nom du tag), avec `HEALTHCHECK`, labels OCI et rétention des versions (`develop`, `v*` et 10 versions sha gardés, suppression activée par la variable de dépôt `PRUNE_IMAGE_VERSIONS`) ; un push plus récent sur la même ref annule le run de CI en cours ([#31](https://github.com/fdanielsin/inbackend/pull/31)) ; la CI se lance aussi à la main (`workflow_dispatch`) et le job `docker` contrôle `/openapi.yaml`.
 - Lint plus strict : `govet` shadow, `revive` import-shadowing, `importas` (alias `usercommands` et `userqueries` seulement), `forbidigo` (`os.Exit` hors `main.go`), `testifylint` ; contrôle des noms de paquets dans `make lint` (`make lint-packages`, exceptions justifiées dans `scripts/package-name-exceptions.txt`) ([#30](https://github.com/fdanielsin/inbackend/pull/30)).
 - Corps de requête validés contre le contrat : propriété inconnue refusée (400 `INVALID_BODY`) ; nom (100), email (254), titre (200) et description (2000) limités en caractères, `user_id` limité à 4 294 967 295 (400 `VALIDATION_FAILED`) ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
 - `GET /openapi.yaml` (contrat embarqué) et `GET /docs` (Swagger UI, version épinglée avec empreintes d'intégrité) ; `API_DOCS_ENABLED` (actif par défaut, inactif en production, valeur invalide refusée).

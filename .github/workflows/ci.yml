@@ -3,11 +3,23 @@ name: CI/CD Pipeline
 on:
   push:
     branches: [main, develop, "feature/**", "bugfix/**", "hotfix/**", "release/**", "chore/**"]
+    tags: ["v*"]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Un push plus récent sur la même branche annule le run en cours : sans cela, un run
+# ancien qui finit en dernier repousserait le tag develop sur une image périmée.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   NODE_VERSION: "22"
+  IMAGE_NAME: ghcr.io/fdanielsin/inbackend
 
 jobs:
   # ========== STAGE 1: LINT & FORMAT ==========
@@ -15,14 +27,14 @@ jobs:
     name: "1️⃣ Lint & Format"
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -50,9 +62,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
@@ -71,9 +83,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
@@ -89,9 +101,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
@@ -105,7 +117,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: "Build image"
         run: docker compose build
@@ -118,6 +130,9 @@ jobs:
 
       - name: "Check /ready"
         run: curl --fail --silent --show-error http://localhost:8080/ready
+
+      - name: "Check /openapi.yaml"
+        run: curl --fail --silent --show-error http://localhost:8080/openapi.yaml | grep '^openapi:'
 
       - name: "Show logs on failure"
         if: failure()
@@ -134,9 +149,9 @@ jobs:
     needs: [unit-tests, security]
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
@@ -156,9 +171,9 @@ jobs:
     needs: [integration-tests]
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
@@ -178,9 +193,9 @@ jobs:
     needs: [e2e-tests]
     
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: false
@@ -192,7 +207,7 @@ jobs:
         run: make cover
 
       - name: "Upload to Codecov"
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v7
         with:
           files: ./coverage.out
           flags: backend
@@ -219,3 +234,68 @@ jobs:
             exit 1
           fi
           echo "🎉 All checks passed! Ready to merge"
+
+  # ========== PUBLICATION: IMAGE GHCR ==========
+  publish-image:
+    name: "📦 Publish image"
+    runs-on: ubuntu-latest
+    needs: [summary]
+    if: >-
+      needs.summary.result == 'success' && github.event_name == 'push' &&
+      (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: "Image tags and labels"
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ env.IMAGE_NAME }}
+          tags: |
+            type=sha,format=long,prefix=
+            type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+            type=ref,event=tag
+
+      # Sans attestation (provenance, sbom) : l'image est un manifeste unique et tagué,
+      # sans version sans tag que prune-image supprimerait par erreur.
+      - name: "Build and push"
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          push: true
+          provenance: false
+          sbom: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ========== RÉTENTION DES VERSIONS DE L'IMAGE ==========
+  prune-image:
+    name: "🧹 Prune image versions"
+    runs-on: ubuntu-latest
+    needs: [publish-image]
+    if: needs.publish-image.result == 'success'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+
+      # Sans PRUNE_IMAGE_VERSIONS=true (variable de dépôt), le script affiche seulement
+      # ce qu'il supprimerait : lire cette liste avant d'activer la suppression.
+      - name: "Prune image versions"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          PRUNE_IMAGE_VERSIONS: ${{ vars.PRUNE_IMAGE_VERSIONS }}
+        run: scripts/prune-image-versions.sh

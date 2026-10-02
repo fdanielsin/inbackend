@@ -34,6 +34,22 @@ docker compose up --build --wait
 docker compose down -v
 ```
 
+## Docker image
+
+Every push to `develop` and every `v*` tag publishes a private image to
+`ghcr.io/fdanielsin/inbackend`, tagged with the full commit sha, `develop` (branch
+pushes) and the tag name (tag pushes). To run it against PostgreSQL:
+
+```bash
+echo "$GITHUB_TOKEN" | docker login ghcr.io -u <user> --password-stdin   # token with read:packages
+docker run -p 8080:8080 -e DATABASE_URL="postgres://user:pass@host:5432/db?sslmode=disable" \
+  ghcr.io/fdanielsin/inbackend:<sha>
+curl http://localhost:8080/openapi.yaml   # the contract of that commit
+```
+
+Use a sha tag to pin a contract version: `develop` moves with every push. Details
+in [`docs/deployment.md`](docs/deployment.md).
+
 ## Configuration
 
 The server reads these environment variables (see `.env.example`):

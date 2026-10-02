@@ -136,7 +136,8 @@ Closes #123
 | 2 | Build | `go build -v -o app .` | ~10s | Catches syntax/import errors |
 | 3 | Unit Tests | `go test -v -race -short ./tests/units/...` | ~30s | No I/O, fast feedback |
 | 4 | Security | `make vuln` (govulncheck) | ~20s | Bloquant : échoue si une vulnérabilité est atteignable par le code. Remplace `nancy` (`Q-05`). |
-| 4b | Docker | `docker compose build`, `docker compose up -d --wait`, `curl -f /health`, `curl -f /ready`, `docker compose down -v` | ~1-2 min | Bloquant : l'image se construit et la pile démarre avec PostgreSQL (`Q-03`) |
+| 4b | Docker | `docker compose build`, `docker compose up -d --wait`, `curl -f /health`, `curl -f /ready`, `curl -f /openapi.yaml`, `docker compose down -v` | ~1-2 min | Bloquant : l'image se construit et la pile démarre avec PostgreSQL (`Q-03`) |
+| 4c | Publish image | `docker/build-push-action` vers `ghcr.io/fdanielsin/inbackend` (tags sha complet, `develop`, `v*`) | ~1 min | Après `summary` vert, sur push `develop` ou tag `v*` seulement, `packages: write` limité à ce job ; `prune-image` (`scripts/prune-image-versions.sh`) garde `develop`, les `v*` et 10 versions sha, et ne supprime que si `PRUNE_IMAGE_VERSIONS=true` (sinon liste seulement) ; `concurrency` par ref avec annulation du run précédent (un push plus récent annule l'ancien, PR comprises), pour que `develop` ne repointe jamais sur une image plus ancienne |
 | 5 | Integration Tests | `go test -v -race ./tests/integration/... -timeout 5m` | ~90s | PostgreSQL via Testcontainers |
 | 6 | E2E Tests | `go test -v -race ./tests/e2e/... -timeout 5m` | ~60s | PostgreSQL via Testcontainers, HTTP contract coverage through `app.NewRouter` |
 | 7 | Coverage | `make cover` puis envoi à Codecov | ~30s | Bloquant : échoue sous 85 % de couverture de `internal/` (même commande qu'en local) |

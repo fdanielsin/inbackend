@@ -35,6 +35,85 @@ L'image est construite en deux étapes (`golang:1.26.8-alpine` puis
 `alpine:3.24.2`), sans CGO, et s'exécute avec un utilisateur non root
 (uid 10001). `make docker-build` et `make docker-run` utilisent Podman.
 
+## Image publiée (GHCR)
+
+Le job `publish-image` de la CI pousse l'image sur `ghcr.io/fdanielsin/inbackend`
+(paquet privé) après un run vert, pour chaque push sur `develop` et sur un tag
+`v*`, jamais depuis une PR, une autre branche ni un `workflow_dispatch`. Tags :
+sha complet du commit, `develop` (push sur la branche) et le nom du tag (push de
+tag). L'image est un manifeste unique linux/amd64, sans attestation, et porte les
+labels OCI `source`, `title` et `description`. Elle fait environ 37 Mo
+décompressée et 10 Mo compressée (mesure locale `docker image ls` et
+`docker save | gzip`, arm64 ; la CI construit en amd64, taille proche).
+
+Le job n'utilise que le `GITHUB_TOKEN` du run avec `packages: write`, limité à
+ce job et à `prune-image` ; le reste du workflow n'a que `contents: read`. Lire
+l'image demande un jeton avec `read:packages`, ou l'accès en lecture au paquet
+donné au dépôt qui la consomme (réglages du paquet).
+
+Usage par un autre dépôt (par exemple les tests E2E du frontend) : démarrer
+l'image avec PostgreSQL et lire le contrat sur `GET /openapi.yaml`.
+
+| Variable | À donner | Remarque |
+| --- | --- | --- |
+| `DATABASE_URL` | URL du PostgreSQL (`...?sslmode=disable` en CI) | obligatoire ; les migrations s'appliquent au démarrage |
+| `PORT` | `8080` par défaut | le `HEALTHCHECK` de l'image suit cette variable |
+| `CORS_ALLOWED_ORIGINS` | origine du client de test | `*` par défaut hors production |
+| `ENV` | laisser vide ou `development` | avec `production`, `/openapi.yaml` est coupé sauf `API_DOCS_ENABLED=true` et les origines CORS sont obligatoires |
+| `API_DOCS_ENABLED` | `true` pour forcer | actif par défaut hors production |
+
+Le `HEALTHCHECK` appelle `/ready`, donc l'image devient saine quand la base
+répond. Pour figer le contrat, tirer le tag sha : `develop` change à chaque push.
+
+### Coût et droits
+
+- Le stockage et la bande passante du Container registry (`ghcr.io`) sont
+  actuellement gratuits, et GitHub annonce un préavis d'un mois avant tout
+  changement ([GitHub Packages, facturation](https://docs.github.com/en/billing/concepts/product-billing/github-packages)).
+  La rétention reste utile par hygiène.
+- Le `GITHUB_TOKEN` peut supprimer des versions parce que le dépôt dont le workflow
+  publie le paquet reçoit par défaut le rôle admin sur lui
+  ([suppression et restauration d'un paquet](https://docs.github.com/en/packages/learn-github-packages/deleting-and-restoring-a-package)).
+  Si le paquet est un jour recréé autrement, redonner ce rôle au dépôt dans les
+  réglages du paquet.
+
+### Ordre des publications
+
+Le workflow porte `concurrency: group <workflow>-<ref>, cancel-in-progress: true` :
+un push plus récent sur la même ref annule le run en cours (aussi pour une PR :
+un nouveau push annule l'ancien run ; un `workflow_dispatch` sur la même ref aussi). Sans cela, deux
+pushes rapprochés sur `develop` lanceraient deux runs complets, et celui du plus
+ancien, s'il finissait en dernier, repousserait le tag `develop` sur une image
+périmée. Une conséquence : le commit annulé n'a ni run complet ni image sha. Choix
+retenu plutôt que de vérifier en fin de run que `github.sha` est encore la tête de
+`develop` (plus de code, et une fenêtre de course restante).
+
+### Rétention des versions
+
+Le job `prune-image` suit `publish-image` et lance `scripts/prune-image-versions.sh`
+(shell POSIX, `gh api --paginate` et `jq`). Il garde :
+
+- toute version qui porte un tag `develop` ou `v*`, jamais supprimée ;
+- les 10 versions taguées sha les plus récentes (`created_at` décroissant).
+
+Il supprime le reste, versions sans tag comprises. Une version que `develop`
+quitte garde son tag sha et compte parmi les 10 ; une version sans tag vient d'une
+reconstruction du même commit qui déplace le tag sha (relance d'un run, tag `v*`
+posé sur un commit déjà publié). L'image n'a pas d'attestation, donc aucune version
+sans tag n'est l'enfant d'une version taguée.
+
+Sans la variable de dépôt `PRUNE_IMAGE_VERSIONS=true` (réglages du dépôt, Actions,
+Variables), le script n'affiche que ce qu'il supprimerait : lire cette liste dans
+le journal d'un run réel avant d'activer la suppression. Un échec de `gh api`, de
+liste ou de suppression, fait échouer le job.
+
+Le propriétaire vient de `github.repository_owner` et le script appelle
+`users/<propriétaire>/packages/container/inbackend/versions` : pour un dépôt
+d'organisation, remplacer `users/` par `orgs/` dans le script. Essai sans GitHub :
+`OWNER=x scripts/prune-image-versions.sh versions.json` lit un JSON de versions
+(`id`, `created_at`, `metadata.container.tags`) et ne supprime jamais : avec
+`PRUNE_IMAGE_VERSIONS=true` il refuse (exit 2), sinon il fait un dry-run sans appeler `gh`.
+
 ## Docker Compose
 
 ```bash
