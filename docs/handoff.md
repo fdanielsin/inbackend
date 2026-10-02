@@ -374,8 +374,8 @@ Sans changement de comportement HTTP ni de contrat.
   pool`), journalisées une fois par `main`.
 - `interface{}` → `any`, shadow corrigé dans `UpdateTask`, commentaires
   paraphrasés ou périmés retirés.
-- Suite prévue (un plan par lot) : E2 code mort, E3 renommages, E4 tests,
-  règles de lint (dont `shadow`, qui signale aussi `tests/testsupport/contract.go:46`).
+- Fait ensuite : E2 code mort (lot `chore/remove-dead-code`), E3 renommages
+  (`httpapi`, `pgstore`, puis ADR 0008, #27), règles de lint dont `shadow` (#30).
 
 ## Lot slog : slog seul (branche `chore/replace-zap-with-slog`)
 

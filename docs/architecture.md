@@ -271,3 +271,22 @@ d'une dépendance importée : `httpapi` et non `http` (`net/http`), `pgstore` et
 non `postgres` (driver GORM). Un alias d'import n'est admis que pour une vraie
 collision entre deux imports (`usercommands` et `userqueries`, deux paquets
 `commands`), jamais pour contourner le nom d'un de nos propres paquets.
+
+`make lint` applique la règle (`scripts/check-package-names.sh`, aussi lancé seul
+par `make lint-packages`) : il compare chaque paquet du module aux paquets de la
+bibliothèque standard et des dépendances. Une exception se déclare dans
+`scripts/package-name-exceptions.txt` (une ligne « chemin : justification », la
+justification est obligatoire) ; elle est vide aujourd'hui, et une exception qui
+ne correspond plus à une collision est refusée.
+
+## Règles de lint
+
+En plus des règles de base, `make lint` (donc la CI) active : `govet` avec
+`shadow` (une variable ne masque pas une variable de la portée englobante),
+`revive` avec `import-shadowing` (une variable ne porte pas le nom d'un paquet
+importé), `importas` avec `no-extra-aliases` (seuls `usercommands` et
+`userqueries` sont admis), `forbidigo` (`os.Exit` seulement dans `main.go` ; un
+`TestMain` retourne, sauf celui de `tests/e2e/server_test.go`, qui sort
+explicitement pour que la porte de couverture du contrat échoue la suite, avec
+`//nolint:forbidigo` justifié) et `testifylint` (bon usage de `require` et
+`assert`). Une règle ne se désactive que localement, avec sa justification.

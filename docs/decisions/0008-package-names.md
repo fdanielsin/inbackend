@@ -24,9 +24,10 @@ confond avec aucun autre.
   en `tasks`. Les entités gardent leur nom (`users.User`, `tasks.Task`).
 - Règle : un paquet du projet ne porte pas le nom d'un paquet de la
   bibliothèque standard ni d'une dépendance.
-- Un contrôle de `make lint` appliquera cette règle ; il aura un mécanisme
-  d'exceptions versionné et justifié, vide au départ, pour les vrais cas à venir.
-  Ce contrôle n'est pas encore réalisé (lot `chore/strict-lint-rules`).
+- Le contrôle est réalisé (#30) : `scripts/check-package-names.sh`, lancé par
+  `make lint` (aussi seul par `make lint-packages`), compare chaque paquet du
+  module à la bibliothèque standard et aux dépendances. Les exceptions, versionnées
+  et justifiées, vivent dans `scripts/package-name-exceptions.txt` (vide aujourd'hui).
 
 ## Conséquences
 

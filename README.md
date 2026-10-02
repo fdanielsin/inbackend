@@ -58,6 +58,7 @@ The server reads these environment variables (see `.env.example`):
 | `make test-e2e` | End-to-end tests |
 | `make cover` | All tests, fails under 85 % coverage of `internal/` |
 | `make lint` | golangci-lint and formatting check |
+| `make lint-packages` | Refuse package names that clash with the standard library or a dependency (also part of `make lint`) |
 | `make lint-api` | Lint the OpenAPI contract (requires Node) |
 | `make lint-ci` | Lint the GitHub Actions workflows |
 | `make vuln` | Scan dependencies with govulncheck |

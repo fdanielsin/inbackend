@@ -11,6 +11,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Lint plus strict : `govet` shadow, `revive` import-shadowing, `importas` (alias `usercommands` et `userqueries` seulement), `forbidigo` (`os.Exit` hors `main.go`), `testifylint` ; contrôle des noms de paquets dans `make lint` (`make lint-packages`, exceptions justifiées dans `scripts/package-name-exceptions.txt`) ([#30](https://github.com/fdanielsin/inbackend/pull/30)).
 - Corps de requête validés contre le contrat : propriété inconnue refusée (400 `INVALID_BODY`) ; nom (100), email (254), titre (200) et description (2000) limités en caractères, `user_id` limité à 4 294 967 295 (400 `VALIDATION_FAILED`) ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
 - `GET /openapi.yaml` (contrat embarqué) et `GET /docs` (Swagger UI, version épinglée avec empreintes d'intégrité) ; `API_DOCS_ENABLED` (actif par défaut, inactif en production, valeur invalide refusée).
 - Messages `error` et `message` en français ou en anglais selon `Accept-Language` (français pour `fr` et ses variantes, anglais sinon) ; `Content-Language` et `Vary: Accept-Language` sur toutes les réponses.
