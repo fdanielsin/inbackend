@@ -95,16 +95,15 @@ serveur; les réponses 500 n'exposent qu'un message générique.
 
 ### Infrastructure
 
-L'infrastructure implémente les ports du domaine et contient aujourd'hui
-PostgreSQL, GORM et le logger. Elle n'utilise pas Echo et ne contient pas le
-router : Echo est utilisé directement par les controllers
-(`internal/controllers/httpapi`) et par `internal/app`, où le router est
-assemblé (`app.NewRouter`). Un package `infrastructure/http/` qui engloberait Echo et
-le routage est une cible (voir Structure cible), pas l'état actuel. Il
-n'existe pas non plus de package de configuration dédié : les variables
-d'environnement (`DATABASE_URL`, `PORT`, `ENV`, `CORS_ALLOWED_ORIGINS`) sont lues directement dans
-`main.go` et `internal/infrastructure/logger` ; un package `config/` est la
-cible.
+L'infrastructure implémente les ports du domaine : persistance GORM sur
+PostgreSQL (`persistence/pgstore`), migrations golang-migrate (`database`) et
+logger. Elle n'utilise pas Echo et ne contient pas le router : Echo est utilisé
+par les controllers (`internal/controllers/httpapi`), et `internal/app` assemble
+le router (`app.NewRouter`). Un package `infrastructure/http/` qui engloberait
+Echo et le routage est une cible (voir Structure cible), pas l'état actuel. Il
+n'existe pas non plus de package de configuration dédié : `main.go` lit
+`DATABASE_URL`, `PORT`, `ENV`, `CORS_ALLOWED_ORIGINS` et `API_DOCS_ENABLED`, et
+`internal/infrastructure/logger` lit `ENV` ; un package `config/` est la cible.
 
 ### Serveur HTTP et middlewares
 
