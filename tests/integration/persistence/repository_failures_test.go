@@ -50,7 +50,9 @@ func TestRepositories_ClosedConnection_ReturnTechnicalErrors(t *testing.T) {
 	require.NoError(t, sqlDB.Close())
 
 	for name, err := range repositoryCalls(context.Background(), db) {
-		assertTechnicalFailure(t, name, err)
+		t.Run(name, func(t *testing.T) {
+			assertTechnicalFailure(t, name, err)
+		})
 	}
 }
 
@@ -62,8 +64,10 @@ func TestRepositories_CancelledContext_ReturnContextCanceled(t *testing.T) {
 	cancel()
 
 	for name, err := range repositoryCalls(ctx, db) {
-		assertTechnicalFailure(t, name, err)
-		assert.ErrorIs(t, err, context.Canceled, name)
+		t.Run(name, func(t *testing.T) {
+			assertTechnicalFailure(t, name, err)
+			assert.ErrorIs(t, err, context.Canceled, name)
+		})
 	}
 
 	var users, tasks int64

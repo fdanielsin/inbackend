@@ -3,6 +3,7 @@ package persistence
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -252,12 +253,19 @@ func TestMigrate_UnreachableDatabase(t *testing.T) {
 
 // GIVEN a DATABASE_URL that is not a postgres:// URL / WHEN Migrate / THEN ErrInvalidDatabaseURL, without the value
 func TestMigrate_RejectsNonURLDatabaseSettings(t *testing.T) {
-	for _, dsn := range []string{"host=localhost password=secretpw dbname=x", "postgres:/x", "POSTGRES://u:secretpw@h/x", "pgx5://u:secretpw@h/x"} {
-		err := database.Migrate(dsn)
+	for _, tc := range []struct{ name, dsn string }{
+		{"key-value form", "host=localhost password=secretpw dbname=x"},
+		{"scheme without authority", "postgres:/x"},
+		{"scheme in capitals", "POSTGRES://u:secretpw@h/x"},
+		{"driver scheme", "pgx5://u:secretpw@h/x"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			err := database.Migrate(tc.dsn)
 
-		require.ErrorIs(t, err, database.ErrInvalidDatabaseURL, dsn)
-		assert.Equal(t, "DATABASE_URL must be a postgres:// URL", err.Error(), dsn)
-		assert.NotContains(t, err.Error(), "secretpw", dsn)
+			require.ErrorIs(t, err, database.ErrInvalidDatabaseURL, tc.dsn)
+			assert.Equal(t, "DATABASE_URL must be a postgres:// URL", err.Error(), tc.dsn)
+			assert.NotContains(t, err.Error(), "secretpw", tc.dsn)
+		})
 	}
 }
 
@@ -300,9 +308,11 @@ func TestTaskRepository_Create_UnknownUser_ReturnsUserNotFound(t *testing.T) {
 	createTestUser(t, db, "owner@example.com")
 
 	for _, userID := range []uint{999, maxContractID} {
-		_, err := repo.Create(ctx, &task.Task{Title: "Orphan", UserID: userID})
+		t.Run(fmt.Sprintf("user %d", userID), func(t *testing.T) {
+			_, err := repo.Create(ctx, &task.Task{Title: "Orphan", UserID: userID})
 
-		assert.ErrorIs(t, err, user.ErrUserNotFound, "user %d", userID)
+			assert.ErrorIs(t, err, user.ErrUserNotFound, "user %d", userID)
+		})
 	}
 	count, err := repo.Count(ctx)
 	require.NoError(t, err)

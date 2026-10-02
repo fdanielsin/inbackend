@@ -2,6 +2,7 @@ package persistence
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -53,10 +54,12 @@ func TestUserRepository_GetByID_BoundaryIDs(t *testing.T) {
 	createTestUser(t, db, "owner@example.com")
 
 	for _, id := range []uint{0, maxContractID} {
-		found, err := repo.GetByID(context.Background(), id)
+		t.Run(fmt.Sprintf("id %d", id), func(t *testing.T) {
+			found, err := repo.GetByID(context.Background(), id)
 
-		assert.Nil(t, found, "id %d", id)
-		assert.ErrorIs(t, err, user.ErrUserNotFound, "id %d", id)
+			assert.Nil(t, found, "id %d", id)
+			assert.ErrorIs(t, err, user.ErrUserNotFound, "id %d", id)
+		})
 	}
 }
 
@@ -129,7 +132,9 @@ func TestTaskRepository_Delete_AbsentTask_ReturnsNotFound(t *testing.T) {
 	removed := createTestTask(t, repo, ownerID, "Delete me")
 
 	for _, id := range []uint{0, 999, maxContractID} {
-		assert.ErrorIs(t, repo.Delete(ctx, id), task.ErrTaskNotFound, "id %d", id)
+		t.Run(fmt.Sprintf("id %d", id), func(t *testing.T) {
+			assert.ErrorIs(t, repo.Delete(ctx, id), task.ErrTaskNotFound, "id %d", id)
+		})
 	}
 	require.NoError(t, repo.Delete(ctx, removed))
 	assert.ErrorIs(t, repo.Delete(ctx, removed), task.ErrTaskNotFound, "a second delete must report the task as absent")
@@ -218,10 +223,12 @@ func TestTaskRepository_GetByID_BoundaryIDs(t *testing.T) {
 	createTestTask(t, repo, createTestUser(t, db, "owner@example.com"), "Task 1")
 
 	for _, id := range []uint{0, maxContractID} {
-		found, err := repo.GetByID(context.Background(), id)
+		t.Run(fmt.Sprintf("id %d", id), func(t *testing.T) {
+			found, err := repo.GetByID(context.Background(), id)
 
-		assert.Nil(t, found, "id %d", id)
-		assert.ErrorIs(t, err, task.ErrTaskNotFound, "id %d", id)
+			assert.Nil(t, found, "id %d", id)
+			assert.ErrorIs(t, err, task.ErrTaskNotFound, "id %d", id)
+		})
 	}
 }
 
