@@ -76,6 +76,12 @@ func newTestServer(t *testing.T, opts ...app.Option) *testServer {
 	return &testServer{t: t, e: app.NewRouter(db, append([]app.Option{app.WithRequestValidator(validator)}, opts...)...), db: db}
 }
 
+// in returns the same server reporting to t: a subtest sharing the server of its test must fail
+// itself, not its parent.
+func (s *testServer) in(t *testing.T) *testServer {
+	return &testServer{t: t, e: s.e, db: s.db}
+}
+
 type response struct {
 	code   int
 	body   []byte

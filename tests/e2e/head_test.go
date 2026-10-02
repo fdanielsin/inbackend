@@ -141,11 +141,13 @@ func TestHead_OpenAPIAnnouncesTheContractSize(t *testing.T) {
 	size := int64(len(contractFile(t)))
 
 	for _, method := range []string{http.MethodGet, http.MethodHead} {
-		r := callOperation(t, method, base+"/openapi.yaml", "", nil)
+		t.Run(method, func(t *testing.T) {
+			r := callOperation(t, method, base+"/openapi.yaml", "", nil)
 
-		require.Equal(t, http.StatusOK, r.status, method)
-		assert.Equal(t, size, r.contentLength, method)
-		assert.Empty(t, r.transferEncoding, method)
+			require.Equal(t, http.StatusOK, r.status, method)
+			assert.Equal(t, size, r.contentLength, method)
+			assert.Empty(t, r.transferEncoding, method)
+		})
 	}
 }
 
@@ -162,11 +164,13 @@ func TestHead_ServerErrorsLikeGet(t *testing.T) {
 		"/api/v1/stats":         http.StatusInternalServerError,
 		"/ready":                http.StatusServiceUnavailable,
 	} {
-		get := callOperation(t, http.MethodGet, base+path, "", nil)
-		head := callOperation(t, http.MethodHead, base+path, "", nil)
+		t.Run(path, func(t *testing.T) {
+			get := callOperation(t, http.MethodGet, base+path, "", nil)
+			head := callOperation(t, http.MethodHead, base+path, "", nil)
 
-		assert.Equal(t, status, get.status, path)
-		requireHeadLikeGet(t, get, head, "HEAD "+path)
+			assert.Equal(t, status, get.status, path)
+			requireHeadLikeGet(t, get, head, "HEAD "+path)
+		})
 	}
 }
 
@@ -208,25 +212,29 @@ func TestHead_AllowHeader(t *testing.T) {
 	for _, rq := range []struct{ method, path string }{
 		{http.MethodDelete, "/health"}, {http.MethodPost, "/api/v1/users/1"}, {http.MethodPut, "/api/v1/stats"},
 	} {
-		r := call(t, rq.method, base+rq.path, "", nil)
-		require.Equal(t, http.StatusMethodNotAllowed, r.status, rq.method+" "+rq.path)
-		contract.ValidateErrorEnvelope(t, r.body)
-		assert.Contains(t, allowed(r), http.MethodGet, rq.path)
-		assert.Contains(t, allowed(r), http.MethodHead, rq.path)
+		t.Run(rq.method+" "+rq.path, func(t *testing.T) {
+			r := call(t, rq.method, base+rq.path, "", nil)
+			require.Equal(t, http.StatusMethodNotAllowed, r.status, rq.method+" "+rq.path)
+			contract.ValidateErrorEnvelope(t, r.body)
+			assert.Contains(t, allowed(r), http.MethodGet, rq.path)
+			assert.Contains(t, allowed(r), http.MethodHead, rq.path)
+		})
 	}
 
 	for path, want := range map[string][]string{
 		"/api/v1/tasks":   {http.MethodPost},
 		"/api/v1/tasks/1": {http.MethodPut, http.MethodDelete},
 	} {
-		r := call(t, http.MethodHead, base+path, "", nil)
-		require.Equal(t, http.StatusMethodNotAllowed, r.status, "HEAD "+path)
-		assert.Empty(t, r.body)
-		for _, method := range want {
-			assert.Contains(t, allowed(r), method, path)
-		}
-		assert.NotContains(t, allowed(r), http.MethodGet, path)
-		assert.NotContains(t, allowed(r), http.MethodHead, path)
+		t.Run("HEAD "+path, func(t *testing.T) {
+			r := call(t, http.MethodHead, base+path, "", nil)
+			require.Equal(t, http.StatusMethodNotAllowed, r.status, "HEAD "+path)
+			assert.Empty(t, r.body)
+			for _, method := range want {
+				assert.Contains(t, allowed(r), method, path)
+			}
+			assert.NotContains(t, allowed(r), http.MethodGet, path)
+			assert.NotContains(t, allowed(r), http.MethodHead, path)
+		})
 	}
 }
 
@@ -273,10 +281,12 @@ func TestHead_RealBinary(t *testing.T) {
 	server := startServer(t)
 	base := "http://" + server.addr
 	for _, path := range []string{"/health", "/ready", "/docs", "/openapi.yaml"} {
-		get := callOperation(t, http.MethodGet, base+path, "", nil)
-		head := callOperation(t, http.MethodHead, base+path, "", nil)
+		t.Run(path, func(t *testing.T) {
+			get := callOperation(t, http.MethodGet, base+path, "", nil)
+			head := callOperation(t, http.MethodHead, base+path, "", nil)
 
-		require.Equal(t, http.StatusOK, head.status, path)
-		requireHeadLikeGet(t, get, head, "binary HEAD "+path)
+			require.Equal(t, http.StatusOK, head.status, path)
+			requireHeadLikeGet(t, get, head, "binary HEAD "+path)
+		})
 	}
 }

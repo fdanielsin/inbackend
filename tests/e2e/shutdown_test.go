@@ -93,9 +93,13 @@ func TestShutdown_LetsARequestInProgressFinish(t *testing.T) {
 	_, err = fmt.Fprintf(conn, "POST /api/v1/users HTTP/1.1\r\nHost: %s\r\nContent-Type: application/json\r\nTransfer-Encoding: chunked\r\n\r\n%s",
 		s.addr, chunk(`{"name":"Slow",`))
 	require.NoError(t, err)
-	time.Sleep(300 * time.Millisecond) // let the handler start reading the body
+	// Nothing observable from outside tells that the handler has started reading the body: the
+	// server logs a request only once it is answered. A short pause stands in for that signal.
+	time.Sleep(300 * time.Millisecond)
 
 	require.NoError(t, s.cmd.Process.Signal(syscall.SIGTERM))
+	// Showing that the server does not exit needs a bounded wait: an exit that ignored the request
+	// would come at once, far within these 500 ms; the real exit is checked at the end.
 	select {
 	case err := <-s.exited:
 		t.Fatalf("the server exited during the request: %v\n%s", err, s.output.String())
@@ -120,15 +124,17 @@ func TestStartup_CORSAllowedOriginsFromEnvironment(t *testing.T) {
 		"https://admin.example": "https://admin.example",
 		"https://evil.example":  "",
 	} {
-		req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+s.addr+"/health", nil)
-		require.NoError(t, err)
-		req.Header.Set("Origin", origin)
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		_ = resp.Body.Close()
+		t.Run(origin, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+s.addr+"/health", nil)
+			require.NoError(t, err)
+			req.Header.Set("Origin", origin)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			_ = resp.Body.Close()
 
-		assert.Equal(t, want, resp.Header.Get("Access-Control-Allow-Origin"), origin)
-		assert.NotEmpty(t, resp.Header.Get("X-Request-Id"))
+			assert.Equal(t, want, resp.Header.Get("Access-Control-Allow-Origin"), origin)
+			assert.NotEmpty(t, resp.Header.Get("X-Request-Id"))
+		})
 	}
 	assert.False(t, strings.Contains(s.output.String(), "panic"))
 }

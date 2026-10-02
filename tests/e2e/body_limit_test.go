@@ -89,9 +89,11 @@ func TestBodyLimit_AppliesToEveryOperationWithABody(t *testing.T) {
 		{http.MethodPut, fmt.Sprintf("/api/v1/tasks/%d", task.ID)},
 	} {
 		for _, chunked := range []bool{false, true} {
-			r := s.sendBody(req.method, req.path, tooBig, chunked)
+			t.Run(fmt.Sprintf("%s %s chunked=%v", req.method, req.path, chunked), func(t *testing.T) {
+				r := s.in(t).sendBody(req.method, req.path, tooBig, chunked)
 
-			requireError(t, r, http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE", "Request body too large")
+				requireError(t, r, http.StatusRequestEntityTooLarge, "PAYLOAD_TOO_LARGE", "Request body too large")
+			})
 		}
 	}
 	assert.Equal(t, []taskJSON{task}, s.listTasks(owner.ID), "nothing may change")

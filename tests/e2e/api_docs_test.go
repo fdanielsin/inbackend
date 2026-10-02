@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -54,13 +55,15 @@ func TestAPIDocs_ServesTheContract(t *testing.T) {
 	s := newDocsServer(t)
 
 	for _, path := range []string{"/openapi.yaml", "/openapi.yaml?download=1"} {
-		r := s.do(http.MethodGet, path, "")
+		t.Run(path, func(t *testing.T) {
+			r := s.in(t).do(http.MethodGet, path, "")
 
-		require.Equal(t, http.StatusOK, r.code, path)
-		assert.Equal(t, "application/yaml", r.header.Get(echo.HeaderContentType), path)
-		assert.Equal(t, "nosniff", r.header.Get("X-Content-Type-Options"), path)
-		assert.NotEmpty(t, r.header.Get(echo.HeaderXRequestID), path)
-		assert.Equal(t, contractFile(t), r.body, "%s serves the contract unchanged", path)
+			require.Equal(t, http.StatusOK, r.code, path)
+			assert.Equal(t, "application/yaml", r.header.Get(echo.HeaderContentType), path)
+			assert.Equal(t, "nosniff", r.header.Get("X-Content-Type-Options"), path)
+			assert.NotEmpty(t, r.header.Get(echo.HeaderXRequestID), path)
+			assert.Equal(t, contractFile(t), r.body, "%s serves the contract unchanged", path)
+		})
 	}
 	doc, err := openapi3.NewLoader().LoadFromData(s.do(http.MethodGet, "/openapi.yaml", "").body)
 	require.NoError(t, err)
@@ -132,10 +135,12 @@ func TestAPIDocs_OtherMethodsAreNotAllowed(t *testing.T) {
 
 	for _, path := range []string{"/openapi.yaml", "/docs"} {
 		for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete} {
-			r := s.doOutsideOperations(method, path)
+			t.Run(method+" "+path, func(t *testing.T) {
+				r := s.in(t).doOutsideOperations(method, path)
 
-			requireError(t, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed")
-			assert.Contains(t, r.header.Get(echo.HeaderAllow), http.MethodGet, "%s %s", method, path)
+				requireError(t, r, http.StatusMethodNotAllowed, "METHOD_NOT_ALLOWED", "Method not allowed")
+				assert.Contains(t, r.header.Get(echo.HeaderAllow), http.MethodGet, "%s %s", method, path)
+			})
 		}
 	}
 }
@@ -145,7 +150,9 @@ func TestAPIDocs_NeighbouringPathsAreUnknown(t *testing.T) {
 	s := newDocsServer(t)
 
 	for _, path := range []string{"/docs/", "/openapi.yml", "/openapi.json", "/docs/index.html"} {
-		requireError(t, s.doOutsideOperations(http.MethodGet, path), http.StatusNotFound, "ROUTE_NOT_FOUND", "Route not found")
+		t.Run(path, func(t *testing.T) {
+			requireError(t, s.in(t).doOutsideOperations(http.MethodGet, path), http.StatusNotFound, "ROUTE_NOT_FOUND", "Route not found")
+		})
 	}
 }
 
@@ -157,16 +164,18 @@ func TestAPIDocs_ContentLanguageIsTheRealOne(t *testing.T) {
 
 	for path, want := range contentLanguage {
 		for _, accept := range []string{"", "en", "fr", "fr-FR,en;q=0.5"} {
-			var r response
-			if accept == "" {
-				r = s.sendWithLanguages(http.MethodGet, path, "", true)
-			} else {
-				r = s.sendWithLanguages(http.MethodGet, path, "", true, accept)
-			}
+			t.Run(fmt.Sprintf("%s Accept-Language %q", path, accept), func(t *testing.T) {
+				var r response
+				if accept == "" {
+					r = s.in(t).sendWithLanguages(http.MethodGet, path, "", true)
+				} else {
+					r = s.in(t).sendWithLanguages(http.MethodGet, path, "", true, accept)
+				}
 
-			require.Equal(t, http.StatusOK, r.code)
-			assert.Equal(t, want, r.header.Get("Content-Language"), "%s with Accept-Language %q", path, accept)
-			assert.Contains(t, varyValues(r), "accept-language", "%s: Vary stays as on every response", path)
+				require.Equal(t, http.StatusOK, r.code)
+				assert.Equal(t, want, r.header.Get("Content-Language"), "%s with Accept-Language %q", path, accept)
+				assert.Contains(t, varyValues(r), "accept-language", "%s: Vary stays as on every response", path)
+			})
 		}
 	}
 }
@@ -185,9 +194,11 @@ func TestAPIDocs_RoutesExistOnlyWithTheOption(t *testing.T) {
 	with := newDocsServer(t)
 
 	for _, path := range []string{"/openapi.yaml", "/docs"} {
-		r := without.doRaw(http.MethodGet, path, "")
-		contract.ValidateErrorEnvelope(t, r.body)
-		requireError(t, r, http.StatusNotFound, "ROUTE_NOT_FOUND", "Route not found")
+		t.Run("without the option "+path, func(t *testing.T) {
+			r := without.in(t).doRaw(http.MethodGet, path, "")
+			contract.ValidateErrorEnvelope(t, r.body)
+			requireError(t, r, http.StatusNotFound, "ROUTE_NOT_FOUND", "Route not found")
+		})
 	}
 	assert.Len(t, routes(without), 16)
 	assert.ElementsMatch(t, append(routes(without), "GET /docs", "GET /openapi.yaml", "HEAD /docs", "HEAD /openapi.yaml"), routes(with))

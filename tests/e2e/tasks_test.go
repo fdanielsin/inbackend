@@ -96,9 +96,11 @@ func TestCreateTask_UnknownUserIsNotFound(t *testing.T) {
 	s.createUser("Owner", "owner@example.com")
 
 	for _, userID := range []string{"999", "4294967295"} {
-		r := s.do(http.MethodPost, "/api/v1/tasks", `{"user_id":`+userID+`,"title":"Orphan"}`)
+		t.Run("user_id "+userID, func(t *testing.T) {
+			r := s.in(t).do(http.MethodPost, "/api/v1/tasks", `{"user_id":`+userID+`,"title":"Orphan"}`)
 
-		requireError(t, r, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+			requireError(t, r, http.StatusNotFound, "USER_NOT_FOUND", "User not found")
+		})
 	}
 	assert.Zero(t, s.countRows(&pgstore.TaskModel{}), "no orphan task may be stored")
 }
@@ -128,9 +130,11 @@ func TestListUserTasks_EmptyListsAreArrays(t *testing.T) {
 	s.createTask(busy.ID, "Task", "")
 
 	for _, id := range []string{fmt.Sprint(idle.ID), "999", "0", "4294967295"} {
-		r := s.do(http.MethodGet, "/api/v1/users/"+id+"/tasks", "")
-		require.Equal(t, http.StatusOK, r.code, "user %s", id)
-		assert.JSONEq(t, `{"success":true,"data":[]}`, string(r.body), "user %s", id)
+		t.Run("user "+id, func(t *testing.T) {
+			r := s.in(t).do(http.MethodGet, "/api/v1/users/"+id+"/tasks", "")
+			require.Equal(t, http.StatusOK, r.code, "user %s", id)
+			assert.JSONEq(t, `{"success":true,"data":[]}`, string(r.body), "user %s", id)
+		})
 	}
 }
 
@@ -139,7 +143,9 @@ func TestListUserTasks_InvalidIDs(t *testing.T) {
 	s := newTestServer(t)
 
 	for _, id := range []string{"abc", "-1", "4294967296"} {
-		requireError(t, s.do(http.MethodGet, "/api/v1/users/"+id+"/tasks", ""), http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
+		t.Run("user "+id, func(t *testing.T) {
+			requireError(t, s.in(t).do(http.MethodGet, "/api/v1/users/"+id+"/tasks", ""), http.StatusBadRequest, "INVALID_ID", "Invalid user ID")
+		})
 	}
 }
 
@@ -164,7 +170,9 @@ func TestDeleteTask_InvalidIDs(t *testing.T) {
 	task := s.createTask(owner.ID, "Keep me", "")
 
 	for _, id := range []string{"abc", "-1", "4294967296"} {
-		requireError(t, s.do(http.MethodDelete, "/api/v1/tasks/"+id, ""), http.StatusBadRequest, "INVALID_ID", "Invalid task ID")
+		t.Run("task "+id, func(t *testing.T) {
+			requireError(t, s.in(t).do(http.MethodDelete, "/api/v1/tasks/"+id, ""), http.StatusBadRequest, "INVALID_ID", "Invalid task ID")
+		})
 	}
 	assert.Equal(t, []taskJSON{task}, s.listTasks(owner.ID))
 }
@@ -191,7 +199,9 @@ func TestDeleteTask_BoundaryIDsAreNotFound(t *testing.T) {
 	s := newTestServer(t)
 
 	for _, id := range []string{"0", "4294967295"} {
-		requireError(t, s.do(http.MethodDelete, "/api/v1/tasks/"+id, ""), http.StatusNotFound, "TASK_NOT_FOUND", "Task not found")
+		t.Run("task "+id, func(t *testing.T) {
+			requireError(t, s.in(t).do(http.MethodDelete, "/api/v1/tasks/"+id, ""), http.StatusNotFound, "TASK_NOT_FOUND", "Task not found")
+		})
 	}
 }
 
@@ -254,7 +264,9 @@ func TestUpdateTask_BoundaryIDs(t *testing.T) {
 		"4294967296": {http.StatusBadRequest, "INVALID_ID", "Invalid task ID"},
 		"-1":         {http.StatusBadRequest, "INVALID_ID", "Invalid task ID"},
 	} {
-		requireError(t, s.do(http.MethodPut, "/api/v1/tasks/"+id, `{"completed":true}`), want.status, want.code, want.message)
+		t.Run("task "+id, func(t *testing.T) {
+			requireError(t, s.in(t).do(http.MethodPut, "/api/v1/tasks/"+id, `{"completed":true}`), want.status, want.code, want.message)
+		})
 	}
 	assert.Zero(t, s.countRows(&pgstore.TaskModel{}), "an update must never create a task")
 }

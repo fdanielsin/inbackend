@@ -68,7 +68,9 @@ func TestRequestID_OnEveryResponse(t *testing.T) {
 	s.e.GET("/panic", func(*echo.Context) error { panic("boom") })
 
 	for _, path := range []string{"/health", "/api/v1/users/abc", "/api/v1/users/999", "/api/v1/unknown", "/panic"} {
-		requireGeneratedID(t, s.sendWithRequestID(http.MethodGet, path, "").Header().Get(echo.HeaderXRequestID))
+		t.Run(path, func(t *testing.T) {
+			requireGeneratedID(t, s.in(t).sendWithRequestID(http.MethodGet, path, "").Header().Get(echo.HeaderXRequestID))
+		})
 	}
 }
 
@@ -77,7 +79,9 @@ func TestRequestID_AcceptableClientIDIsKept(t *testing.T) {
 	s := newTestServer(t)
 
 	for _, id := range []string{"a", "abc-123.x_Y", strings.Repeat("z", 64)} {
-		assert.Equal(t, id, s.sendWithRequestID(http.MethodGet, "/health", id).Header().Get(echo.HeaderXRequestID))
+		t.Run(fmt.Sprintf("%d characters %.12q", len(id), id), func(t *testing.T) {
+			assert.Equal(t, id, s.in(t).sendWithRequestID(http.MethodGet, "/health", id).Header().Get(echo.HeaderXRequestID))
+		})
 	}
 }
 
@@ -86,9 +90,11 @@ func TestRequestID_UnacceptableClientIDIsReplaced(t *testing.T) {
 	s := newTestServer(t)
 
 	for _, id := range []string{strings.Repeat("z", 65), "bad id", "a<script>", "é", "a\tb", "a/b"} {
-		got := s.sendWithRequestID(http.MethodGet, "/health", id).Header().Get(echo.HeaderXRequestID)
-		assert.NotEqual(t, id, got)
-		requireGeneratedID(t, got)
+		t.Run(fmt.Sprintf("%d characters %.12q", len(id), id), func(t *testing.T) {
+			got := s.in(t).sendWithRequestID(http.MethodGet, "/health", id).Header().Get(echo.HeaderXRequestID)
+			assert.NotEqual(t, id, got)
+			requireGeneratedID(t, got)
+		})
 	}
 }
 
@@ -202,13 +208,15 @@ func TestCORS_ListedOriginIsAllowed(t *testing.T) {
 	s := newTestServer(t, app.WithAllowedOrigins([]string{"https://app.example", "https://admin.example"}))
 
 	for _, origin := range []string{"https://app.example", "https://admin.example"} {
-		preflight := corsRequest(s, http.MethodOptions, origin)
-		assert.Equal(t, http.StatusNoContent, preflight.Code)
-		assert.Equal(t, origin, preflight.Header().Get(echo.HeaderAccessControlAllowOrigin))
+		t.Run(origin, func(t *testing.T) {
+			preflight := corsRequest(s.in(t), http.MethodOptions, origin)
+			assert.Equal(t, http.StatusNoContent, preflight.Code)
+			assert.Equal(t, origin, preflight.Header().Get(echo.HeaderAccessControlAllowOrigin))
 
-		simple := corsRequest(s, http.MethodGet, origin)
-		assert.Equal(t, origin, simple.Header().Get(echo.HeaderAccessControlAllowOrigin))
-		assert.Equal(t, echo.HeaderXRequestID, simple.Header().Get(echo.HeaderAccessControlExposeHeaders))
+			simple := corsRequest(s.in(t), http.MethodGet, origin)
+			assert.Equal(t, origin, simple.Header().Get(echo.HeaderAccessControlAllowOrigin))
+			assert.Equal(t, echo.HeaderXRequestID, simple.Header().Get(echo.HeaderAccessControlExposeHeaders))
+		})
 	}
 }
 
@@ -218,7 +226,9 @@ func TestCORS_UnlistedOriginGetsNoHeader(t *testing.T) {
 
 	for _, origin := range []string{"https://evil.example", "https://app.example.evil", "http://app.example"} {
 		for _, method := range []string{http.MethodOptions, http.MethodGet} {
-			assert.Empty(t, corsRequest(s, method, origin).Header().Get(echo.HeaderAccessControlAllowOrigin), "%s %s", method, origin)
+			t.Run(method+" "+origin, func(t *testing.T) {
+				assert.Empty(t, corsRequest(s.in(t), method, origin).Header().Get(echo.HeaderAccessControlAllowOrigin), "%s %s", method, origin)
+			})
 		}
 	}
 }

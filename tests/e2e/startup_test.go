@@ -167,12 +167,18 @@ func TestStartup_RefusedMigration_ExitsWithCode1(t *testing.T) {
 // THEN it exits with code 1 before connecting, and never prints the value
 func TestStartup_NonURLDatabaseSetting_ExitsWithCode1(t *testing.T) {
 	bin := buildServer(t)
-	for _, setting := range []string{"host=localhost password=secretpw dbname=x", "postgres:/secretpw", "POSTGRES://u:secretpw@127.0.0.1:1/x"} {
-		code, out := runUntilExit(t, bin, serverEnv("DATABASE_URL="+setting))
+	for _, tc := range []struct{ name, setting string }{
+		{"key-value form", "host=localhost password=secretpw dbname=x"},
+		{"scheme without authority", "postgres:/secretpw"},
+		{"scheme in capitals", "POSTGRES://u:secretpw@127.0.0.1:1/x"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			code, out := runUntilExit(t, bin, serverEnv("DATABASE_URL="+tc.setting))
 
-		assert.Equal(t, 1, code, setting)
-		assert.Contains(t, out, "DATABASE_URL must be a postgres:// URL", setting)
-		assert.NotContains(t, out, "secretpw", setting)
+			assert.Equal(t, 1, code, tc.setting)
+			assert.Contains(t, out, "DATABASE_URL must be a postgres:// URL", tc.setting)
+			assert.NotContains(t, out, "secretpw", tc.setting)
+		})
 	}
 }
 

@@ -284,17 +284,19 @@ func TestRequestValidation_ComesBeforeTheDatabase(t *testing.T) {
 func TestRequestValidation_DoesNotDependOnTheHost(t *testing.T) {
 	base := liveServer(t, newTestServer(t))
 	for _, host := range []string{"api.example.com", "localhost:8080", "127.0.0.1"} {
-		req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, base+"/api/v1/users", strings.NewReader(`{"name":"A","email":"a@b.co","role":1}`))
-		require.NoError(t, err)
-		req.Host = host
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		resp, err := http.DefaultClient.Do(req)
-		require.NoError(t, err)
-		body, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-		require.NoError(t, resp.Body.Close())
+		t.Run(host, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), http.MethodPost, base+"/api/v1/users", strings.NewReader(`{"name":"A","email":"a@b.co","role":1}`))
+			require.NoError(t, err)
+			req.Host = host
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+			resp, err := http.DefaultClient.Do(req)
+			require.NoError(t, err)
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			require.NoError(t, resp.Body.Close())
 
-		requireError(t, response{code: resp.StatusCode, body: body, header: resp.Header}, http.StatusBadRequest, "INVALID_BODY", english(shared.MsgUnknownField))
+			requireError(t, response{code: resp.StatusCode, body: body, header: resp.Header}, http.StatusBadRequest, "INVALID_BODY", english(shared.MsgUnknownField))
+		})
 	}
 }
 
@@ -336,19 +338,21 @@ func TestRequestValidation_RealBinaryWithoutTheDocs(t *testing.T) {
 func TestRequestValidation_NeverEchoesTheValues(t *testing.T) {
 	logs := captureLogs(t)
 	s := newTestServer(t)
-	bodies := []string{
-		jsonBody(t, map[string]any{"name": personName, "email": personEmail, "role": personName}),
-		jsonBody(t, map[string]any{"name": personName + strings.Repeat("x", 100), "email": personEmail}),
-		jsonBody(t, map[string]any{"name": personName, "email": strings.Repeat("x", 254) + personEmail}),
+	bodies := []struct{ name, body string }{
+		{"unknown field", jsonBody(t, map[string]any{"name": personName, "email": personEmail, "role": personName})},
+		{"name too long", jsonBody(t, map[string]any{"name": personName + strings.Repeat("x", 100), "email": personEmail})},
+		{"email too long", jsonBody(t, map[string]any{"name": personName, "email": strings.Repeat("x", 254) + personEmail})},
 	}
-	for _, body := range bodies {
-		r := s.do(http.MethodPost, "/api/v1/users", body)
+	for _, tc := range bodies {
+		t.Run(tc.name, func(t *testing.T) {
+			r := s.in(t).do(http.MethodPost, "/api/v1/users", tc.body)
 
-		require.Equal(t, http.StatusBadRequest, r.code, "body: %s", r.body)
-		for _, secret := range forbiddenInLogs(body) {
-			assert.NotContains(t, string(r.body), secret)
-			assert.NotContains(t, logs.String(), secret)
-		}
+			require.Equal(t, http.StatusBadRequest, r.code, "body: %s", r.body)
+			for _, secret := range forbiddenInLogs(tc.body) {
+				assert.NotContains(t, string(r.body), secret)
+				assert.NotContains(t, logs.String(), secret)
+			}
+		})
 	}
 }
 

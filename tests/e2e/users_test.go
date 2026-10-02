@@ -179,11 +179,13 @@ func TestGetUser_ReturnsUser(t *testing.T) {
 	john := s.createUser("John", "john@example.com")
 
 	for _, path := range []string{"/api/v1/users/1", "/api/v1/users/01"} {
-		r := s.do(http.MethodGet, path, "")
-		require.Equal(t, http.StatusOK, r.code, path)
-		env := decode[userJSON](t, r)
-		assert.True(t, env.Success, path)
-		assert.Equal(t, john, env.Data, path)
+		t.Run(path, func(t *testing.T) {
+			r := s.in(t).do(http.MethodGet, path, "")
+			require.Equal(t, http.StatusOK, r.code, path)
+			env := decode[userJSON](t, r)
+			assert.True(t, env.Success, path)
+			assert.Equal(t, john, env.Data, path)
+		})
 	}
 }
 
