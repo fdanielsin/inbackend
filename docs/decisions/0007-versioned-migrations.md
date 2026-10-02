@@ -3,6 +3,8 @@
 - **Statut** : accepted
 - **Périmètre** : `inbackend`
 - **Date** : 2026-10-01 (décision utilisateur)
+- **Mise à jour** : le paquet `database` est devenu `pgsetup` (ADR 0008) ; les
+  chemins et noms ci-dessous se lisent avec ce nom.
 
 ## Contexte
 
