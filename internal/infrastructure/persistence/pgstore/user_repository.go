@@ -79,7 +79,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.Us
 // List récupère tous les utilisateurs.
 func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
 	var gormUsers []UserModel
-	result := r.db.WithContext(ctx).Find(&gormUsers)
+	result := r.db.WithContext(ctx).Order("id ASC").Find(&gormUsers)
 
 	if result.Error != nil {
 		return nil, result.Error

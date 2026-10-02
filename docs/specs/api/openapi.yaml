@@ -148,6 +148,9 @@ paths:
     get:
       tags: [Users]
       summary: Lister les utilisateurs
+      description: |
+        Les utilisateurs sont retournés triés par `id` croissant (ordre de
+        création), garanti par le serveur.
       operationId: listUsers
       responses:
         '200':

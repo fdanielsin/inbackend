@@ -65,6 +65,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Fixed
 
+- `GET /api/v1/users` retourne les utilisateurs triés par `id` croissant ([#24](https://github.com/fdanielsin/inbackend/pull/24)).
 - `Q-03` : l'image Docker se construit et `docker compose up` démarre PostgreSQL et le backend.
 - `Q-05` : le scan de vulnérabilités de la CI bloque (govulncheck remplace `nancy`).
 - `Q-12` : `GET /api/v1/users/{id}/tasks` retourne les tâches triées par

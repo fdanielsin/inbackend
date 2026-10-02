@@ -134,6 +134,24 @@ func TestListUsers_ReturnsAllUsers(t *testing.T) {
 	assert.ElementsMatch(t, []userJSON{alice, bob}, env.Data)
 }
 
+// GIVEN users created as Charlie, Bob, Alice, the first one rewritten after the others (PostgreSQL then
+// stores it last) / WHEN GET /api/v1/users / THEN exactly in ascending id order, as the contract promises
+func TestListUsers_OrderedByIDNotByStorage(t *testing.T) {
+	s := newTestServer(t)
+	charlie := s.createUser("Charlie", "charlie@example.com")
+	bob := s.createUser("Bob", "bob@example.com")
+	alice := s.createUser("Alice", "alice@example.com")
+	require.NoError(t, s.db.Exec("UPDATE user_models SET name = name WHERE id = ?", charlie.ID).Error)
+	var physical []uint
+	require.NoError(t, s.db.Raw("SELECT id FROM user_models").Scan(&physical).Error)
+	require.Equal(t, []uint{bob.ID, alice.ID, charlie.ID}, physical, "the setup must change the physical order")
+
+	r := s.do(http.MethodGet, "/api/v1/users", "")
+
+	require.Equal(t, http.StatusOK, r.code)
+	assert.Equal(t, []userJSON{charlie, bob, alice}, decode[[]userJSON](t, r).Data)
+}
+
 // GIVEN exactly one user / WHEN GET /api/v1/users / THEN a one-element list
 func TestListUsers_SingleUser(t *testing.T) {
 	s := newTestServer(t)
