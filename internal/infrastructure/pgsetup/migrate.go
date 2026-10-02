@@ -1,4 +1,4 @@
-package database
+package pgsetup
 
 import (
 	"embed"

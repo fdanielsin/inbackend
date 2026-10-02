@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/pgsetup"
 	"github.com/fdanielsin/inbackend/tests/testsupport"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
@@ -19,7 +19,7 @@ import (
 func TestInitDB_MigratesAnEmptyDatabase(t *testing.T) {
 	dsn := pg.NewEmptyDatabase(t)
 
-	db, err := database.InitDB(dsn, slog.New(slog.DiscardHandler))
+	db, err := pgsetup.InitDB(dsn, slog.New(slog.DiscardHandler))
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
 	require.NoError(t, err)
@@ -36,7 +36,7 @@ func TestInitDB_MigratesAnEmptyDatabase(t *testing.T) {
 
 // GIVEN an unreachable database / WHEN InitDB / THEN an error is returned instead of a usable connection
 func TestInitDB_UnreachableDatabase(t *testing.T) {
-	db, err := database.InitDB("postgres://testuser:testpass@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2", slog.New(slog.DiscardHandler))
+	db, err := pgsetup.InitDB("postgres://testuser:testpass@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2", slog.New(slog.DiscardHandler))
 
 	assert.Error(t, err)
 	assert.Nil(t, db)
@@ -46,7 +46,7 @@ func TestInitDB_UnreachableDatabase(t *testing.T) {
 func initDBObserved(t *testing.T, dsn string) error {
 	t.Helper()
 	var out bytes.Buffer
-	db, err := database.InitDB(dsn, slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	db, err := pgsetup.InitDB(dsn, slog.New(slog.NewJSONHandler(&out, &slog.HandlerOptions{Level: slog.LevelDebug})))
 	assert.Nil(t, db)
 	initializing, errorEntries := 0, 0
 	for _, line := range bytes.Split(bytes.TrimSpace(out.Bytes()), []byte("\n")) {
@@ -79,7 +79,7 @@ func TestInitDB_UnreachableDatabase_ReturnsAWrappedError(t *testing.T) {
 // THEN the PostgreSQL error is still reachable through the wrapping (errors.As), nothing logged as an error
 func TestInitDB_RefusedMigration_KeepsThePostgresCause(t *testing.T) {
 	dsn := pg.NewEmptyDatabase(t)
-	require.NoError(t, database.MigrateTo(dsn, 1))
+	require.NoError(t, pgsetup.MigrateTo(dsn, 1))
 	require.NoError(t, testsupport.OpenDSN(t, dsn).Exec(
 		"INSERT INTO user_models (name, email) VALUES ('Ada', 'dup.person@x.io'), ('Ada2', 'DUP.PERSON@X.IO')").Error)
 

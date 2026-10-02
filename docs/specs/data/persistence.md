@@ -2,7 +2,7 @@
 
 ## Statut
 
-`active` — schéma défini par les migrations SQL (`internal/infrastructure/database/migrations/`, ADR 0007) ; les modèles GORM doivent rester cohérents avec lui.
+`active` — schéma défini par les migrations SQL (`internal/infrastructure/pgsetup/migrations/`, ADR 0007) ; les modèles GORM doivent rester cohérents avec lui.
 
 ## Utilisateur (table `user_models`)
 

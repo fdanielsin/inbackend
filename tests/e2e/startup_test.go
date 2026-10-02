@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/pgsetup"
 	"github.com/fdanielsin/inbackend/tests/testsupport"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -151,7 +151,7 @@ func TestStartup_ServesHealthOnConfiguredPort(t *testing.T) {
 func TestStartup_RefusedMigration_ExitsWithCode1(t *testing.T) {
 	pg.Require(t)
 	dsn := pg.NewEmptyDatabase(t)
-	require.NoError(t, database.MigrateTo(dsn, 1))
+	require.NoError(t, pgsetup.MigrateTo(dsn, 1))
 	db := testsupport.OpenDSN(t, dsn)
 	require.NoError(t, db.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'dup.person@x.io'), ('Ada2', 'DUP.PERSON@X.IO')").Error)
 

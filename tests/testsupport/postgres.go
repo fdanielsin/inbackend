@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/pgsetup"
 	_ "github.com/jackc/pgx/v5/stdlib" // pgx driver used by the container readiness check
 	"github.com/moby/moby/api/types/container"
 	"github.com/moby/moby/api/types/network"
@@ -146,7 +146,7 @@ func OpenDSN(t testing.TB, dsn string) *gorm.DB {
 func (p *Postgres) NewDB(t testing.TB) *gorm.DB {
 	t.Helper()
 	p.Require(t)
-	require.NoError(t, database.Migrate(p.DSN), "failed to migrate database")
+	require.NoError(t, pgsetup.Migrate(p.DSN), "failed to migrate database")
 	db := OpenDSN(t, p.DSN)
 	require.NoError(t, db.Exec("TRUNCATE TABLE task_models, user_models RESTART IDENTITY").Error, "failed to reset tables")
 	return db

@@ -1,5 +1,5 @@
-// Package database ouvre la connexion PostgreSQL et applique les migrations.
-package database
+// Package pgsetup ouvre la connexion PostgreSQL et applique les migrations.
+package pgsetup
 
 import (
 	"fmt"

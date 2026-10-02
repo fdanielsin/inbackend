@@ -16,7 +16,7 @@ import (
 	"github.com/fdanielsin/inbackend/internal/app"
 	"github.com/fdanielsin/inbackend/internal/controllers/httpapi"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/applog"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/pgsetup"
 	"gorm.io/gorm"
 )
 
@@ -56,7 +56,7 @@ func run(ctx context.Context, log *slog.Logger) error {
 		return fmt.Errorf("failed to load API contract: %w", err)
 	}
 
-	db, err := database.InitDB(dsn, log)
+	db, err := pgsetup.InitDB(dsn, log)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}

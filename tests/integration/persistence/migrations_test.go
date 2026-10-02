@@ -9,8 +9,8 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
 	"github.com/fdanielsin/inbackend/internal/domain/user"
-	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
+	"github.com/fdanielsin/inbackend/internal/infrastructure/pgsetup"
 	"github.com/fdanielsin/inbackend/tests/testsupport"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +18,7 @@ import (
 	"gorm.io/gorm"
 )
 
-// latestMigration is the number of migrations shipped in internal/infrastructure/database/migrations.
+// latestMigration is the number of migrations shipped in internal/infrastructure/pgsetup/migrations.
 const latestMigration = 3
 
 type migrationState struct {
@@ -93,7 +93,7 @@ func sqlState(err error) string {
 func migratedTo(t *testing.T, version uint) (string, *gorm.DB) {
 	t.Helper()
 	dsn := pg.NewEmptyDatabase(t)
-	require.NoError(t, database.MigrateTo(dsn, version))
+	require.NoError(t, pgsetup.MigrateTo(dsn, version))
 	return dsn, testsupport.OpenDSN(t, dsn)
 }
 
@@ -101,7 +101,7 @@ func migratedTo(t *testing.T, version uint) (string, *gorm.DB) {
 func TestMigrate_EmptyDatabase_AppliesEveryVersion(t *testing.T) {
 	dsn := pg.NewEmptyDatabase(t)
 
-	require.NoError(t, database.Migrate(dsn))
+	require.NoError(t, pgsetup.Migrate(dsn))
 
 	db := testsupport.OpenDSN(t, dsn)
 	assert.Equal(t, migrationState{Version: latestMigration}, readMigrationState(t, db))
@@ -116,7 +116,7 @@ func TestMigrate_UpToDate_IsANoOp(t *testing.T) {
 	dsn, db := migratedTo(t, latestMigration)
 	before := snapshotSchema(t, db)
 
-	require.NoError(t, database.Migrate(dsn))
+	require.NoError(t, pgsetup.Migrate(dsn))
 
 	assert.Equal(t, before, snapshotSchema(t, db))
 	assert.Equal(t, migrationState{Version: latestMigration}, readMigrationState(t, db))
@@ -128,20 +128,20 @@ func TestMigrateTo_EachDownRestoresThePreviousSchema(t *testing.T) {
 	db := testsupport.OpenDSN(t, dsn)
 	snapshots := map[uint]schemaSnapshot{}
 	for version := uint(1); version <= latestMigration; version++ {
-		require.NoError(t, database.MigrateTo(dsn, version))
+		require.NoError(t, pgsetup.MigrateTo(dsn, version))
 		snapshots[version] = snapshotSchema(t, db)
 	}
 
 	for version := uint(latestMigration - 1); version >= 1; version-- {
-		require.NoError(t, database.MigrateTo(dsn, version))
+		require.NoError(t, pgsetup.MigrateTo(dsn, version))
 		assert.Equal(t, snapshots[version], snapshotSchema(t, db), "down to version %d", version)
 	}
-	require.NoError(t, database.MigrateTo(dsn, 0))
+	require.NoError(t, pgsetup.MigrateTo(dsn, 0))
 	var tables int64
 	require.NoError(t, db.Raw("SELECT count(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_name IN ('user_models', 'task_models')").Scan(&tables).Error)
 	assert.Zero(t, tables, "version 0 has no application table")
 
-	require.NoError(t, database.Migrate(dsn))
+	require.NoError(t, pgsetup.Migrate(dsn))
 	assert.Equal(t, snapshots[latestMigration], snapshotSchema(t, db), "up again after a full down")
 }
 
@@ -157,7 +157,7 @@ func TestMigration1_MatchesTheFormerAutoMigrateSchema(t *testing.T) {
 
 	require.NoError(t, legacy.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'ada@x.io')").Error)
 	require.NoError(t, legacy.Exec("INSERT INTO task_models (title, description, user_id, completed) VALUES ('Keep me', '', 1, true)").Error)
-	require.NoError(t, database.Migrate(legacyDSN))
+	require.NoError(t, pgsetup.Migrate(legacyDSN))
 	assert.Equal(t, []string{"ada@x.io"}, emails(t, legacy))
 	var tasks int64
 	require.NoError(t, legacy.Raw("SELECT count(*) FROM task_models WHERE title = 'Keep me' AND completed").Scan(&tasks).Error)
@@ -169,7 +169,7 @@ func TestMigration2_NormalizesExistingEmails(t *testing.T) {
 	dsn, db := migratedTo(t, 1)
 	require.NoError(t, db.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'Ada@X.io'), ('Bob', E'  bob@y.io\\t'), ('Carl', 'carl@z.io')").Error)
 
-	require.NoError(t, database.MigrateTo(dsn, 2))
+	require.NoError(t, pgsetup.MigrateTo(dsn, 2))
 
 	assert.Equal(t, []string{"ada@x.io", "bob@y.io", "carl@z.io"}, emails(t, db))
 }
@@ -179,7 +179,7 @@ func TestMigration2_DistinctEmailsPass(t *testing.T) {
 	dsn, db := migratedTo(t, 1)
 	require.NoError(t, db.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'ada@x.io'), ('Adb', 'adb@x.io')").Error)
 
-	require.NoError(t, database.MigrateTo(dsn, 2))
+	require.NoError(t, pgsetup.MigrateTo(dsn, 2))
 
 	assert.Equal(t, migrationState{Version: 2}, readMigrationState(t, db))
 }
@@ -191,7 +191,7 @@ func TestMigration2_RefusesCaseDuplicates(t *testing.T) {
 	// One group differs by case only, the other by surrounding spaces only.
 	require.NoError(t, db.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'ada@x.io'), ('Ada2', 'ADA@X.IO'), ('Bob', 'bob@y.io'), ('Bob2', ' bob@y.io'), ('Carl', 'Carl@Z.io')").Error)
 
-	err := database.MigrateTo(dsn, 2)
+	err := pgsetup.MigrateTo(dsn, 2)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot normalize emails: 2 group(s)")
@@ -207,9 +207,9 @@ func TestMigration2_RefusesCaseDuplicates(t *testing.T) {
 func TestMigrate_DirtyDatabase_Refuses(t *testing.T) {
 	dsn, db := migratedTo(t, 1)
 	require.NoError(t, db.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'ada@x.io'), ('Ada2', 'ADA@X.IO')").Error)
-	require.Error(t, database.Migrate(dsn))
+	require.Error(t, pgsetup.Migrate(dsn))
 
-	err := database.Migrate(dsn)
+	err := pgsetup.Migrate(dsn)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "migrate-force")
@@ -222,7 +222,7 @@ func TestMigration3_RefusesOrphanTasks(t *testing.T) {
 	require.NoError(t, db.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'ada@x.io')").Error)
 	require.NoError(t, db.Exec("INSERT INTO task_models (title, description, user_id, completed) VALUES ('Owned', '', 1, false), ('Orphan', '', 999, false)").Error)
 
-	err := database.MigrateTo(dsn, 3)
+	err := pgsetup.MigrateTo(dsn, 3)
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot add foreign key: 1 task(s)")
@@ -239,14 +239,14 @@ func TestMigration3_NoOrphanPasses(t *testing.T) {
 	require.NoError(t, db.Exec("INSERT INTO user_models (name, email) VALUES ('Ada', 'ada@x.io')").Error)
 	require.NoError(t, db.Exec("INSERT INTO task_models (title, description, user_id, completed) VALUES ('Owned', '', 1, false)").Error)
 
-	require.NoError(t, database.MigrateTo(dsn, 3))
+	require.NoError(t, pgsetup.MigrateTo(dsn, 3))
 
 	assert.True(t, hasConstraint(t, db, "fk_task_models_user"))
 }
 
 // GIVEN an unreachable database / WHEN Migrate / THEN an error, never a success
 func TestMigrate_UnreachableDatabase(t *testing.T) {
-	err := database.Migrate("postgres://testuser:testpass@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2")
+	err := pgsetup.Migrate("postgres://testuser:testpass@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2")
 
 	assert.Error(t, err)
 }
@@ -260,9 +260,9 @@ func TestMigrate_RejectsNonURLDatabaseSettings(t *testing.T) {
 		{"driver scheme", "pgx5://u:secretpw@h/x"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			err := database.Migrate(tc.dsn)
+			err := pgsetup.Migrate(tc.dsn)
 
-			require.ErrorIs(t, err, database.ErrInvalidDatabaseURL, tc.dsn)
+			require.ErrorIs(t, err, pgsetup.ErrInvalidDatabaseURL, tc.dsn)
 			assert.Equal(t, "DATABASE_URL must be a postgres:// URL", err.Error(), tc.dsn)
 			assert.NotContains(t, err.Error(), "secretpw", tc.dsn)
 		})
@@ -273,7 +273,7 @@ func TestMigrate_RejectsNonURLDatabaseSettings(t *testing.T) {
 func TestMigrate_AcceptsPostgresqlScheme(t *testing.T) {
 	dsn := pg.NewEmptyDatabase(t)
 
-	require.NoError(t, database.Migrate("postgresql://"+dsn[len("postgres://"):]))
+	require.NoError(t, pgsetup.Migrate("postgresql://"+dsn[len("postgres://"):]))
 }
 
 // GIVEN a user with a task / WHEN the user is deleted directly in the database / THEN the foreign key refuses it (ON DELETE RESTRICT)

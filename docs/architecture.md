@@ -45,7 +45,7 @@ inbackend/
     ├── infrastructure/
     │   ├── persistence/pgstore/
     │   │   └── models.go
-    │   ├── database/             (connexion, migrations SQL embarquées : ADR 0007)
+    │   ├── pgsetup/              (connexion, migrations SQL embarquées : ADR 0007)
     │   ├── http/    (cible, pas encore créé)
     │   ├── config/  (cible, pas encore créé)
     │   └── applog/
@@ -96,7 +96,7 @@ serveur; les réponses 500 n'exposent qu'un message générique.
 ### Infrastructure
 
 L'infrastructure implémente les ports du domaine : persistance GORM sur
-PostgreSQL (`persistence/pgstore`), migrations golang-migrate (`database`) et
+PostgreSQL (`persistence/pgstore`), migrations golang-migrate (`pgsetup`) et
 logger. Elle n'utilise pas Echo et ne contient pas le router : Echo est utilisé
 par les controllers (`internal/controllers/httpapi`), et `internal/app` assemble
 le router (`app.NewRouter`). Un package `infrastructure/http/` qui engloberait
