@@ -9,7 +9,7 @@
 ## Phase 1 — fondations du domaine
 
 - **Statut : conforme après remise en conformité**
-- Créer les packages `domain/user` et `domain/task`.
+- Créer les packages `domain/user` et `domain/task` (renommés `users` et `tasks`, ADR 0008).
 - Définir les entités et les erreurs métier.
 - Définir les interfaces de repository.
 - Ajouter les règles métier réellement identifiées.
