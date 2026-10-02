@@ -11,6 +11,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Corps de requête validés contre le contrat : propriété inconnue refusée (400 `INVALID_BODY`) ; nom (100), email (254), titre (200) et description (2000) limités en caractères, `user_id` limité à 4 294 967 295 (400 `VALIDATION_FAILED`) ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
 - `GET /openapi.yaml` (contrat embarqué) et `GET /docs` (Swagger UI, version épinglée avec empreintes d'intégrité) ; `API_DOCS_ENABLED` (actif par défaut, inactif en production, valeur invalide refusée).
 - Messages `error` et `message` en français ou en anglais selon `Accept-Language` (français pour `fr` et ses variantes, anglais sinon) ; `Content-Language` et `Vary: Accept-Language` sur toutes les réponses.
 - `GET /ready` : disponibilité (base joignable sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`) ; `/health` reste une sonde de vivacité sans base ; réponses des deux sondes non mises en cache.
@@ -31,6 +32,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- Seul `application/json` est accepté pour un corps de requête : XML et formulaire répondent 400 `INVALID_BODY` ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
+- `null` sur une propriété facultative (`description`, `completed`, `title` en `PUT`) répond 400 `INVALID_BODY` au lieu d'être ignoré ; `user_id` au-dessus de 4 294 967 295 répond 400 au lieu de 404 ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
 - Contrat : `message` et `version` des réponses de santé ne sont plus des constantes ; `Stats` sans `format: int64` ; la réponse de `DELETE /tasks/{id}` déclare `message`.
 - Healthcheck de Docker Compose et job `docker` de la CI sur `/ready` ; lignes d'accès des sondes réussies en Debug.
 - Logs par `slog` seul (zap retiré) : JSON au niveau Info en production, texte au niveau Debug en développement, position du code source sur chaque ligne.

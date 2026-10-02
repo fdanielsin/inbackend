@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/app"
+	"github.com/fdanielsin/inbackend/internal/controllers/httpapi"
 	"github.com/fdanielsin/inbackend/tests/testsupport"
 	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/require"
@@ -66,10 +67,13 @@ type testServer struct {
 	db *gorm.DB
 }
 
+// newTestServer builds the router as main.go does, request bodies validated against the contract.
 func newTestServer(t *testing.T, opts ...app.Option) *testServer {
 	t.Helper()
+	validator, err := httpapi.NewRequestValidator(contractFile(t), app.ValidatedOperations...)
+	require.NoError(t, err)
 	db := pg.NewDB(t)
-	return &testServer{t: t, e: app.NewRouter(db, opts...), db: db}
+	return &testServer{t: t, e: app.NewRouter(db, append([]app.Option{app.WithRequestValidator(validator)}, opts...)...), db: db}
 }
 
 type response struct {

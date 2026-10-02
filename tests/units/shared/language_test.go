@@ -83,6 +83,8 @@ var allMessageKeys = []shared.MessageKey{
 	shared.MsgInvalidTaskID, shared.MsgRouteNotFound, shared.MsgMethodNotAllowed, shared.MsgInvalidRequest,
 	shared.MsgDatabaseDown, shared.MsgUserCreated, shared.MsgTaskCreated, shared.MsgTaskUpdated,
 	shared.MsgTaskDeleted, shared.MsgServiceHealthy, shared.MsgServiceReady,
+	shared.MsgUserNameTooLong, shared.MsgUserEmailTooLong, shared.MsgTaskTitleTooLong,
+	shared.MsgTaskDescriptionTooLong, shared.MsgTaskUserIDOutOfRange, shared.MsgUnknownField,
 }
 
 // GIVEN the catalogue / THEN it holds exactly the declared keys, each with a non-empty text per language,
@@ -116,6 +118,12 @@ func TestMessages_EnglishTextsAreUnchanged(t *testing.T) {
 		shared.MsgDatabaseDown: "Database unavailable", shared.MsgUserCreated: "User created",
 		shared.MsgTaskCreated: "Task created", shared.MsgTaskUpdated: "Task updated", shared.MsgTaskDeleted: "Task deleted",
 		shared.MsgServiceHealthy: "Service is healthy", shared.MsgServiceReady: "Service is ready",
+		shared.MsgUserNameTooLong:        "User name cannot exceed 100 characters",
+		shared.MsgUserEmailTooLong:       "User email cannot exceed 254 characters",
+		shared.MsgTaskTitleTooLong:       "Task title cannot exceed 200 characters",
+		shared.MsgTaskDescriptionTooLong: "Task description cannot exceed 2000 characters",
+		shared.MsgTaskUserIDOutOfRange:   "Task user_id is out of range",
+		shared.MsgUnknownField:           "Request body contains an unknown field",
 	}
 	require.Len(t, want, len(allMessageKeys))
 	for key, text := range want {
@@ -129,8 +137,9 @@ func TestMessages_FrenchTexts(t *testing.T) {
 		shared.MsgInternalError: "Erreur interne du serveur", shared.MsgUserNotFound: "Utilisateur introuvable",
 		shared.MsgUserNameEmpty:    "Le nom de l'utilisateur ne peut pas être vide",
 		shared.MsgUserEmailEmpty:   "L'email de l'utilisateur ne peut pas être vide",
-		shared.MsgUserEmailInvalid: "L'email de l'utilisateur est invalide", shared.MsgEmailTaken: "Cet email est déjà utilisé",
-		shared.MsgTaskNotFound: "Tâche introuvable", shared.MsgTaskTitleEmpty: "Le titre de la tâche ne peut pas être vide",
+		shared.MsgUserEmailInvalid: "L'email de l'utilisateur est invalide",
+		shared.MsgEmailTaken:       "Cet email est déjà utilisé",
+		shared.MsgTaskNotFound:     "Tâche introuvable", shared.MsgTaskTitleEmpty: "Le titre de la tâche ne peut pas être vide",
 		shared.MsgTaskUserIDInvalid: "Le user_id de la tâche ne peut pas être vide",
 		shared.MsgInvalidBody:       "Corps de requête invalide", shared.MsgPayloadTooLarge: "Corps de requête trop volumineux",
 		shared.MsgInvalidUserID: "Identifiant d'utilisateur invalide", shared.MsgInvalidTaskID: "Identifiant de tâche invalide",
@@ -139,6 +148,12 @@ func TestMessages_FrenchTexts(t *testing.T) {
 		shared.MsgUserCreated: "Utilisateur créé", shared.MsgTaskCreated: "Tâche créée",
 		shared.MsgTaskUpdated: "Tâche mise à jour", shared.MsgTaskDeleted: "Tâche supprimée",
 		shared.MsgServiceHealthy: "Service en bonne santé", shared.MsgServiceReady: "Service prêt",
+		shared.MsgUserNameTooLong:        "Le nom de l'utilisateur ne peut pas dépasser 100 caractères",
+		shared.MsgUserEmailTooLong:       "L'adresse e-mail de l'utilisateur ne peut pas dépasser 254 caractères",
+		shared.MsgTaskTitleTooLong:       "Le titre de la tâche ne peut pas dépasser 200 caractères",
+		shared.MsgTaskDescriptionTooLong: "La description de la tâche ne peut pas dépasser 2000 caractères",
+		shared.MsgTaskUserIDOutOfRange:   "Le user_id de la tâche est hors limites",
+		shared.MsgUnknownField:           "Le corps de la requête contient un champ inconnu",
 	}
 	require.Len(t, want, len(allMessageKeys))
 	for key, text := range want {

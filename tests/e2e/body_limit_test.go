@@ -16,12 +16,13 @@ import (
 // maxBody is the request body limit announced by the contract: 1 MiB.
 const maxBody = 1 << 20
 
-// userBodyOfSize returns a valid create-user JSON body of exactly size bytes.
+// userBodyOfSize returns a valid create-user JSON body of exactly size bytes, padded with JSON
+// white space so that no field goes over its maximum length.
 func userBodyOfSize(t *testing.T, size int) string {
 	t.Helper()
-	frame := `{"name":"","email":"big@x.io"}`
+	frame := `{"name":"Big","email":"big@x.io"}`
 	require.Greater(t, size, len(frame))
-	body := `{"name":"` + strings.Repeat("a", size-len(frame)) + `","email":"big@x.io"}`
+	body := `{"name":"Big","email":"big@x.io"` + strings.Repeat(" ", size-len(frame)) + `}`
 	require.Len(t, body, size)
 	return body
 }

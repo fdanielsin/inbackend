@@ -17,7 +17,14 @@ info:
     - HEAD est accepté sur toute route GET et répond comme elle, sans corps
       (RFC 9110, section 9.3.2) ;
     - un corps de requête de plus de 1 MiB (1 048 576 octets) répond `413`
-      `PAYLOAD_TOO_LARGE`.
+      `PAYLOAD_TOO_LARGE` ;
+    - un corps JSON de requête qui contient une propriété que le schéma ne
+      déclare pas, ou `null` pour une propriété facultative, répond `400`
+      `INVALID_BODY` ; une valeur texte plus longue que
+      `maxLength`, ou un nombre au-dessus de `maximum`, répond `400`
+      `VALIDATION_FAILED`. La longueur compte les
+      caractères Unicode (points de code) de la valeur reçue. Les réponses, elles, peuvent gagner des
+      propriétés sans changer de version.
 
     Langue des messages : le serveur parle deux langues, l'anglais (par défaut)
     et le français. Si l'en-tête `Accept-Language` demande le français
@@ -372,8 +379,8 @@ paths:
         est optionnelle : une propriété absente du corps JSON n'est pas
         modifiée. Une propriété présente avec une valeur, y compris une
         valeur "vide" (`completed: false`, `description: ""`), est appliquée
-        telle quelle. `title`, si présent, ne peut pas être une chaîne vide
-        (voir `400`).
+        telle quelle ; `null` est refusé. `title`, si présent, ne peut pas être
+        une chaîne vide (voir `400`).
       operationId: updateTask
       requestBody:
         required: true
@@ -653,9 +660,9 @@ components:
         - DATABASE_UNAVAILABLE
         - INTERNAL_ERROR
       x-enumDescriptions:
-        INVALID_BODY: Corps JSON absent, mal formé ou de mauvais type (400).
+        INVALID_BODY: Corps JSON absent, mal formé, de mauvais type ou contenant une propriété inconnue (400).
         INVALID_ID: Identifiant de chemin non numérique ou hors de la plage uint32 (400).
-        VALIDATION_FAILED: Règle de validation violée (titre, nom ou email vide, format d'email invalide, user_id absent) ; `error` précise laquelle (400).
+        VALIDATION_FAILED: Règle de validation violée (titre, nom ou email vide, format d'email invalide, user_id absent, valeur trop longue) ; `error` précise laquelle (400).
         USER_NOT_FOUND: Utilisateur introuvable (404).
         TASK_NOT_FOUND: Tâche introuvable (404).
         EMAIL_TAKEN: Un utilisateur avec cet email (une fois normalisé) existe déjà (409).
@@ -754,14 +761,17 @@ components:
                   const: ready
     CreateUserRequest:
       type: object
+      additionalProperties: false
       required: [name, email]
       properties:
         name:
           type: string
           minLength: 1
+          maxLength: 100
         email:
           type: string
           minLength: 1
+          maxLength: 254
           description: |
             Normalisé par le serveur : espaces de début et de fin retirés,
             minuscules. L'email renvoyé est la forme normalisée, et l'unicité
@@ -774,34 +784,43 @@ components:
             composé d'espaces est aussi refusé.
     CreateTaskRequest:
       type: object
+      additionalProperties: false
       required: [user_id, title]
       properties:
         user_id:
           type: integer
           format: uint32
           minimum: 1
+          maximum: 4294967295
+          description: Au-delà du maximum, 400 `VALIDATION_FAILED`.
         title:
           type: string
           minLength: 1
+          maxLength: 200
         description:
           type: string
+          maxLength: 2000
         completed:
           type: boolean
           default: false
     UpdateTaskRequest:
       type: object
+      additionalProperties: false
       description: |
         Toutes les propriétés sont optionnelles. Une propriété absente du
         corps JSON laisse la valeur existante inchangée en base ; une
         propriété présente est appliquée telle quelle, y compris une valeur
-        "vide" (`false`, `""`).
+        "vide" (`false`, `""`). `null` est refusé (400 `INVALID_BODY`), de même
+        qu'un titre vide (400 `VALIDATION_FAILED`).
       properties:
         title:
           type: string
           minLength: 1
+          maxLength: 200
           description: Si fourni, ne peut pas être une chaîne vide (400 sinon).
         description:
           type: string
+          maxLength: 2000
         completed:
           type: boolean
   headers:

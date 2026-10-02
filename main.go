@@ -14,12 +14,14 @@ import (
 	"syscall"
 
 	"github.com/fdanielsin/inbackend/internal/app"
+	"github.com/fdanielsin/inbackend/internal/controllers/httpapi"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/database"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/logger"
 	"gorm.io/gorm"
 )
 
-// apiContract est le contrat OpenAPI, servi sur /openapi.yaml quand les docs sont actives.
+// apiContract est le contrat OpenAPI : il valide toujours les corps de requête, et
+// il est servi sur /openapi.yaml quand les docs sont actives.
 //
 //go:embed docs/specs/api/openapi.yaml
 var apiContract []byte
@@ -49,13 +51,18 @@ func run(ctx context.Context, log *slog.Logger) error {
 		return err
 	}
 
+	validator, err := httpapi.NewRequestValidator(apiContract, app.ValidatedOperations...)
+	if err != nil {
+		return fmt.Errorf("failed to load API contract: %w", err)
+	}
+
 	db, err := database.InitDB(dsn, log)
 	if err != nil {
 		return fmt.Errorf("failed to initialize database: %w", err)
 	}
 	defer closeDB(db, log)
 
-	opts := []app.Option{app.WithLogger(log), app.WithAllowedOrigins(app.ParseAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS")))}
+	opts := []app.Option{app.WithLogger(log), app.WithAllowedOrigins(app.ParseAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS"))), app.WithRequestValidator(validator)}
 	if docsEnabled {
 		opts = append(opts, app.WithAPIDocs(apiContract))
 	}

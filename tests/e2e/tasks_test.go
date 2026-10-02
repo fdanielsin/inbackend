@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
+	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -201,9 +202,10 @@ type updatedTaskJSON struct {
 	Completed   bool   `json:"completed"`
 }
 
-// GIVEN a task / WHEN PUT with an empty object or with title null / THEN 200 and nothing changes
+// GIVEN a task / WHEN PUT with an empty object / THEN 200 and nothing changes
+// (title null is refused since D4: TestRequestValidation_RefusesNullOnOptionalFields)
 func TestUpdateTask_AbsentAndNullFieldsAreUnchanged(t *testing.T) {
-	for name, body := range map[string]string{"empty object": `{}`, "title null": `{"title":null}`} {
+	for name, body := range map[string]string{"empty object": `{}`} {
 		t.Run(name, func(t *testing.T) {
 			s := newTestServer(t)
 			owner := s.createUser("Owner", "owner@example.com")
@@ -220,7 +222,8 @@ func TestUpdateTask_AbsentAndNullFieldsAreUnchanged(t *testing.T) {
 	}
 }
 
-// GIVEN Alice's task / WHEN PUT carries another id and Bob's user_id in the body / THEN the path id wins and the owner stays Alice
+// GIVEN Alice's task / WHEN PUT carries another id and Bob's user_id in the body
+// THEN 400 INVALID_BODY (unknown fields), and neither Alice's nor Bob's task changes
 func TestUpdateTask_BodyCannotRetargetOrReassign(t *testing.T) {
 	s := newTestServer(t)
 	alice := s.createUser("Alice", "alice@example.com")
@@ -232,9 +235,8 @@ func TestUpdateTask_BodyCannotRetargetOrReassign(t *testing.T) {
 
 	r := s.do(http.MethodPut, fmt.Sprintf("/api/v1/tasks/%d", aliceTask.ID), string(body))
 
-	require.Equal(t, http.StatusOK, r.code, "body: %s", r.body)
-	assert.Equal(t, updatedTaskJSON{ID: aliceTask.ID, Title: "Alice task", Completed: true}, decode[updatedTaskJSON](t, r).Data)
-	assert.Equal(t, []taskJSON{{ID: aliceTask.ID, Title: "Alice task", UserID: alice.ID, Completed: true}}, s.listTasks(alice.ID))
+	requireError(t, r, http.StatusBadRequest, "INVALID_BODY", shared.Message(shared.LangEnglish, shared.MsgUnknownField))
+	assert.Equal(t, []taskJSON{aliceTask}, s.listTasks(alice.ID), "Alice's task must be untouched")
 	assert.Equal(t, []taskJSON{bobTask}, s.listTasks(bob.ID), "Bob's task must be untouched")
 }
 

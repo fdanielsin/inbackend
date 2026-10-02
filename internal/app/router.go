@@ -29,6 +29,7 @@ type routerConfig struct {
 	allowedOrigins []string
 	log            *slog.Logger
 	apiContract    []byte
+	validator      *httpapi.RequestValidator
 }
 
 // WithAllowedOrigins fixe les origines CORS autorisées ("*" par défaut).
@@ -40,6 +41,17 @@ func WithAllowedOrigins(origins []string) Option {
 // Swagger UI sur /docs ; sans cette option, ces routes n'existent pas.
 func WithAPIDocs(contract []byte) Option {
 	return func(cfg *routerConfig) { cfg.apiContract = contract }
+}
+
+// ValidatedOperations sont les opérations dont le corps JSON est validé contre
+// le contrat (voir httpapi.NewRequestValidator).
+var ValidatedOperations = []string{"POST /api/v1/users", "POST /api/v1/tasks", "PUT /api/v1/tasks/{id}"}
+
+// WithRequestValidator refuse les corps JSON qui violent le contrat (propriétés
+// inconnues, valeurs trop longues) ; sans cette option, aucune validation de
+// schéma n'est faite.
+func WithRequestValidator(validator *httpapi.RequestValidator) Option {
+	return func(cfg *routerConfig) { cfg.validator = validator }
 }
 
 // WithLogger fixe le logger des controllers et du journal d'accès ; nil garde
@@ -93,6 +105,9 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 		ExposeHeaders: []string{echo.HeaderXRequestID},
 	}))
 	e.Use(httpapi.BodyLimit(maxRequestBody))
+	if cfg.validator != nil {
+		e.Use(cfg.validator.Middleware(log))
+	}
 
 	getAndHead(e, "/health", healthCtrl.HealthCheck)
 	getAndHead(e, "/ready", healthCtrl.Ready)

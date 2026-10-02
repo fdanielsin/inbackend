@@ -138,6 +138,36 @@ CSP autorise le script d'initialisation par son hash, calculé au démarrage. Le
 Le premier serveur du contrat est `/` pour que « Try it out » appelle l'origine
 de la page et reste sous `connect-src 'self'`.
 
+### Validation des corps de requête
+
+`httpapi.RequestValidator`, branché par `app.WithRequestValidator` après
+`BodyLimit` (le 413 passe avant), lit dans le contrat embarqué le schéma du corps
+de `POST /api/v1/users`, `POST /api/v1/tasks` et `PUT /api/v1/tasks/{id}`
+(`app.ValidatedOperations`). La validation ne dépend pas de `API_DOCS_ENABLED`.
+
+Le validateur est partiel volontairement. Il applique : propriété inconnue,
+casse comprise (400 `INVALID_BODY`), `null` sur une propriété facultative (400
+`INVALID_BODY`), `maxLength` en caractères Unicode de la valeur reçue, et `maximum` d'un nombre (400 `VALIDATION_FAILED`). Le reste
+garde ses codes et textes, rendus par `Bind` et le domaine : type, corps absent
+ou `null`, champ obligatoire, vide, `minLength: 1`, `minimum: 1` de `user_id`,
+format d'email.
+
+Un validateur générique (`openapi3filter` de kin-openapi) n'a pas été retenu :
+pour un contrat OpenAPI 3.1 il ne rend que du texte anglais, sans mot-clé ni
+chemin exploitables, qu'on ne pourrait relier à nos codes et messages qu'en
+l'analysant, ce qui est fragile. D'où le risque d'un mot-clé du contrat ignoré en
+silence, que `NewRequestValidator` écarte au démarrage : il refuse (le serveur ne
+démarre pas) une opération absente, sans corps JSON, ou sans
+`additionalProperties: false`, et un schéma qui utilise un mot-clé non appliqué.
+Mots-clés acceptés, corps : `type`, `properties`, `additionalProperties`,
+`required` (seulement `name`, `email`, `title`, `user_id`) ; propriété : `type`,
+`maxLength`, `maximum`, `format` (`email` ou `uint32`), `minLength: 1` (seulement
+`name`, `email`, `title`), `minimum: 1` (seulement `user_id`) ; annotations, sans
+effet : `description`, `title`, `default`, `example`, `examples`, `deprecated`,
+`x-*`. Tout autre mot-clé (`pattern`, `enum`, `oneOf`...) impose d'abord
+d'étendre le validateur. Les colonnes `name`, `email`, `title` et `description`
+sont des `text` non bornés : les limites ne vivent que dans le contrat.
+
 ### Langue des messages
 
 Deux langues, l'anglais par défaut et le français. `shared.NegotiateLanguage`
