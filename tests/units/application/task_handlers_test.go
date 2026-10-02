@@ -40,7 +40,7 @@ func TestCreateTaskHandler_Execute_ValidationErrorDoesNotStore(t *testing.T) {
 			resp, err := commands.NewCreateTaskHandler(repo).Execute(context.Background(), tc.req)
 
 			assert.Nil(t, resp)
-			assert.ErrorIs(t, err, tc.want)
+			require.ErrorIs(t, err, tc.want)
 			assert.Empty(t, repo.created)
 		})
 	}
@@ -119,9 +119,9 @@ func TestListUserTasksHandler_Execute_RepositoryErrorIsPropagated(t *testing.T) 
 
 // statsRepositories answers counts only: a stats query that loads the users
 // (List) instead of counting them fails, because listFn is not expected.
-func statsRepositories(users int64, usersErr error, tasks int64, tasksErr error) (*stubUserRepository, *stubTaskRepository) {
-	return &stubUserRepository{countFn: func() (int64, error) { return users, usersErr }},
-		&stubTaskRepository{countFn: func() (int64, error) { return tasks, tasksErr }}
+func statsRepositories(userCount int64, usersErr error, taskCount int64, tasksErr error) (*stubUserRepository, *stubTaskRepository) {
+	return &stubUserRepository{countFn: func() (int64, error) { return userCount, usersErr }},
+		&stubTaskRepository{countFn: func() (int64, error) { return taskCount, tasksErr }}
 }
 
 // GIVEN 3 users and 5 tasks / WHEN GetStats / THEN the exact counters are returned
@@ -177,7 +177,7 @@ func TestUpdateTaskHandler_Execute_ReadErrorIsPropagated(t *testing.T) {
 		commands.UpdateTaskRequest{ID: 1, Completed: ptrBool(true)})
 
 	assert.Nil(t, resp)
-	assert.ErrorIs(t, err, errDatabaseDown)
+	require.ErrorIs(t, err, errDatabaseDown)
 	assert.Empty(t, repo.updated)
 }
 
@@ -192,6 +192,6 @@ func TestUpdateTaskHandler_Execute_WriteErrorIsPropagated(t *testing.T) {
 		commands.UpdateTaskRequest{ID: 1, Completed: ptrBool(true)})
 
 	assert.Nil(t, resp)
-	assert.ErrorIs(t, err, errDatabaseDown)
+	require.ErrorIs(t, err, errDatabaseDown)
 	assert.Len(t, repo.updated, 1)
 }

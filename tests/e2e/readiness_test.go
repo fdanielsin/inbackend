@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
+	"gorm.io/gorm/logger"
 )
 
 type readyJSON struct {
@@ -97,7 +97,7 @@ func TestReady_ParallelProbesReleaseTheirConnections(t *testing.T) {
 	wg.Wait()
 
 	for i, code := range codes {
-		assert.Equal(t, http.StatusOK, code, fmt.Sprintf("probe %d", i))
+		assert.Equal(t, http.StatusOK, code, "probe %d", i)
 	}
 	sqlDB, err := s.db.DB()
 	require.NoError(t, err)
@@ -136,7 +136,7 @@ func unresponsiveDatabase(t *testing.T) string {
 // GIVEN a database that accepts connections but never answers / WHEN GET /ready through the real driver
 // THEN the check gives up at its 2 s deadline: 503 DATABASE_UNAVAILABLE before a 3 s probe timeout
 func TestReady_UnresponsiveDatabaseHitsTheDeadline(t *testing.T) {
-	db, err := gorm.Open(postgres.Open(unresponsiveDatabase(t)), &gorm.Config{DisableAutomaticPing: true, Logger: gormlogger.Discard})
+	db, err := gorm.Open(postgres.Open(unresponsiveDatabase(t)), &gorm.Config{DisableAutomaticPing: true, Logger: logger.Discard})
 	require.NoError(t, err)
 	sqlDB, err := db.DB()
 	require.NoError(t, err)

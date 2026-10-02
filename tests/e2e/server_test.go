@@ -26,12 +26,18 @@ var pg *testsupport.Postgres
 // contract validates every response sent through testServer.do (QP-02).
 var contract *testsupport.Contract
 
+// TestMain exits explicitly: when every test passes but the contract coverage gate
+// fails, returning would let the binary exit with m.Run's code, 0.
 func TestMain(m *testing.M) {
+	os.Exit(runSuite(m)) //nolint:forbidigo // only way to fail a run on the contract coverage gate
+}
+
+func runSuite(m *testing.M) int {
 	var err error
 	contract, err = testsupport.LoadContract()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+		return 1
 	}
 	pg = testsupport.StartPostgres()
 	code := m.Run()
@@ -39,7 +45,7 @@ func TestMain(m *testing.M) {
 	if code == 0 {
 		code = checkContractCoverage()
 	}
-	os.Exit(code)
+	return code
 }
 
 // checkContractCoverage fails a complete run in which a response declared by the

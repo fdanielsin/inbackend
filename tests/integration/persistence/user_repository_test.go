@@ -69,7 +69,7 @@ func TestUserRepository_GetByEmail_SadPath_NotFound(t *testing.T) {
 
 	found, err := repo.GetByEmail(context.Background(), "nonexistent@example.com")
 
-	assert.ErrorIs(t, err, users.ErrUserNotFound)
+	require.ErrorIs(t, err, users.ErrUserNotFound)
 	assert.Nil(t, found)
 }
 
@@ -108,10 +108,10 @@ func requirePhysicalOrderDiffers(t *testing.T, db *gorm.DB, want []uint) {
 
 func listedIDs(t *testing.T, repo *pgstore.UserRepository) []uint {
 	t.Helper()
-	users, err := repo.List(context.Background())
+	listed, err := repo.List(context.Background())
 	require.NoError(t, err)
-	ids := make([]uint, len(users))
-	for i, u := range users {
+	ids := make([]uint, len(listed))
+	for i, u := range listed {
 		ids[i] = u.ID
 	}
 	return ids

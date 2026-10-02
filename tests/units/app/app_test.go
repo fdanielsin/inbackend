@@ -7,7 +7,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"strings"
 	"testing"
 	"time"
 
@@ -39,11 +38,16 @@ func listen(t *testing.T) net.Listener {
 	return l
 }
 
-func get(t *testing.T, url string) (*http.Response, error) {
+func newGetRequest(t *testing.T, url string) *http.Request {
 	t.Helper()
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	require.NoError(t, err)
-	return http.DefaultClient.Do(req)
+	return req
+}
+
+func get(t *testing.T, url string) (*http.Response, error) {
+	t.Helper()
+	return http.DefaultClient.Do(newGetRequest(t, url))
 }
 
 // GIVEN a running server / WHEN its context is cancelled / THEN Serve returns nil and stops listening
@@ -100,9 +104,10 @@ func TestServe_LetsARequestInProgressFinish(t *testing.T) {
 		body string
 		err  error
 	}
+	req := newGetRequest(t, url)
 	answer := make(chan result, 1)
 	go func() {
-		resp, err := get(t, url)
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			answer <- result{err: err}
 			return
@@ -136,7 +141,7 @@ func TestServe_LetsARequestInProgressFinish(t *testing.T) {
 	}
 	select {
 	case err := <-done:
-		assert.NoError(t, err)
+		require.NoError(t, err)
 	case <-time.After(5 * time.Second):
 		t.Fatal("Serve did not return after the request finished")
 	}
@@ -153,7 +158,7 @@ func TestServe_ClosedListenerReturnsAnError(t *testing.T) {
 	select {
 	case err := <-done:
 		require.Error(t, err)
-		assert.True(t, strings.Contains(err.Error(), "closed"), err.Error())
+		assert.Contains(t, err.Error(), "closed")
 	case <-time.After(5 * time.Second):
 		t.Fatal("Serve did not return on a closed listener")
 	}

@@ -1,7 +1,6 @@
 package persistence
 
 import (
-	"os"
 	"testing"
 
 	"github.com/fdanielsin/inbackend/tests/testsupport"
@@ -13,9 +12,8 @@ var pg *testsupport.Postgres
 
 func TestMain(m *testing.M) {
 	pg = testsupport.StartPostgres()
-	code := m.Run()
+	m.Run()
 	pg.Terminate()
-	os.Exit(code)
 }
 
 // setupTestDB returns a connection to a migrated schema with empty tables.

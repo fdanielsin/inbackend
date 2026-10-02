@@ -43,7 +43,7 @@ func LoadContract() (*Contract, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load %s: %w", path, err)
 	}
-	if err := doc.Validate(loader.Context); err != nil {
+	if err = doc.Validate(loader.Context); err != nil {
 		return nil, fmt.Errorf("invalid contract: %w", err)
 	}
 	// Without servers the router matches any host, such as httptest's example.com.

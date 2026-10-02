@@ -49,7 +49,7 @@ func TestTaskRepository_Update_PersistsEmptyDescription(t *testing.T) {
 	require.NoError(t, err)
 	stored, err := repo.GetByID(ctx, id)
 	require.NoError(t, err)
-	assert.Equal(t, "", stored.Description, "empty description must be persisted")
+	assert.Empty(t, stored.Description, "empty description must be persisted")
 	assert.Equal(t, "Buy milk", stored.Title)
 	assert.True(t, stored.Completed)
 }
@@ -64,7 +64,7 @@ func TestTaskRepository_Update_SadPath_MissingTask(t *testing.T) {
 	err := repo.Update(ctx, &tasks.Task{ID: 999, Title: "Ghost", UserID: 1, Completed: true})
 
 	// THEN: ErrTaskNotFound is returned and no row is created.
-	assert.ErrorIs(t, err, tasks.ErrTaskNotFound)
+	require.ErrorIs(t, err, tasks.ErrTaskNotFound)
 	_, getErr := repo.GetByID(ctx, 999)
 	assert.ErrorIs(t, getErr, tasks.ErrTaskNotFound, "update must not create the missing task")
 }

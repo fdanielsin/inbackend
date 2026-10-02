@@ -21,12 +21,12 @@ type fakeTaskRepository struct {
 }
 
 func newFakeTaskRepository(existing *tasks.Task) *fakeTaskRepository {
-	tasks := make(map[uint]*tasks.Task)
+	stored := make(map[uint]*tasks.Task)
 	if existing != nil {
 		cp := *existing
-		tasks[existing.ID] = &cp
+		stored[existing.ID] = &cp
 	}
-	return &fakeTaskRepository{tasks: tasks}
+	return &fakeTaskRepository{tasks: stored}
 }
 
 func (r *fakeTaskRepository) Create(_ context.Context, _ *tasks.Task) (uint, error) {
@@ -82,13 +82,13 @@ func TestUpdateTaskHandler_Execute_CompletedFalseOnly_PreservesTitleAndDescripti
 	require.NoError(t, err)
 	assert.Equal(t, "Buy milk", resp.Title)
 	assert.Equal(t, "whole milk", resp.Description)
-	assert.Equal(t, false, resp.Completed)
+	assert.False(t, resp.Completed)
 
 	require.Len(t, repo.updateCalls, 1)
 	persisted := repo.updateCalls[0]
 	assert.Equal(t, "Buy milk", persisted.Title)
 	assert.Equal(t, "whole milk", persisted.Description)
-	assert.Equal(t, false, persisted.Completed)
+	assert.False(t, persisted.Completed)
 }
 
 // GIVEN une tâche avec une description existante
@@ -105,11 +105,11 @@ func TestUpdateTaskHandler_Execute_DescriptionEmptyExplicit_IsApplied(t *testing
 	})
 
 	require.NoError(t, err)
-	assert.Equal(t, "", resp.Description)
+	assert.Empty(t, resp.Description)
 	assert.Equal(t, "Buy milk", resp.Title, "le titre non fourni doit rester inchangé")
 
 	require.Len(t, repo.updateCalls, 1)
-	assert.Equal(t, "", repo.updateCalls[0].Description)
+	assert.Empty(t, repo.updateCalls[0].Description)
 }
 
 // GIVEN une tâche existante
@@ -143,7 +143,7 @@ func TestUpdateTaskHandler_Execute_NoFieldsProvided_IsNoOp(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "Buy milk", resp.Title)
 	assert.Equal(t, "whole milk", resp.Description)
-	assert.Equal(t, true, resp.Completed)
+	assert.True(t, resp.Completed)
 
 	require.Len(t, repo.updateCalls, 1)
 	assert.Equal(t, *existing, repo.updateCalls[0])

@@ -40,11 +40,11 @@ func TestUserRepository_List_ReturnsAllUsers(t *testing.T) {
 
 // GIVEN no user / WHEN List / THEN an empty, non-nil slice
 func TestUserRepository_List_EmptyTable(t *testing.T) {
-	users, err := pgstore.NewUserRepository(setupTestDB(t)).List(context.Background())
+	listed, err := pgstore.NewUserRepository(setupTestDB(t)).List(context.Background())
 
 	require.NoError(t, err)
-	assert.NotNil(t, users)
-	assert.Empty(t, users)
+	assert.NotNil(t, listed)
+	assert.Empty(t, listed)
 }
 
 // GIVEN a stored user / WHEN GetByID with 0 or the largest contract id / THEN ErrUserNotFound
@@ -112,7 +112,7 @@ func TestTaskRepository_Delete_RemovesOnlyTargetedTask(t *testing.T) {
 	require.NoError(t, repo.Delete(ctx, second))
 
 	_, err := repo.GetByID(ctx, second)
-	assert.ErrorIs(t, err, tasks.ErrTaskNotFound)
+	require.ErrorIs(t, err, tasks.ErrTaskNotFound)
 	remaining, err := repo.ListByUserID(ctx, ownerID)
 	require.NoError(t, err)
 	require.Len(t, remaining, 2)
@@ -137,7 +137,7 @@ func TestTaskRepository_Delete_AbsentTask_ReturnsNotFound(t *testing.T) {
 		})
 	}
 	require.NoError(t, repo.Delete(ctx, removed))
-	assert.ErrorIs(t, repo.Delete(ctx, removed), tasks.ErrTaskNotFound, "a second delete must report the task as absent")
+	require.ErrorIs(t, repo.Delete(ctx, removed), tasks.ErrTaskNotFound, "a second delete must report the task as absent")
 
 	remaining, err := repo.ListByUserID(ctx, ownerID)
 	require.NoError(t, err)
@@ -209,11 +209,11 @@ func TestTaskRepository_ListByUserID_UserWithoutTasks(t *testing.T) {
 	idleID := createTestUser(t, db, "idle@example.com")
 	createTestTask(t, repo, busyID, "Task 1")
 
-	tasks, err := repo.ListByUserID(context.Background(), idleID)
+	listed, err := repo.ListByUserID(context.Background(), idleID)
 
 	require.NoError(t, err)
-	assert.NotNil(t, tasks)
-	assert.Empty(t, tasks)
+	assert.NotNil(t, listed)
+	assert.Empty(t, listed)
 }
 
 // GIVEN a stored task / WHEN GetByID with 0 or the largest contract id / THEN ErrTaskNotFound

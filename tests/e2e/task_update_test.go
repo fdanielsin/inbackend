@@ -109,7 +109,7 @@ func TestTaskController_UpdateTask_EmptyDescriptionIsPersisted(t *testing.T) {
 	// THEN: The description is cleared and absent fields are unchanged.
 	require.Equal(t, http.StatusOK, code)
 	stored := f.persistedTask(t, id)
-	assert.Equal(t, "", stored.Description, "empty description must be persisted")
+	assert.Empty(t, stored.Description, "empty description must be persisted")
 	assert.Equal(t, "Buy milk", stored.Title)
 	assert.True(t, stored.Completed)
 	assert.Equal(t, stored.Title, resp.Data.Title, "response must reflect storage")

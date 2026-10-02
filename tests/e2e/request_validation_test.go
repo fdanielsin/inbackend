@@ -245,7 +245,7 @@ func TestRequestValidation_LengthBoundaries(t *testing.T) {
 		for unitName, unit := range map[string]string{"ascii": "a", "emoji": "😀", "zwj": familyEmoji} {
 			t.Run(lc.field+" "+unitName, func(t *testing.T) {
 				atMax := textOfRunes(lc.field, unit, lc.max)
-				require.Equal(t, lc.max, len([]rune(atMax)))
+				require.Len(t, []rune(atMax), lc.max)
 
 				s := newTestServer(t)
 				r, stored := lc.send(t, s, atMax)

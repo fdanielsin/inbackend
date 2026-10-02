@@ -38,7 +38,7 @@ func TestInitDB_MigratesAnEmptyDatabase(t *testing.T) {
 func TestInitDB_UnreachableDatabase(t *testing.T) {
 	db, err := pgsetup.InitDB("postgres://testuser:testpass@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2", slog.New(slog.DiscardHandler))
 
-	assert.Error(t, err)
+	require.Error(t, err)
 	assert.Nil(t, db)
 }
 
@@ -71,7 +71,7 @@ func TestInitDB_UnreachableDatabase_ReturnsAWrappedError(t *testing.T) {
 
 	require.Error(t, err)
 	assert.True(t, strings.HasPrefix(err.Error(), "migrate database: "), err.Error())
-	assert.Error(t, errors.Unwrap(err), "the cause is wrapped, not flattened")
+	require.Error(t, errors.Unwrap(err), "the cause is wrapped, not flattened")
 	assert.NotContains(t, err.Error(), "qa-s3cr3t-pw")
 }
 

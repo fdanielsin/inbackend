@@ -42,7 +42,7 @@ func TestCreateUserHandler_Execute_ValidationErrorDoesNotStore(t *testing.T) {
 			resp, err := usercommands.NewCreateUserHandler(repo).Execute(context.Background(), tc.req)
 
 			assert.Nil(t, resp)
-			assert.ErrorIs(t, err, tc.want)
+			require.ErrorIs(t, err, tc.want)
 			assert.Empty(t, repo.created)
 		})
 	}

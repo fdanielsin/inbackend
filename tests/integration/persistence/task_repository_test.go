@@ -70,11 +70,11 @@ func TestTaskRepository_ListByUserID_HappyPath(t *testing.T) {
 	createTestTask(t, repo, bobID, "Task 3")
 
 	// THEN: List only Alice's tasks
-	tasks, err := repo.ListByUserID(context.Background(), aliceID)
+	aliceTasks, err := repo.ListByUserID(context.Background(), aliceID)
 	require.NoError(t, err)
-	require.Len(t, tasks, 2)
-	assert.Equal(t, "Task 1", tasks[0].Title)
-	assert.Equal(t, "Task 2", tasks[1].Title)
+	require.Len(t, aliceTasks, 2)
+	assert.Equal(t, "Task 1", aliceTasks[0].Title)
+	assert.Equal(t, "Task 2", aliceTasks[1].Title)
 }
 
 // GIVEN: A user's first task was updated after the others were created
@@ -96,11 +96,11 @@ func TestTaskRepository_ListByUserID_OrderedByIDAfterUpdate(t *testing.T) {
 	stored.Title = "Task 1 edited"
 	require.NoError(t, repo.Update(ctx, stored))
 
-	tasks, err := repo.ListByUserID(ctx, ownerID)
+	listed, err := repo.ListByUserID(ctx, ownerID)
 
 	require.NoError(t, err)
-	ids := make([]uint, len(tasks))
-	for i, tk := range tasks {
+	ids := make([]uint, len(listed))
+	for i, tk := range listed {
 		ids[i] = tk.ID
 	}
 	assert.Equal(t, []uint{first, second, third}, ids, "tasks must be ordered by id")

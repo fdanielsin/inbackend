@@ -33,5 +33,5 @@ func TestNewTask_Valid(t *testing.T) {
 	assert.Equal(t, uint(1), tk.ID)
 	assert.Equal(t, uint(1), tk.UserID)
 	assert.Equal(t, "Buy milk", tk.Title)
-	assert.Equal(t, false, tk.Completed)
+	assert.False(t, tk.Completed)
 }

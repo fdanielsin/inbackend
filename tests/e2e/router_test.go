@@ -127,7 +127,7 @@ func TestHealth_ReturnsContractBody(t *testing.T) {
 		assert.Equal(t, "ok", env.Data.Status, path)
 		assert.Equal(t, "1.0.0", env.Data.Version, path)
 		_, err := uuid.Parse(env.Data.ID)
-		assert.NoError(t, err, "id must be a UUID (%s)", path)
+		require.NoError(t, err, "id must be a UUID (%s)", path)
 		ids = append(ids, env.Data.ID)
 	}
 	assert.NotEqual(t, ids[0], ids[1], "each response carries a new id")

@@ -20,7 +20,7 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	gormlogger "gorm.io/gorm/logger"
+	"gorm.io/gorm/logger"
 )
 
 // Postgres is one PostgreSQL container, started once per test package from TestMain.
@@ -63,21 +63,21 @@ func startPostgres(hostPort string) *Postgres {
 		}
 	}
 
-	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+	pgContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	pg := &Postgres{container: container, startErr: err}
+	pg := &Postgres{container: pgContainer, startErr: err}
 	if err != nil {
 		return pg
 	}
 
-	host, err := container.Host(ctx)
+	host, err := pgContainer.Host(ctx)
 	if err != nil {
 		pg.startErr = err
 		return pg
 	}
-	port, err := container.MappedPort(ctx, "5432")
+	port, err := pgContainer.MappedPort(ctx, "5432")
 	if err != nil {
 		pg.startErr = err
 		return pg
@@ -133,7 +133,7 @@ func (p *Postgres) Open(t testing.TB) *gorm.DB {
 // OpenDSN opens a connection to the given database, closed at the end of the test.
 func OpenDSN(t testing.TB, dsn string) *gorm.DB {
 	t.Helper()
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: gormlogger.Discard})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: logger.Discard})
 	require.NoError(t, err, "failed to connect to PostgreSQL")
 	sqlDB, err := db.DB()
 	require.NoError(t, err)

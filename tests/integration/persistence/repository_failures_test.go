@@ -37,8 +37,8 @@ func repositoryCalls(ctx context.Context, db *gorm.DB) map[string]error {
 func assertTechnicalFailure(t *testing.T, name string, err error) {
 	t.Helper()
 	require.Error(t, err, name)
-	assert.NotErrorIs(t, err, users.ErrUserNotFound, name)
-	assert.NotErrorIs(t, err, users.ErrUserEmailTaken, name)
+	require.NotErrorIs(t, err, users.ErrUserNotFound, name)
+	require.NotErrorIs(t, err, users.ErrUserEmailTaken, name)
 	assert.NotErrorIs(t, err, tasks.ErrTaskNotFound, name)
 }
 
@@ -70,9 +70,9 @@ func TestRepositories_CancelledContext_ReturnContextCanceled(t *testing.T) {
 		})
 	}
 
-	var users, tasks int64
-	require.NoError(t, db.Model(&pgstore.UserModel{}).Count(&users).Error)
-	require.NoError(t, db.Model(&pgstore.TaskModel{}).Count(&tasks).Error)
-	assert.Zero(t, users, "no user may be written with a cancelled context")
-	assert.Zero(t, tasks, "no task may be written with a cancelled context")
+	var userCount, taskCount int64
+	require.NoError(t, db.Model(&pgstore.UserModel{}).Count(&userCount).Error)
+	require.NoError(t, db.Model(&pgstore.TaskModel{}).Count(&taskCount).Error)
+	assert.Zero(t, userCount, "no user may be written with a cancelled context")
+	assert.Zero(t, taskCount, "no task may be written with a cancelled context")
 }

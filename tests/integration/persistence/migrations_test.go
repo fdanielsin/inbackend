@@ -159,9 +159,9 @@ func TestMigration1_MatchesTheFormerAutoMigrateSchema(t *testing.T) {
 	require.NoError(t, legacy.Exec("INSERT INTO task_models (title, description, user_id, completed) VALUES ('Keep me', '', 1, true)").Error)
 	require.NoError(t, pgsetup.Migrate(legacyDSN))
 	assert.Equal(t, []string{"ada@x.io"}, emails(t, legacy))
-	var tasks int64
-	require.NoError(t, legacy.Raw("SELECT count(*) FROM task_models WHERE title = 'Keep me' AND completed").Scan(&tasks).Error)
-	assert.Equal(t, int64(1), tasks)
+	var taskCount int64
+	require.NoError(t, legacy.Raw("SELECT count(*) FROM task_models WHERE title = 'Keep me' AND completed").Scan(&taskCount).Error)
+	assert.Equal(t, int64(1), taskCount)
 }
 
 // GIVEN version 1 with emails in mixed case or padded / WHEN migration 2 runs / THEN they are stored trimmed and lower-cased
@@ -227,9 +227,9 @@ func TestMigration3_RefusesOrphanTasks(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot add foreign key: 1 task(s)")
 	assert.Contains(t, err.Error(), "make migrate-force version=2")
-	var tasks int64
-	require.NoError(t, db.Raw("SELECT count(*) FROM task_models").Scan(&tasks).Error)
-	assert.Equal(t, int64(2), tasks, "no task may be deleted")
+	var taskCount int64
+	require.NoError(t, db.Raw("SELECT count(*) FROM task_models").Scan(&taskCount).Error)
+	assert.Equal(t, int64(2), taskCount, "no task may be deleted")
 	assert.False(t, hasConstraint(t, db, "fk_task_models_user"))
 }
 
@@ -332,6 +332,6 @@ func TestUserRepository_Create_OtherUniqueViolationIsNotEmailTaken(t *testing.T)
 	_, err = repo.Create(ctx, &users.User{Name: "Ada", Email: "other@x.io"})
 
 	require.Error(t, err)
-	assert.NotErrorIs(t, err, users.ErrUserEmailTaken)
+	require.NotErrorIs(t, err, users.ErrUserEmailTaken)
 	assert.Equal(t, "23505", sqlState(err))
 }

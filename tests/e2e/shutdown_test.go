@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"os/exec"
-	"strings"
 	"syscall"
 	"testing"
 	"time"
@@ -107,8 +106,8 @@ func TestShutdown_LetsARequestInProgressFinish(t *testing.T) {
 	// Showing that the server does not exit needs a bounded wait: an exit that ignored the request
 	// would come at once, far within these 500 ms; the real exit is checked at the end.
 	select {
-	case err := <-s.exited:
-		t.Fatalf("the server exited during the request: %v\n%s", err, s.output.String())
+	case exitErr := <-s.exited:
+		t.Fatalf("the server exited during the request: %v\n%s", exitErr, s.output.String())
 	case <-time.After(500 * time.Millisecond):
 	}
 	_, err = fmt.Fprint(conn, chunk(`"email":"slow@x.io"}`)+"0\r\n\r\n")
@@ -142,5 +141,5 @@ func TestStartup_CORSAllowedOriginsFromEnvironment(t *testing.T) {
 			assert.NotEmpty(t, resp.Header.Get("X-Request-Id"))
 		})
 	}
-	assert.False(t, strings.Contains(s.output.String(), "panic"))
+	assert.NotContains(t, s.output.String(), "panic")
 }
