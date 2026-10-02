@@ -112,6 +112,20 @@ func TestAPIDocs_SwaggerPageIsLockedDown(t *testing.T) {
 	}
 }
 
+// GIVEN the docs option / WHEN "Try it out" calls the first server of the served contract
+// THEN that server is the origin of the page, whatever its host and port, the only one its CSP lets it connect to
+func TestAPIDocs_TryItOutTargetsTheDocsOrigin(t *testing.T) {
+	s := newDocsServer(t)
+
+	doc, err := openapi3.NewLoader().LoadFromData(s.do(http.MethodGet, "/openapi.yaml", "").body)
+	require.NoError(t, err)
+	require.NotEmpty(t, doc.Servers, "Swagger UI needs a server to call")
+	assert.Equal(t, "/", doc.Servers[0].URL, "the default server is relative to the page")
+
+	csp := cspDirectives(t, s.do(http.MethodGet, "/docs", "").header.Get("Content-Security-Policy"))
+	assert.Equal(t, []string{"'self'"}, csp["connect-src"], "the page calls its own origin only")
+}
+
 // GIVEN the docs option / WHEN another method than GET / THEN 405 METHOD_NOT_ALLOWED in the envelope, Allow listing GET
 func TestAPIDocs_OtherMethodsAreNotAllowed(t *testing.T) {
 	s := newDocsServer(t)

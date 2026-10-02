@@ -135,6 +135,8 @@ d'`Accept-Language` : `fr` pour le contrat, `en` pour la page. `/docs` charge
 Swagger UI depuis un CDN à version et empreintes épinglées ; la
 CSP autorise le script d'initialisation par son hash, calculé au démarrage. Le
 `.dockerignore` laisse passer `openapi.yaml` pour que l'image se construise.
+Le premier serveur du contrat est `/` pour que « Try it out » appelle l'origine
+de la page et reste sous `connect-src 'self'`.
 
 ### Langue des messages
 

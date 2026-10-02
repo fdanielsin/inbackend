@@ -27,6 +27,8 @@ info:
     `Vary: Accept-Language`. Les codes `error_code` et les valeurs machine
     (par exemple `status`) ne dépendent pas de la langue.
 servers:
+  - url: /
+    description: Même origine que cette documentation
   - url: http://localhost:8080
     description: Développement local
 tags:
