@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -107,35 +107,35 @@ func TestNewUser_LongUnicodeFields_AreKeptUnchanged(t *testing.T) {
 
 // GIVEN: A task without title / WHEN: NewTask / THEN: ErrTaskTitleEmpty
 func TestNewTask_EmptyTitle(t *testing.T) {
-	tk, err := task.NewTask(1, 1, "", "desc", false)
+	tk, err := tasks.NewTask(1, 1, "", "desc", false)
 
 	assert.Nil(t, tk)
-	assert.ErrorIs(t, err, task.ErrTaskTitleEmpty)
+	assert.ErrorIs(t, err, tasks.ErrTaskTitleEmpty)
 }
 
 // GIVEN: A task with user id 0 / WHEN: NewTask / THEN: ErrTaskUserIDInvalid
 func TestNewTask_ZeroUserID(t *testing.T) {
-	tk, err := task.NewTask(1, 0, "Buy milk", "desc", false)
+	tk, err := tasks.NewTask(1, 0, "Buy milk", "desc", false)
 
 	assert.Nil(t, tk)
-	assert.ErrorIs(t, err, task.ErrTaskUserIDInvalid)
+	assert.ErrorIs(t, err, tasks.ErrTaskUserIDInvalid)
 }
 
 // GIVEN: Neither title nor user id / WHEN: NewTask / THEN: the title is reported first
 func TestNewTask_EmptyTitleAndZeroUserID_ReportsTitleFirst(t *testing.T) {
-	tk, err := task.NewTask(1, 0, "", "", false)
+	tk, err := tasks.NewTask(1, 0, "", "", false)
 
 	assert.Nil(t, tk)
-	assert.ErrorIs(t, err, task.ErrTaskTitleEmpty)
+	assert.ErrorIs(t, err, tasks.ErrTaskTitleEmpty)
 }
 
 // GIVEN: The smallest valid task (1-char title, user id 1, empty description, completed)
 // WHEN: NewTask / THEN: every field is kept
 func TestNewTask_BoundaryValues_AreAccepted(t *testing.T) {
-	tk, err := task.NewTask(0, 1, "B", "", true)
+	tk, err := tasks.NewTask(0, 1, "B", "", true)
 
 	require.NoError(t, err)
-	assert.Equal(t, task.Task{ID: 0, UserID: 1, Title: "B", Description: "", Completed: true}, *tk)
+	assert.Equal(t, tasks.Task{ID: 0, UserID: 1, Title: "B", Description: "", Completed: true}, *tk)
 }
 
 // GIVEN: Long Unicode title and description / WHEN: NewTask / THEN: kept byte for byte
@@ -143,7 +143,7 @@ func TestNewTask_LongUnicodeFields_AreKeptUnchanged(t *testing.T) {
 	title := strings.TrimSpace(strings.Repeat("Tâche ✅ ", 1000))
 	description := "Ligne 1\nLigne 2 <b>gras</b> ' OR 1=1 --"
 
-	tk, err := task.NewTask(3, 2, title, description, false)
+	tk, err := tasks.NewTask(3, 2, title, description, false)
 
 	require.NoError(t, err)
 	assert.Equal(t, title, tk.Title)

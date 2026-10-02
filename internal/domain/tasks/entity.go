@@ -1,5 +1,5 @@
-// Package task contient l'entité, les erreurs et le port de persistance des tâches.
-package task
+// Package tasks contient l'entité, les erreurs et le port de persistance des tâches.
+package tasks
 
 import "strings"
 

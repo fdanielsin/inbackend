@@ -5,7 +5,7 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
@@ -50,9 +50,9 @@ var domainErrors = []struct {
 	{users.ErrUserEmailEmpty, APIError{http.StatusBadRequest, CodeValidationFailed, MsgUserEmailEmpty}},
 	{users.ErrUserEmailInvalid, APIError{http.StatusBadRequest, CodeValidationFailed, MsgUserEmailInvalid}},
 	{users.ErrUserEmailTaken, APIError{http.StatusConflict, CodeEmailTaken, MsgEmailTaken}},
-	{task.ErrTaskNotFound, APIError{http.StatusNotFound, CodeTaskNotFound, MsgTaskNotFound}},
-	{task.ErrTaskTitleEmpty, APIError{http.StatusBadRequest, CodeValidationFailed, MsgTaskTitleEmpty}},
-	{task.ErrTaskUserIDInvalid, APIError{http.StatusBadRequest, CodeValidationFailed, MsgTaskUserIDInvalid}},
+	{tasks.ErrTaskNotFound, APIError{http.StatusNotFound, CodeTaskNotFound, MsgTaskNotFound}},
+	{tasks.ErrTaskTitleEmpty, APIError{http.StatusBadRequest, CodeValidationFailed, MsgTaskTitleEmpty}},
+	{tasks.ErrTaskUserIDInvalid, APIError{http.StatusBadRequest, CodeValidationFailed, MsgTaskUserIDInvalid}},
 }
 
 // Classify retourne la réponse publique d'une erreur ; toute erreur inconnue est une erreur interne.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"gorm.io/gorm"
 )
@@ -20,7 +20,7 @@ func NewTaskRepository(db *gorm.DB) *TaskRepository {
 }
 
 // Create crée une nouvelle tâche et retourne l'ID généré.
-func (r *TaskRepository) Create(ctx context.Context, t *task.Task) (uint, error) {
+func (r *TaskRepository) Create(ctx context.Context, t *tasks.Task) (uint, error) {
 	gormTask := &TaskModel{
 		Title:       t.Title,
 		Description: t.Description,
@@ -40,18 +40,18 @@ func (r *TaskRepository) Create(ctx context.Context, t *task.Task) (uint, error)
 }
 
 // GetByID récupère une tâche par son ID.
-func (r *TaskRepository) GetByID(ctx context.Context, id uint) (*task.Task, error) {
+func (r *TaskRepository) GetByID(ctx context.Context, id uint) (*tasks.Task, error) {
 	var gormTask TaskModel
 	result := r.db.WithContext(ctx).First(&gormTask, id)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, task.ErrTaskNotFound
+			return nil, tasks.ErrTaskNotFound
 		}
 		return nil, result.Error
 	}
 
-	return &task.Task{
+	return &tasks.Task{
 		ID:          gormTask.ID,
 		Title:       gormTask.Title,
 		Description: gormTask.Description,
@@ -61,7 +61,7 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint) (*task.Task, erro
 }
 
 // ListByUserID récupère toutes les tâches d'un utilisateur.
-func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task.Task, error) {
+func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*tasks.Task, error) {
 	var gormTasks []TaskModel
 	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("id ASC").Find(&gormTasks)
 
@@ -69,9 +69,9 @@ func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task
 		return nil, result.Error
 	}
 
-	tasks := make([]*task.Task, len(gormTasks))
+	listed := make([]*tasks.Task, len(gormTasks))
 	for i, gt := range gormTasks {
-		tasks[i] = &task.Task{
+		listed[i] = &tasks.Task{
 			ID:          gt.ID,
 			Title:       gt.Title,
 			Description: gt.Description,
@@ -80,7 +80,7 @@ func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task
 		}
 	}
 
-	return tasks, nil
+	return listed, nil
 }
 
 // Update met à jour une tâche existante.
@@ -95,7 +95,7 @@ func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*task
 // déjà supprimée, y compris via une suppression concurrente entre GetByID et
 // cet appel) ; on le traite comme "non trouvée" plutôt que comme un succès
 // silencieux.
-func (r *TaskRepository) Update(ctx context.Context, t *task.Task) error {
+func (r *TaskRepository) Update(ctx context.Context, t *tasks.Task) error {
 	result := r.db.WithContext(ctx).
 		Model(&TaskModel{}).
 		Where("id = ?", t.ID).
@@ -109,7 +109,7 @@ func (r *TaskRepository) Update(ctx context.Context, t *task.Task) error {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return task.ErrTaskNotFound
+		return tasks.ErrTaskNotFound
 	}
 	return nil
 }
@@ -122,7 +122,7 @@ func (r *TaskRepository) Delete(ctx context.Context, id uint) error {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return task.ErrTaskNotFound
+		return tasks.ErrTaskNotFound
 	}
 	return nil
 }

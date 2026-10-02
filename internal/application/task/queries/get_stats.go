@@ -4,7 +4,7 @@ package queries
 import (
 	"context"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
@@ -20,11 +20,11 @@ type GetStatsResponse struct {
 // GetStatsHandler exécute la logique de récupération des statistiques.
 type GetStatsHandler struct {
 	userRepo users.Repository
-	taskRepo task.Repository
+	taskRepo tasks.Repository
 }
 
 // NewGetStatsHandler crée une nouvelle instance du handler.
-func NewGetStatsHandler(userRepo users.Repository, taskRepo task.Repository) *GetStatsHandler {
+func NewGetStatsHandler(userRepo users.Repository, taskRepo tasks.Repository) *GetStatsHandler {
 	return &GetStatsHandler{
 		userRepo: userRepo,
 		taskRepo: taskRepo,

@@ -3,7 +3,7 @@ package commands
 import (
 	"context"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 )
 
 // UpdateTaskRequest est le DTO de la commande UpdateTask.
@@ -28,11 +28,11 @@ type UpdateTaskResponse struct {
 
 // UpdateTaskHandler exécute la logique de mise à jour de tâche.
 type UpdateTaskHandler struct {
-	repo task.Repository
+	repo tasks.Repository
 }
 
 // NewUpdateTaskHandler crée une nouvelle instance du handler.
-func NewUpdateTaskHandler(repo task.Repository) *UpdateTaskHandler {
+func NewUpdateTaskHandler(repo tasks.Repository) *UpdateTaskHandler {
 	return &UpdateTaskHandler{repo: repo}
 }
 
@@ -44,14 +44,14 @@ func (h *UpdateTaskHandler) Execute(ctx context.Context, req UpdateTaskRequest) 
 	}
 
 	if req.Title != nil {
-		title, err := task.NormalizeTitle(*req.Title)
+		title, err := tasks.NormalizeTitle(*req.Title)
 		if err != nil {
 			return nil, err
 		}
 		t.Title = title
 	}
 	if req.Description != nil {
-		t.Description = task.NormalizeDescription(*req.Description)
+		t.Description = tasks.NormalizeDescription(*req.Description)
 	}
 	if req.Completed != nil {
 		t.Completed = *req.Completed

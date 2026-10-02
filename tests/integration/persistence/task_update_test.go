@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,11 +17,11 @@ func TestTaskRepository_Update_PersistsCompletedFalse(t *testing.T) {
 	db := setupTestDB(t)
 	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
-	id, err := repo.Create(ctx, &task.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: true})
+	id, err := repo.Create(ctx, &tasks.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: true})
 	require.NoError(t, err)
 
 	// WHEN: The task is updated with completed=false.
-	err = repo.Update(ctx, &task.Task{ID: id, Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: false})
+	err = repo.Update(ctx, &tasks.Task{ID: id, Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: false})
 
 	// THEN: completed=false is persisted.
 	require.NoError(t, err)
@@ -39,11 +39,11 @@ func TestTaskRepository_Update_PersistsEmptyDescription(t *testing.T) {
 	db := setupTestDB(t)
 	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
-	id, err := repo.Create(ctx, &task.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: true})
+	id, err := repo.Create(ctx, &tasks.Task{Title: "Buy milk", Description: "Semi-skimmed", UserID: ownerID, Completed: true})
 	require.NoError(t, err)
 
 	// WHEN: The task is updated with an empty description.
-	err = repo.Update(ctx, &task.Task{ID: id, Title: "Buy milk", Description: "", UserID: ownerID, Completed: true})
+	err = repo.Update(ctx, &tasks.Task{ID: id, Title: "Buy milk", Description: "", UserID: ownerID, Completed: true})
 
 	// THEN: The empty description is persisted and the other fields are unchanged.
 	require.NoError(t, err)
@@ -61,10 +61,10 @@ func TestTaskRepository_Update_SadPath_MissingTask(t *testing.T) {
 	repo := pgstore.NewTaskRepository(setupTestDB(t))
 
 	// WHEN: The missing task is updated.
-	err := repo.Update(ctx, &task.Task{ID: 999, Title: "Ghost", UserID: 1, Completed: true})
+	err := repo.Update(ctx, &tasks.Task{ID: 999, Title: "Ghost", UserID: 1, Completed: true})
 
 	// THEN: ErrTaskNotFound is returned and no row is created.
-	assert.ErrorIs(t, err, task.ErrTaskNotFound)
+	assert.ErrorIs(t, err, tasks.ErrTaskNotFound)
 	_, getErr := repo.GetByID(ctx, 999)
-	assert.ErrorIs(t, getErr, task.ErrTaskNotFound, "update must not create the missing task")
+	assert.ErrorIs(t, getErr, tasks.ErrTaskNotFound, "update must not create the missing task")
 }

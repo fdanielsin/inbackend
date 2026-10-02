@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
@@ -91,12 +91,12 @@ func TestTaskRepository_Update_NeverReassignsOwner(t *testing.T) {
 	bobID := createTestUser(t, db, "bob@example.com")
 	id := createTestTask(t, repo, aliceID, "Task 1")
 
-	err := repo.Update(ctx, &task.Task{ID: id, UserID: bobID, Title: "Task 1 edited", Description: "d", Completed: true})
+	err := repo.Update(ctx, &tasks.Task{ID: id, UserID: bobID, Title: "Task 1 edited", Description: "d", Completed: true})
 
 	require.NoError(t, err)
 	stored, err := repo.GetByID(ctx, id)
 	require.NoError(t, err)
-	assert.Equal(t, task.Task{ID: id, UserID: aliceID, Title: "Task 1 edited", Description: "d", Completed: true}, *stored)
+	assert.Equal(t, tasks.Task{ID: id, UserID: aliceID, Title: "Task 1 edited", Description: "d", Completed: true}, *stored)
 }
 
 // GIVEN three tasks / WHEN one is deleted / THEN only that one disappears and Count follows
@@ -112,7 +112,7 @@ func TestTaskRepository_Delete_RemovesOnlyTargetedTask(t *testing.T) {
 	require.NoError(t, repo.Delete(ctx, second))
 
 	_, err := repo.GetByID(ctx, second)
-	assert.ErrorIs(t, err, task.ErrTaskNotFound)
+	assert.ErrorIs(t, err, tasks.ErrTaskNotFound)
 	remaining, err := repo.ListByUserID(ctx, ownerID)
 	require.NoError(t, err)
 	require.Len(t, remaining, 2)
@@ -133,11 +133,11 @@ func TestTaskRepository_Delete_AbsentTask_ReturnsNotFound(t *testing.T) {
 
 	for _, id := range []uint{0, 999, maxContractID} {
 		t.Run(fmt.Sprintf("id %d", id), func(t *testing.T) {
-			assert.ErrorIs(t, repo.Delete(ctx, id), task.ErrTaskNotFound, "id %d", id)
+			assert.ErrorIs(t, repo.Delete(ctx, id), tasks.ErrTaskNotFound, "id %d", id)
 		})
 	}
 	require.NoError(t, repo.Delete(ctx, removed))
-	assert.ErrorIs(t, repo.Delete(ctx, removed), task.ErrTaskNotFound, "a second delete must report the task as absent")
+	assert.ErrorIs(t, repo.Delete(ctx, removed), tasks.ErrTaskNotFound, "a second delete must report the task as absent")
 
 	remaining, err := repo.ListByUserID(ctx, ownerID)
 	require.NoError(t, err)
@@ -227,7 +227,7 @@ func TestTaskRepository_GetByID_BoundaryIDs(t *testing.T) {
 			found, err := repo.GetByID(context.Background(), id)
 
 			assert.Nil(t, found, "id %d", id)
-			assert.ErrorIs(t, err, task.ErrTaskNotFound, "id %d", id)
+			assert.ErrorIs(t, err, tasks.ErrTaskNotFound, "id %d", id)
 		})
 	}
 }
@@ -241,7 +241,7 @@ func TestTaskRepository_Create_KeepsLongUnicodeValues(t *testing.T) {
 	title := strings.Repeat("Tâche ✅ 日本語 ", 800)
 	description := "Ligne 1\nLigne 2\t<script>alert('x')</script> ; DROP TABLE task_models;"
 
-	id, err := repo.Create(ctx, &task.Task{Title: title, Description: description, UserID: ownerID})
+	id, err := repo.Create(ctx, &tasks.Task{Title: title, Description: description, UserID: ownerID})
 	require.NoError(t, err)
 
 	stored, err := repo.GetByID(ctx, id)

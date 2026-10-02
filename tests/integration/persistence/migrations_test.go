@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/pgsetup"
@@ -309,7 +309,7 @@ func TestTaskRepository_Create_UnknownUser_ReturnsUserNotFound(t *testing.T) {
 
 	for _, userID := range []uint{999, maxContractID} {
 		t.Run(fmt.Sprintf("user %d", userID), func(t *testing.T) {
-			_, err := repo.Create(ctx, &task.Task{Title: "Orphan", UserID: userID})
+			_, err := repo.Create(ctx, &tasks.Task{Title: "Orphan", UserID: userID})
 
 			assert.ErrorIs(t, err, users.ErrUserNotFound, "user %d", userID)
 		})

@@ -4,7 +4,7 @@ package commands
 import (
 	"context"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 )
 
 // CreateTaskRequest est le DTO de la commande CreateTask.
@@ -26,17 +26,17 @@ type CreateTaskResponse struct {
 
 // CreateTaskHandler exécute la logique de création de tâche.
 type CreateTaskHandler struct {
-	repo task.Repository
+	repo tasks.Repository
 }
 
 // NewCreateTaskHandler crée une nouvelle instance du handler.
-func NewCreateTaskHandler(repo task.Repository) *CreateTaskHandler {
+func NewCreateTaskHandler(repo tasks.Repository) *CreateTaskHandler {
 	return &CreateTaskHandler{repo: repo}
 }
 
 // Execute exécute la commande CreateTask.
 func (h *CreateTaskHandler) Execute(ctx context.Context, req CreateTaskRequest) (*CreateTaskResponse, error) {
-	t, err := task.NewTask(0, req.UserID, req.Title, req.Description, req.Completed)
+	t, err := tasks.NewTask(0, req.UserID, req.Title, req.Description, req.Completed)
 	if err != nil {
 		return nil, err
 	}

@@ -3,7 +3,7 @@ package domain
 import (
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,7 +28,7 @@ func TestNewUser_EmptyName(t *testing.T) {
 
 // GIVEN: Task entity / WHEN: Create with valid data / THEN: Task created
 func TestNewTask_Valid(t *testing.T) {
-	tk, err := task.NewTask(1, 1, "Buy milk", "Get milk from store", false)
+	tk, err := tasks.NewTask(1, 1, "Buy milk", "Get milk from store", false)
 	require.NoError(t, err)
 	assert.Equal(t, uint(1), tk.ID)
 	assert.Equal(t, uint(1), tk.UserID)

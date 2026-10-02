@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
@@ -23,10 +23,10 @@ func repositoryCalls(ctx context.Context, db *gorm.DB) map[string]error {
 	_, errs["User.GetByEmail"] = userRepo.GetByEmail(ctx, "ada@example.com")
 	_, errs["User.List"] = userRepo.List(ctx)
 	_, errs["User.Count"] = userRepo.Count(ctx)
-	_, errs["Task.Create"] = taskRepo.Create(ctx, &task.Task{Title: "Buy milk", UserID: 1})
+	_, errs["Task.Create"] = taskRepo.Create(ctx, &tasks.Task{Title: "Buy milk", UserID: 1})
 	_, errs["Task.GetByID"] = taskRepo.GetByID(ctx, 1)
 	_, errs["Task.ListByUserID"] = taskRepo.ListByUserID(ctx, 1)
-	errs["Task.Update"] = taskRepo.Update(ctx, &task.Task{ID: 1, Title: "Buy milk", UserID: 1})
+	errs["Task.Update"] = taskRepo.Update(ctx, &tasks.Task{ID: 1, Title: "Buy milk", UserID: 1})
 	errs["Task.Delete"] = taskRepo.Delete(ctx, 1)
 	_, errs["Task.Count"] = taskRepo.Count(ctx)
 	return errs
@@ -39,7 +39,7 @@ func assertTechnicalFailure(t *testing.T, name string, err error) {
 	require.Error(t, err, name)
 	assert.NotErrorIs(t, err, users.ErrUserNotFound, name)
 	assert.NotErrorIs(t, err, users.ErrUserEmailTaken, name)
-	assert.NotErrorIs(t, err, task.ErrTaskNotFound, name)
+	assert.NotErrorIs(t, err, tasks.ErrTaskNotFound, name)
 }
 
 // GIVEN the database connection is closed / WHEN any repository method runs / THEN it returns a technical error

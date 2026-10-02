@@ -3,7 +3,7 @@ package commands
 import (
 	"context"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 )
 
 // DeleteTaskRequest est le DTO de la commande DeleteTask.
@@ -13,11 +13,11 @@ type DeleteTaskRequest struct {
 
 // DeleteTaskHandler exécute la logique de suppression de tâche.
 type DeleteTaskHandler struct {
-	repo task.Repository
+	repo tasks.Repository
 }
 
 // NewDeleteTaskHandler crée une nouvelle instance du handler.
-func NewDeleteTaskHandler(repo task.Repository) *DeleteTaskHandler {
+func NewDeleteTaskHandler(repo tasks.Repository) *DeleteTaskHandler {
 	return &DeleteTaskHandler{repo: repo}
 }
 

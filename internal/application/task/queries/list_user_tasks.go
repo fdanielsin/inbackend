@@ -3,7 +3,7 @@ package queries
 import (
 	"context"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 )
 
 // ListUserTasksRequest est le DTO de la requête ListUserTasks.
@@ -22,11 +22,11 @@ type ListUserTasksResponse struct {
 
 // ListUserTasksHandler exécute la logique de récupération des tâches d'un utilisateur.
 type ListUserTasksHandler struct {
-	repo task.Repository
+	repo tasks.Repository
 }
 
 // NewListUserTasksHandler crée une nouvelle instance du handler.
-func NewListUserTasksHandler(repo task.Repository) *ListUserTasksHandler {
+func NewListUserTasksHandler(repo tasks.Repository) *ListUserTasksHandler {
 	return &ListUserTasksHandler{repo: repo}
 }
 

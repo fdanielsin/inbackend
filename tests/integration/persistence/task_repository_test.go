@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
@@ -22,7 +22,7 @@ func createTestUser(t *testing.T, db *gorm.DB, email string) uint {
 
 func createTestTask(t *testing.T, repo *pgstore.TaskRepository, userID uint, title string) uint {
 	t.Helper()
-	id, err := repo.Create(context.Background(), &task.Task{Title: title, Description: "Desc " + title, UserID: userID})
+	id, err := repo.Create(context.Background(), &tasks.Task{Title: title, Description: "Desc " + title, UserID: userID})
 	require.NoError(t, err)
 	return id
 }
@@ -33,7 +33,7 @@ func TestTaskRepository_Create_HappyPath(t *testing.T) {
 	repo := pgstore.NewTaskRepository(db)
 	ownerID := createTestUser(t, db, "owner@example.com")
 
-	tsk := &task.Task{Title: "Buy milk", Description: "Get milk from store", UserID: ownerID, Completed: false}
+	tsk := &tasks.Task{Title: "Buy milk", Description: "Get milk from store", UserID: ownerID, Completed: false}
 	id, err := repo.Create(context.Background(), tsk)
 
 	require.NoError(t, err)
@@ -55,7 +55,7 @@ func TestTaskRepository_GetByID_SadPath_NotFound(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Nil(t, retrieved)
-	assert.Equal(t, task.ErrTaskNotFound, err)
+	assert.Equal(t, tasks.ErrTaskNotFound, err)
 }
 
 // GIVEN: TaskRepository with multiple tasks / WHEN: List by UserID / THEN: Return only user's tasks

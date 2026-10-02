@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/application/task/commands"
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -15,13 +15,13 @@ import (
 // par les tests d'intégration PostgreSQL) : il vérifie uniquement la logique
 // de fusion et de validation d'UpdateTaskHandler.Execute.
 type fakeTaskRepository struct {
-	tasks       map[uint]*task.Task
+	tasks       map[uint]*tasks.Task
 	getByIDErr  error
-	updateCalls []task.Task // copies des valeurs passées à Update, dans l'ordre
+	updateCalls []tasks.Task // copies des valeurs passées à Update, dans l'ordre
 }
 
-func newFakeTaskRepository(existing *task.Task) *fakeTaskRepository {
-	tasks := make(map[uint]*task.Task)
+func newFakeTaskRepository(existing *tasks.Task) *fakeTaskRepository {
+	tasks := make(map[uint]*tasks.Task)
 	if existing != nil {
 		cp := *existing
 		tasks[existing.ID] = &cp
@@ -29,27 +29,27 @@ func newFakeTaskRepository(existing *task.Task) *fakeTaskRepository {
 	return &fakeTaskRepository{tasks: tasks}
 }
 
-func (r *fakeTaskRepository) Create(_ context.Context, _ *task.Task) (uint, error) {
+func (r *fakeTaskRepository) Create(_ context.Context, _ *tasks.Task) (uint, error) {
 	panic("not used by these tests")
 }
 
-func (r *fakeTaskRepository) GetByID(_ context.Context, id uint) (*task.Task, error) {
+func (r *fakeTaskRepository) GetByID(_ context.Context, id uint) (*tasks.Task, error) {
 	if r.getByIDErr != nil {
 		return nil, r.getByIDErr
 	}
 	t, ok := r.tasks[id]
 	if !ok {
-		return nil, task.ErrTaskNotFound
+		return nil, tasks.ErrTaskNotFound
 	}
 	cp := *t
 	return &cp, nil
 }
 
-func (r *fakeTaskRepository) ListByUserID(_ context.Context, _ uint) ([]*task.Task, error) {
+func (r *fakeTaskRepository) ListByUserID(_ context.Context, _ uint) ([]*tasks.Task, error) {
 	panic("not used by these tests")
 }
 
-func (r *fakeTaskRepository) Update(_ context.Context, t *task.Task) error {
+func (r *fakeTaskRepository) Update(_ context.Context, t *tasks.Task) error {
 	r.updateCalls = append(r.updateCalls, *t)
 	r.tasks[t.ID] = t
 	return nil
@@ -70,7 +70,7 @@ func ptrBool(b bool) *bool       { return &b }
 // WHEN  PUT ne fournit que completed:false
 // THEN  titre et description restent inchangés, completed passe à false
 func TestUpdateTaskHandler_Execute_CompletedFalseOnly_PreservesTitleAndDescription(t *testing.T) {
-	existing := &task.Task{ID: 1, UserID: 1, Title: "Buy milk", Description: "whole milk", Completed: true}
+	existing := &tasks.Task{ID: 1, UserID: 1, Title: "Buy milk", Description: "whole milk", Completed: true}
 	repo := newFakeTaskRepository(existing)
 	handler := commands.NewUpdateTaskHandler(repo)
 
@@ -95,7 +95,7 @@ func TestUpdateTaskHandler_Execute_CompletedFalseOnly_PreservesTitleAndDescripti
 // WHEN  PUT fournit explicitement description:""
 // THEN  la description est vidée (valeur explicite, pas une absence)
 func TestUpdateTaskHandler_Execute_DescriptionEmptyExplicit_IsApplied(t *testing.T) {
-	existing := &task.Task{ID: 2, UserID: 1, Title: "Buy milk", Description: "whole milk", Completed: false}
+	existing := &tasks.Task{ID: 2, UserID: 1, Title: "Buy milk", Description: "whole milk", Completed: false}
 	repo := newFakeTaskRepository(existing)
 	handler := commands.NewUpdateTaskHandler(repo)
 
@@ -116,7 +116,7 @@ func TestUpdateTaskHandler_Execute_DescriptionEmptyExplicit_IsApplied(t *testing
 // WHEN  PUT fournit title:""
 // THEN  400 métier (ErrTaskTitleEmpty), rien n'est persisté
 func TestUpdateTaskHandler_Execute_TitleEmptyExplicit_ReturnsValidationError(t *testing.T) {
-	existing := &task.Task{ID: 3, UserID: 1, Title: "Buy milk", Description: "whole milk", Completed: false}
+	existing := &tasks.Task{ID: 3, UserID: 1, Title: "Buy milk", Description: "whole milk", Completed: false}
 	repo := newFakeTaskRepository(existing)
 	handler := commands.NewUpdateTaskHandler(repo)
 
@@ -125,7 +125,7 @@ func TestUpdateTaskHandler_Execute_TitleEmptyExplicit_ReturnsValidationError(t *
 		Title: ptrString(""),
 	})
 
-	require.ErrorIs(t, err, task.ErrTaskTitleEmpty)
+	require.ErrorIs(t, err, tasks.ErrTaskTitleEmpty)
 	assert.Nil(t, resp)
 	assert.Empty(t, repo.updateCalls, "aucune écriture ne doit être tentée si la validation échoue")
 }
@@ -134,7 +134,7 @@ func TestUpdateTaskHandler_Execute_TitleEmptyExplicit_ReturnsValidationError(t *
 // WHEN  PUT ne fournit aucun champ (tous les pointeurs nil hormis l'ID)
 // THEN  la tâche persistée est identique à l'état existant (idempotent)
 func TestUpdateTaskHandler_Execute_NoFieldsProvided_IsNoOp(t *testing.T) {
-	existing := &task.Task{ID: 4, UserID: 1, Title: "Buy milk", Description: "whole milk", Completed: true}
+	existing := &tasks.Task{ID: 4, UserID: 1, Title: "Buy milk", Description: "whole milk", Completed: true}
 	repo := newFakeTaskRepository(existing)
 	handler := commands.NewUpdateTaskHandler(repo)
 
@@ -161,7 +161,7 @@ func TestUpdateTaskHandler_Execute_TaskNotFound_PropagatesError(t *testing.T) {
 		Completed: ptrBool(true),
 	})
 
-	require.ErrorIs(t, err, task.ErrTaskNotFound)
+	require.ErrorIs(t, err, tasks.ErrTaskNotFound)
 	assert.Nil(t, resp)
 	assert.Empty(t, repo.updateCalls)
 }

@@ -3,7 +3,7 @@ package application
 import (
 	"context"
 
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
@@ -40,31 +40,31 @@ func (r *stubUserRepository) Count(_ context.Context) (int64, error) {
 
 // stubTaskRepository records calls and returns canned results, like stubUserRepository.
 type stubTaskRepository struct {
-	createFn func(t *task.Task) (uint, error)
-	getFn    func(id uint) (*task.Task, error)
-	listFn   func(userID uint) ([]*task.Task, error)
-	updateFn func(t *task.Task) error
+	createFn func(t *tasks.Task) (uint, error)
+	getFn    func(id uint) (*tasks.Task, error)
+	listFn   func(userID uint) ([]*tasks.Task, error)
+	updateFn func(t *tasks.Task) error
 	deleteFn func(id uint) error
 	countFn  func() (int64, error)
-	created  []task.Task
-	updated  []task.Task
+	created  []tasks.Task
+	updated  []tasks.Task
 	deleted  []uint
 }
 
-func (r *stubTaskRepository) Create(_ context.Context, t *task.Task) (uint, error) {
+func (r *stubTaskRepository) Create(_ context.Context, t *tasks.Task) (uint, error) {
 	r.created = append(r.created, *t)
 	return r.createFn(t)
 }
 
-func (r *stubTaskRepository) GetByID(_ context.Context, id uint) (*task.Task, error) {
+func (r *stubTaskRepository) GetByID(_ context.Context, id uint) (*tasks.Task, error) {
 	return r.getFn(id)
 }
 
-func (r *stubTaskRepository) ListByUserID(_ context.Context, userID uint) ([]*task.Task, error) {
+func (r *stubTaskRepository) ListByUserID(_ context.Context, userID uint) ([]*tasks.Task, error) {
 	return r.listFn(userID)
 }
 
-func (r *stubTaskRepository) Update(_ context.Context, t *task.Task) error {
+func (r *stubTaskRepository) Update(_ context.Context, t *tasks.Task) error {
 	r.updated = append(r.updated, *t)
 	return r.updateFn(t)
 }

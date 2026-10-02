@@ -6,7 +6,7 @@ import (
 
 	"github.com/fdanielsin/inbackend/internal/application/task/commands"
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
-	"github.com/fdanielsin/inbackend/internal/domain/task"
+	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,7 +14,7 @@ import (
 
 // GIVEN a valid request, completed=true / WHEN CreateTask / THEN the entity is stored as sent and the id returned
 func TestCreateTaskHandler_Execute_StoresRequestAsSent(t *testing.T) {
-	repo := &stubTaskRepository{createFn: func(*task.Task) (uint, error) { return 9, nil }}
+	repo := &stubTaskRepository{createFn: func(*tasks.Task) (uint, error) { return 9, nil }}
 
 	resp, err := commands.NewCreateTaskHandler(repo).Execute(context.Background(), commands.CreateTaskRequest{
 		UserID: 3, Title: "Buy milk", Description: "Semi-skimmed", Completed: true,
@@ -22,7 +22,7 @@ func TestCreateTaskHandler_Execute_StoresRequestAsSent(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, commands.CreateTaskResponse{ID: 9, UserID: 3, Title: "Buy milk", Description: "Semi-skimmed", Completed: true}, *resp)
-	assert.Equal(t, []task.Task{{ID: 0, UserID: 3, Title: "Buy milk", Description: "Semi-skimmed", Completed: true}}, repo.created)
+	assert.Equal(t, []tasks.Task{{ID: 0, UserID: 3, Title: "Buy milk", Description: "Semi-skimmed", Completed: true}}, repo.created)
 }
 
 // GIVEN an invalid request / WHEN CreateTask / THEN the domain error is returned and nothing is stored
@@ -31,8 +31,8 @@ func TestCreateTaskHandler_Execute_ValidationErrorDoesNotStore(t *testing.T) {
 		req  commands.CreateTaskRequest
 		want error
 	}{
-		"empty title": {commands.CreateTaskRequest{UserID: 1, Title: ""}, task.ErrTaskTitleEmpty},
-		"user id 0":   {commands.CreateTaskRequest{UserID: 0, Title: "Buy milk"}, task.ErrTaskUserIDInvalid},
+		"empty title": {commands.CreateTaskRequest{UserID: 1, Title: ""}, tasks.ErrTaskTitleEmpty},
+		"user id 0":   {commands.CreateTaskRequest{UserID: 0, Title: "Buy milk"}, tasks.ErrTaskUserIDInvalid},
 	} {
 		t.Run(name, func(t *testing.T) {
 			repo := &stubTaskRepository{}
@@ -48,7 +48,7 @@ func TestCreateTaskHandler_Execute_ValidationErrorDoesNotStore(t *testing.T) {
 
 // GIVEN the database fails / WHEN CreateTask / THEN the error is propagated
 func TestCreateTaskHandler_Execute_RepositoryErrorIsPropagated(t *testing.T) {
-	repo := &stubTaskRepository{createFn: func(*task.Task) (uint, error) { return 0, errDatabaseDown }}
+	repo := &stubTaskRepository{createFn: func(*tasks.Task) (uint, error) { return 0, errDatabaseDown }}
 
 	resp, err := commands.NewCreateTaskHandler(repo).Execute(context.Background(),
 		commands.CreateTaskRequest{UserID: 1, Title: "Buy milk"})
@@ -79,9 +79,9 @@ func TestDeleteTaskHandler_Execute_RepositoryErrorIsPropagated(t *testing.T) {
 // GIVEN a user's tasks / WHEN ListUserTasks / THEN they are mapped in repository order for this user
 func TestListUserTasksHandler_Execute_MapsTasksInOrder(t *testing.T) {
 	var requested uint
-	repo := &stubTaskRepository{listFn: func(userID uint) ([]*task.Task, error) {
+	repo := &stubTaskRepository{listFn: func(userID uint) ([]*tasks.Task, error) {
 		requested = userID
-		return []*task.Task{
+		return []*tasks.Task{
 			{ID: 1, UserID: userID, Title: "First", Description: "a", Completed: true},
 			{ID: 2, UserID: userID, Title: "Second", Description: "", Completed: false},
 		}, nil
@@ -98,7 +98,7 @@ func TestListUserTasksHandler_Execute_MapsTasksInOrder(t *testing.T) {
 
 // GIVEN a user without tasks / WHEN ListUserTasks / THEN an empty, non-nil slice
 func TestListUserTasksHandler_Execute_EmptyIsNotNil(t *testing.T) {
-	repo := &stubTaskRepository{listFn: func(uint) ([]*task.Task, error) { return nil, nil }}
+	repo := &stubTaskRepository{listFn: func(uint) ([]*tasks.Task, error) { return nil, nil }}
 
 	resp, err := queries.NewListUserTasksHandler(repo).Execute(context.Background(), queries.ListUserTasksRequest{UserID: 4})
 
@@ -109,7 +109,7 @@ func TestListUserTasksHandler_Execute_EmptyIsNotNil(t *testing.T) {
 
 // GIVEN the database fails / WHEN ListUserTasks / THEN the error is propagated
 func TestListUserTasksHandler_Execute_RepositoryErrorIsPropagated(t *testing.T) {
-	repo := &stubTaskRepository{listFn: func(uint) ([]*task.Task, error) { return nil, errDatabaseDown }}
+	repo := &stubTaskRepository{listFn: func(uint) ([]*tasks.Task, error) { return nil, errDatabaseDown }}
 
 	resp, err := queries.NewListUserTasksHandler(repo).Execute(context.Background(), queries.ListUserTasksRequest{UserID: 4})
 
@@ -171,7 +171,7 @@ func TestGetStatsHandler_Execute_RepositoryErrorIsPropagated(t *testing.T) {
 
 // GIVEN the task cannot be read (database down) / WHEN UpdateTask / THEN the error is propagated and nothing is written
 func TestUpdateTaskHandler_Execute_ReadErrorIsPropagated(t *testing.T) {
-	repo := &stubTaskRepository{getFn: func(uint) (*task.Task, error) { return nil, errDatabaseDown }}
+	repo := &stubTaskRepository{getFn: func(uint) (*tasks.Task, error) { return nil, errDatabaseDown }}
 
 	resp, err := commands.NewUpdateTaskHandler(repo).Execute(context.Background(),
 		commands.UpdateTaskRequest{ID: 1, Completed: ptrBool(true)})
@@ -184,8 +184,8 @@ func TestUpdateTaskHandler_Execute_ReadErrorIsPropagated(t *testing.T) {
 // GIVEN the write fails / WHEN UpdateTask / THEN the error is propagated and no response is built
 func TestUpdateTaskHandler_Execute_WriteErrorIsPropagated(t *testing.T) {
 	repo := &stubTaskRepository{
-		getFn:    func(id uint) (*task.Task, error) { return &task.Task{ID: id, UserID: 1, Title: "Buy milk"}, nil },
-		updateFn: func(*task.Task) error { return errDatabaseDown },
+		getFn:    func(id uint) (*tasks.Task, error) { return &tasks.Task{ID: id, UserID: 1, Title: "Buy milk"}, nil },
+		updateFn: func(*tasks.Task) error { return errDatabaseDown },
 	}
 
 	resp, err := commands.NewUpdateTaskHandler(repo).Execute(context.Background(),

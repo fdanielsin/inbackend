@@ -26,7 +26,7 @@ inbackend/
     │   ├── user/
     │   │   ├── commands/
     │   │   └── queries/
-    │   └── task/
+    │   └── tasks/
     │       ├── commands/
     │       └── queries/
     ├── domain/
@@ -35,7 +35,7 @@ inbackend/
     │   │   ├── errors.go
     │   │   ├── repository.go
     │   │   └── service.go       (cible, pas encore créé)
-    │   └── task/
+    │   └── tasks/
     │       ├── entity.go
     │       ├── errors.go
     │       ├── repository.go
@@ -56,7 +56,7 @@ inbackend/
 ```
 
 Aucun fichier `service.go` n'existe aujourd'hui dans `domain/users` ni
-`domain/task` : la logique métier des entités suffit pour l'instant (voir
+`domain/tasks` : la logique métier des entités suffit pour l'instant (voir
 `entity.go`). Un `service.go` n'est ajouté que si une règle métier réelle ne
 trouve sa place ni dans l'entité ni dans un cas d'usage applicatif — jamais
 pour remplir une structure théorique.
