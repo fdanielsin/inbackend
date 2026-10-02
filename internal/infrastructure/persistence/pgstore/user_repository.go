@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"gorm.io/gorm"
 )
 
@@ -21,7 +21,7 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 }
 
 // Create crée un nouvel utilisateur et retourne l'ID généré.
-func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error) {
+func (r *UserRepository) Create(ctx context.Context, u *users.User) (uint, error) {
 	gormUser := &UserModel{
 		Name:  u.Name,
 		Email: u.Email,
@@ -30,7 +30,7 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error)
 	result := r.db.WithContext(ctx).Create(gormUser)
 	if result.Error != nil {
 		if isConstraintViolation(result.Error, pgUniqueViolation, uniqueEmailIndex) {
-			return 0, user.ErrUserEmailTaken
+			return 0, users.ErrUserEmailTaken
 		}
 		return 0, result.Error
 	}
@@ -39,18 +39,18 @@ func (r *UserRepository) Create(ctx context.Context, u *user.User) (uint, error)
 }
 
 // GetByID récupère un utilisateur par son ID.
-func (r *UserRepository) GetByID(ctx context.Context, id uint) (*user.User, error) {
+func (r *UserRepository) GetByID(ctx context.Context, id uint) (*users.User, error) {
 	var gormUser UserModel
 	result := r.db.WithContext(ctx).First(&gormUser, id)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, user.ErrUserNotFound
+			return nil, users.ErrUserNotFound
 		}
 		return nil, result.Error
 	}
 
-	return &user.User{
+	return &users.User{
 		ID:    gormUser.ID,
 		Name:  gormUser.Name,
 		Email: gormUser.Email,
@@ -58,18 +58,18 @@ func (r *UserRepository) GetByID(ctx context.Context, id uint) (*user.User, erro
 }
 
 // GetByEmail récupère un utilisateur par son email.
-func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.User, error) {
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*users.User, error) {
 	var gormUser UserModel
 	result := r.db.WithContext(ctx).Where("email = ?", email).First(&gormUser)
 
 	if result.Error != nil {
 		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			return nil, user.ErrUserNotFound
+			return nil, users.ErrUserNotFound
 		}
 		return nil, result.Error
 	}
 
-	return &user.User{
+	return &users.User{
 		ID:    gormUser.ID,
 		Name:  gormUser.Name,
 		Email: gormUser.Email,
@@ -77,7 +77,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*user.Us
 }
 
 // List récupère tous les utilisateurs.
-func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
+func (r *UserRepository) List(ctx context.Context) ([]*users.User, error) {
 	var gormUsers []UserModel
 	result := r.db.WithContext(ctx).Order("id ASC").Find(&gormUsers)
 
@@ -85,16 +85,16 @@ func (r *UserRepository) List(ctx context.Context) ([]*user.User, error) {
 		return nil, result.Error
 	}
 
-	users := make([]*user.User, len(gormUsers))
+	listed := make([]*users.User, len(gormUsers))
 	for i, gu := range gormUsers {
-		users[i] = &user.User{
+		listed[i] = &users.User{
 			ID:    gu.ID,
 			Name:  gu.Name,
 			Email: gu.Email,
 		}
 	}
 
-	return users, nil
+	return listed, nil
 }
 
 // Count retourne le nombre total d'utilisateurs.

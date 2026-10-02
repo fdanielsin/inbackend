@@ -6,33 +6,33 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 // GIVEN: A user without email / WHEN: NewUser / THEN: ErrUserEmailEmpty
 func TestNewUser_EmptyEmail(t *testing.T) {
-	u, err := user.NewUser(1, "John Doe", "")
+	u, err := users.NewUser(1, "John Doe", "")
 
 	assert.Nil(t, u)
-	assert.ErrorIs(t, err, user.ErrUserEmailEmpty)
+	assert.ErrorIs(t, err, users.ErrUserEmailEmpty)
 }
 
 // GIVEN: Neither name nor email / WHEN: NewUser / THEN: the name is reported first
 func TestNewUser_EmptyNameAndEmail_ReportsNameFirst(t *testing.T) {
-	u, err := user.NewUser(1, "", "")
+	u, err := users.NewUser(1, "", "")
 
 	assert.Nil(t, u)
-	assert.ErrorIs(t, err, user.ErrUserNameEmpty)
+	assert.ErrorIs(t, err, users.ErrUserNameEmpty)
 }
 
 // GIVEN: A one-character name and the shortest valid email / WHEN: NewUser / THEN: accepted
 func TestNewUser_ShortestValidFields_AreAccepted(t *testing.T) {
-	u, err := user.NewUser(0, "J", "a@b.c")
+	u, err := users.NewUser(0, "J", "a@b.c")
 
 	require.NoError(t, err)
-	assert.Equal(t, user.User{ID: 0, Name: "J", Email: "a@b.c"}, *u)
+	assert.Equal(t, users.User{ID: 0, Name: "J", Email: "a@b.c"}, *u)
 }
 
 // GIVEN: An email with surrounding spaces and capitals, ASCII or not / WHEN: NewUser / THEN: trimmed and lower-cased; the name is kept as typed
@@ -43,7 +43,7 @@ func TestNewUser_NormalizesEmailOnly(t *testing.T) {
 		"ada@mail.example.co":  "ada@mail.example.co",
 	} {
 		t.Run(fmt.Sprintf("%q", raw), func(t *testing.T) {
-			u, err := user.NewUser(0, "Ada LOVELACE", raw)
+			u, err := users.NewUser(0, "Ada LOVELACE", raw)
 
 			require.NoError(t, err, raw)
 			assert.Equal(t, want, u.Email, raw)
@@ -54,10 +54,10 @@ func TestNewUser_NormalizesEmailOnly(t *testing.T) {
 
 // GIVEN: An email made of spaces only / WHEN: NewUser / THEN: ErrUserEmailEmpty, checked before the format
 func TestNewUser_BlankEmail_IsEmpty(t *testing.T) {
-	u, err := user.NewUser(0, "Ada", " \t\n ")
+	u, err := users.NewUser(0, "Ada", " \t\n ")
 
 	assert.Nil(t, u)
-	assert.ErrorIs(t, err, user.ErrUserEmailEmpty)
+	assert.ErrorIs(t, err, users.ErrUserEmailEmpty)
 }
 
 // GIVEN: An email without the minimal shape local@domain.tld (current rule) / WHEN: NewUser / THEN: ErrUserEmailInvalid
@@ -78,19 +78,19 @@ func TestNewUser_MalformedEmail_IsInvalid(t *testing.T) {
 		"\x00ada@x.io",      // control character first (not removed by the trim)
 	} {
 		t.Run(fmt.Sprintf("%q", email), func(t *testing.T) {
-			u, err := user.NewUser(0, "Ada", email)
+			u, err := users.NewUser(0, "Ada", email)
 
 			assert.Nil(t, u, email)
-			assert.ErrorIs(t, err, user.ErrUserEmailInvalid, email)
+			assert.ErrorIs(t, err, users.ErrUserEmailInvalid, email)
 		})
 	}
 }
 
 // GIVEN: An empty name and a malformed email / WHEN: NewUser / THEN: the name is reported first
 func TestNewUser_EmptyNameAndMalformedEmail_ReportsNameFirst(t *testing.T) {
-	_, err := user.NewUser(0, "", "not-an-email")
+	_, err := users.NewUser(0, "", "not-an-email")
 
-	assert.ErrorIs(t, err, user.ErrUserNameEmpty)
+	assert.ErrorIs(t, err, users.ErrUserNameEmpty)
 }
 
 // GIVEN: Long Unicode values / WHEN: NewUser / THEN: kept byte for byte
@@ -98,7 +98,7 @@ func TestNewUser_LongUnicodeFields_AreKeptUnchanged(t *testing.T) {
 	name := strings.TrimSpace(strings.Repeat("Élodie 🚀 ", 1000))
 	email := "élodie+tâches@exemple.fr"
 
-	u, err := user.NewUser(7, name, email)
+	u, err := users.NewUser(7, name, email)
 
 	require.NoError(t, err)
 	assert.Equal(t, name, u.Name)

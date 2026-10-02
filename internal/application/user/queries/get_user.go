@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/fdanielsin/inbackend/internal/application"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
 // GetUserRequest est le DTO de la requête GetUser.
@@ -15,11 +15,11 @@ type GetUserRequest struct {
 
 // GetUserHandler exécute la logique de récupération d'un utilisateur.
 type GetUserHandler struct {
-	repo user.Repository
+	repo users.Repository
 }
 
 // NewGetUserHandler crée une nouvelle instance du handler.
-func NewGetUserHandler(repo user.Repository) *GetUserHandler {
+func NewGetUserHandler(repo users.Repository) *GetUserHandler {
 	return &GetUserHandler{repo: repo}
 }
 

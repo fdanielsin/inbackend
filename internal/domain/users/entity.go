@@ -1,5 +1,5 @@
-// Package user contient l'entité, les erreurs et le port de persistance des utilisateurs.
-package user
+// Package users contient l'entité, les erreurs et le port de persistance des utilisateurs.
+package users
 
 import (
 	"strings"

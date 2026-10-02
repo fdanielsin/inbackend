@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,21 +14,21 @@ import (
 
 // repositoryCalls runs every repository method once and returns the error of each call.
 func repositoryCalls(ctx context.Context, db *gorm.DB) map[string]error {
-	users := pgstore.NewUserRepository(db)
-	tasks := pgstore.NewTaskRepository(db)
+	userRepo := pgstore.NewUserRepository(db)
+	taskRepo := pgstore.NewTaskRepository(db)
 	errs := map[string]error{}
 
-	_, errs["User.Create"] = users.Create(ctx, &user.User{Name: "Ada", Email: "ada@example.com"})
-	_, errs["User.GetByID"] = users.GetByID(ctx, 1)
-	_, errs["User.GetByEmail"] = users.GetByEmail(ctx, "ada@example.com")
-	_, errs["User.List"] = users.List(ctx)
-	_, errs["User.Count"] = users.Count(ctx)
-	_, errs["Task.Create"] = tasks.Create(ctx, &task.Task{Title: "Buy milk", UserID: 1})
-	_, errs["Task.GetByID"] = tasks.GetByID(ctx, 1)
-	_, errs["Task.ListByUserID"] = tasks.ListByUserID(ctx, 1)
-	errs["Task.Update"] = tasks.Update(ctx, &task.Task{ID: 1, Title: "Buy milk", UserID: 1})
-	errs["Task.Delete"] = tasks.Delete(ctx, 1)
-	_, errs["Task.Count"] = tasks.Count(ctx)
+	_, errs["User.Create"] = userRepo.Create(ctx, &users.User{Name: "Ada", Email: "ada@example.com"})
+	_, errs["User.GetByID"] = userRepo.GetByID(ctx, 1)
+	_, errs["User.GetByEmail"] = userRepo.GetByEmail(ctx, "ada@example.com")
+	_, errs["User.List"] = userRepo.List(ctx)
+	_, errs["User.Count"] = userRepo.Count(ctx)
+	_, errs["Task.Create"] = taskRepo.Create(ctx, &task.Task{Title: "Buy milk", UserID: 1})
+	_, errs["Task.GetByID"] = taskRepo.GetByID(ctx, 1)
+	_, errs["Task.ListByUserID"] = taskRepo.ListByUserID(ctx, 1)
+	errs["Task.Update"] = taskRepo.Update(ctx, &task.Task{ID: 1, Title: "Buy milk", UserID: 1})
+	errs["Task.Delete"] = taskRepo.Delete(ctx, 1)
+	_, errs["Task.Count"] = taskRepo.Count(ctx)
 	return errs
 }
 
@@ -37,8 +37,8 @@ func repositoryCalls(ctx context.Context, db *gorm.DB) map[string]error {
 func assertTechnicalFailure(t *testing.T, name string, err error) {
 	t.Helper()
 	require.Error(t, err, name)
-	assert.NotErrorIs(t, err, user.ErrUserNotFound, name)
-	assert.NotErrorIs(t, err, user.ErrUserEmailTaken, name)
+	assert.NotErrorIs(t, err, users.ErrUserNotFound, name)
+	assert.NotErrorIs(t, err, users.ErrUserEmailTaken, name)
 	assert.NotErrorIs(t, err, task.ErrTaskNotFound, name)
 }
 

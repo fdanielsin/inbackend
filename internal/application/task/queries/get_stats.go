@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
 // GetStatsRequest est le DTO de la requête GetStats.
@@ -19,12 +19,12 @@ type GetStatsResponse struct {
 
 // GetStatsHandler exécute la logique de récupération des statistiques.
 type GetStatsHandler struct {
-	userRepo user.Repository
+	userRepo users.Repository
 	taskRepo task.Repository
 }
 
 // NewGetStatsHandler crée une nouvelle instance du handler.
-func NewGetStatsHandler(userRepo user.Repository, taskRepo task.Repository) *GetStatsHandler {
+func NewGetStatsHandler(userRepo users.Repository, taskRepo task.Repository) *GetStatsHandler {
 	return &GetStatsHandler{
 		userRepo: userRepo,
 		taskRepo: taskRepo,

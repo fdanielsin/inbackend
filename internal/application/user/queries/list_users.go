@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/fdanielsin/inbackend/internal/application"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
 // ListUsersRequest est le DTO de la requête ListUsers.
@@ -12,11 +12,11 @@ type ListUsersRequest struct{}
 
 // ListUsersHandler exécute la logique de récupération de tous les utilisateurs.
 type ListUsersHandler struct {
-	repo user.Repository
+	repo users.Repository
 }
 
 // NewListUsersHandler crée une nouvelle instance du handler.
-func NewListUsersHandler(repo user.Repository) *ListUsersHandler {
+func NewListUsersHandler(repo users.Repository) *ListUsersHandler {
 	return &ListUsersHandler{repo: repo}
 }
 

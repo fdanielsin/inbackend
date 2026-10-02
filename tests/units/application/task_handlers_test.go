@@ -7,7 +7,7 @@ import (
 	"github.com/fdanielsin/inbackend/internal/application/task/commands"
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -137,7 +137,7 @@ func TestGetStatsHandler_Execute_ReturnsExactCounters(t *testing.T) {
 // GIVEN listing the users fails / WHEN GetStats / THEN the users are counted, never loaded
 func TestGetStatsHandler_Execute_CountsUsersWithoutLoadingThem(t *testing.T) {
 	userRepo, taskRepo := statsRepositories(2, nil, 0, nil)
-	userRepo.listFn = func() ([]*user.User, error) { return nil, errDatabaseDown }
+	userRepo.listFn = func() ([]*users.User, error) { return nil, errDatabaseDown }
 
 	resp, err := queries.NewGetStatsHandler(userRepo, taskRepo).Execute(context.Background(), queries.GetStatsRequest{})
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,17 +22,17 @@ func TestUserRepository_List_ReturnsAllUsers(t *testing.T) {
 	db := setupTestDB(t)
 	repo := pgstore.NewUserRepository(db)
 	adaID := createTestUser(t, db, "ada@example.com")
-	bobID, err := repo.Create(ctx, &user.User{Name: "Bob", Email: "bob@example.com"})
+	bobID, err := repo.Create(ctx, &users.User{Name: "Bob", Email: "bob@example.com"})
 	require.NoError(t, err)
 
-	users, err := repo.List(ctx)
+	listed, err := repo.List(ctx)
 
 	require.NoError(t, err)
-	got := make([]user.User, len(users))
-	for i, u := range users {
+	got := make([]users.User, len(listed))
+	for i, u := range listed {
 		got[i] = *u
 	}
-	assert.ElementsMatch(t, []user.User{
+	assert.ElementsMatch(t, []users.User{
 		{ID: adaID, Name: "Owner", Email: "ada@example.com"},
 		{ID: bobID, Name: "Bob", Email: "bob@example.com"},
 	}, got)
@@ -58,7 +58,7 @@ func TestUserRepository_GetByID_BoundaryIDs(t *testing.T) {
 			found, err := repo.GetByID(context.Background(), id)
 
 			assert.Nil(t, found, "id %d", id)
-			assert.ErrorIs(t, err, user.ErrUserNotFound, "id %d", id)
+			assert.ErrorIs(t, err, users.ErrUserNotFound, "id %d", id)
 		})
 	}
 }
@@ -70,7 +70,7 @@ func TestUserRepository_Create_KeepsLongUnicodeValues(t *testing.T) {
 	name := strings.Repeat("Zoë 🚀 ' OR 1=1 -- ", 600)
 	email := "zoë.o'brien+tâches@exemple.fr"
 
-	id, err := repo.Create(ctx, &user.User{Name: name, Email: email})
+	id, err := repo.Create(ctx, &users.User{Name: name, Email: email})
 	require.NoError(t, err)
 
 	stored, err := repo.GetByID(ctx, id)
@@ -150,12 +150,12 @@ func TestUserRepository_Create_DuplicateEmail_ReturnsEmailTaken(t *testing.T) {
 	ctx := context.Background()
 	db := setupTestDB(t)
 	repo := pgstore.NewUserRepository(db)
-	_, err := repo.Create(ctx, &user.User{Name: "Ada", Email: "ada@x.io"})
+	_, err := repo.Create(ctx, &users.User{Name: "Ada", Email: "ada@x.io"})
 	require.NoError(t, err)
 
-	_, err = repo.Create(ctx, &user.User{Name: "Other", Email: "ada@x.io"})
+	_, err = repo.Create(ctx, &users.User{Name: "Other", Email: "ada@x.io"})
 
-	require.ErrorIs(t, err, user.ErrUserEmailTaken)
+	require.ErrorIs(t, err, users.ErrUserEmailTaken)
 	assert.NotContains(t, err.Error(), "ada@x.io", "the error must not carry the email")
 	count, err := repo.Count(ctx)
 	require.NoError(t, err)

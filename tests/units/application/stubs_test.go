@@ -4,33 +4,33 @@ import (
 	"context"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
 // stubUserRepository records calls and returns canned results.
 // A nil function means "not expected": the call panics so the test fails loudly.
 type stubUserRepository struct {
-	createFn func(u *user.User) (uint, error)
-	getFn    func(id uint) (*user.User, error)
-	listFn   func() ([]*user.User, error)
+	createFn func(u *users.User) (uint, error)
+	getFn    func(id uint) (*users.User, error)
+	listFn   func() ([]*users.User, error)
 	countFn  func() (int64, error)
-	created  []user.User
+	created  []users.User
 }
 
-func (r *stubUserRepository) Create(_ context.Context, u *user.User) (uint, error) {
+func (r *stubUserRepository) Create(_ context.Context, u *users.User) (uint, error) {
 	r.created = append(r.created, *u)
 	return r.createFn(u)
 }
 
-func (r *stubUserRepository) GetByID(_ context.Context, id uint) (*user.User, error) {
+func (r *stubUserRepository) GetByID(_ context.Context, id uint) (*users.User, error) {
 	return r.getFn(id)
 }
 
-func (r *stubUserRepository) GetByEmail(_ context.Context, _ string) (*user.User, error) {
+func (r *stubUserRepository) GetByEmail(_ context.Context, _ string) (*users.User, error) {
 	panic("GetByEmail not expected")
 }
 
-func (r *stubUserRepository) List(_ context.Context) ([]*user.User, error) {
+func (r *stubUserRepository) List(_ context.Context) ([]*users.User, error) {
 	return r.listFn()
 }
 

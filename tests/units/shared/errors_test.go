@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/shared"
 	"github.com/stretchr/testify/assert"
 )
@@ -21,11 +21,11 @@ func TestErrorClassification_EveryDomainError(t *testing.T) {
 		code    string
 		message string
 	}{
-		{user.ErrUserNameEmpty, http.StatusBadRequest, "VALIDATION_FAILED", "User name cannot be empty"},
-		{user.ErrUserEmailEmpty, http.StatusBadRequest, "VALIDATION_FAILED", "User email cannot be empty"},
-		{user.ErrUserEmailInvalid, http.StatusBadRequest, "VALIDATION_FAILED", "User email is invalid"},
-		{user.ErrUserEmailTaken, http.StatusConflict, "EMAIL_TAKEN", "Email already in use"},
-		{user.ErrUserNotFound, http.StatusNotFound, "USER_NOT_FOUND", "User not found"},
+		{users.ErrUserNameEmpty, http.StatusBadRequest, "VALIDATION_FAILED", "User name cannot be empty"},
+		{users.ErrUserEmailEmpty, http.StatusBadRequest, "VALIDATION_FAILED", "User email cannot be empty"},
+		{users.ErrUserEmailInvalid, http.StatusBadRequest, "VALIDATION_FAILED", "User email is invalid"},
+		{users.ErrUserEmailTaken, http.StatusConflict, "EMAIL_TAKEN", "Email already in use"},
+		{users.ErrUserNotFound, http.StatusNotFound, "USER_NOT_FOUND", "User not found"},
 		{task.ErrTaskTitleEmpty, http.StatusBadRequest, "VALIDATION_FAILED", "Task title cannot be empty"},
 		{task.ErrTaskUserIDInvalid, http.StatusBadRequest, "VALIDATION_FAILED", "Task user_id cannot be empty"},
 		{task.ErrTaskNotFound, http.StatusNotFound, "TASK_NOT_FOUND", "Task not found"},

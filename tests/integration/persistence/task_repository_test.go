@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -15,7 +15,7 @@ import (
 // createTestUser persists a real user so that task fixtures reference an existing owner.
 func createTestUser(t *testing.T, db *gorm.DB, email string) uint {
 	t.Helper()
-	id, err := pgstore.NewUserRepository(db).Create(context.Background(), &user.User{Name: "Owner", Email: email})
+	id, err := pgstore.NewUserRepository(db).Create(context.Background(), &users.User{Name: "Owner", Email: email})
 	require.NoError(t, err)
 	return id
 }

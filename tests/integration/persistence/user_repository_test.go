@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,7 +17,7 @@ func TestUserRepository_Create_HappyPath(t *testing.T) {
 	db := setupTestDB(t)
 	repo := pgstore.NewUserRepository(db)
 
-	u := &user.User{Name: "John Doe", Email: "john@example.com"}
+	u := &users.User{Name: "John Doe", Email: "john@example.com"}
 	id, err := repo.Create(context.Background(), u)
 
 	require.NoError(t, err)
@@ -39,7 +39,7 @@ func TestUserRepository_GetByID_SadPath_NotFound(t *testing.T) {
 
 	require.Error(t, err)
 	assert.Nil(t, retrieved)
-	assert.Equal(t, user.ErrUserNotFound, err)
+	assert.Equal(t, users.ErrUserNotFound, err)
 }
 
 // GIVEN: UserRepository with multiple users / WHEN: Get by email / THEN: Return matching user
@@ -47,8 +47,8 @@ func TestUserRepository_GetByEmail_HappyPath(t *testing.T) {
 	db := setupTestDB(t)
 	repo := pgstore.NewUserRepository(db)
 
-	u1 := &user.User{Name: "John", Email: "john@example.com"}
-	u2 := &user.User{Name: "Jane", Email: "jane@example.com"}
+	u1 := &users.User{Name: "John", Email: "john@example.com"}
+	u2 := &users.User{Name: "Jane", Email: "jane@example.com"}
 
 	_, err := repo.Create(context.Background(), u1)
 	require.NoError(t, err)
@@ -69,7 +69,7 @@ func TestUserRepository_GetByEmail_SadPath_NotFound(t *testing.T) {
 
 	found, err := repo.GetByEmail(context.Background(), "nonexistent@example.com")
 
-	assert.ErrorIs(t, err, user.ErrUserNotFound)
+	assert.ErrorIs(t, err, users.ErrUserNotFound)
 	assert.Nil(t, found)
 }
 
@@ -79,7 +79,7 @@ func createUsers(t *testing.T, repo *pgstore.UserRepository, count int) []uint {
 	t.Helper()
 	ids := make([]uint, count)
 	for i := range ids {
-		id, err := repo.Create(context.Background(), &user.User{
+		id, err := repo.Create(context.Background(), &users.User{
 			Name:  fmt.Sprintf("User %03d", count-i),
 			Email: fmt.Sprintf("u%03d@example.com", count-i),
 		})

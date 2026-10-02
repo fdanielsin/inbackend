@@ -5,7 +5,7 @@ import (
 	"context"
 
 	"github.com/fdanielsin/inbackend/internal/application"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
 // CreateUserRequest est le DTO de la commande CreateUser.
@@ -16,17 +16,17 @@ type CreateUserRequest struct {
 
 // CreateUserHandler exécute la logique de création d'utilisateur.
 type CreateUserHandler struct {
-	repo user.Repository
+	repo users.Repository
 }
 
 // NewCreateUserHandler crée une nouvelle instance du handler.
-func NewCreateUserHandler(repo user.Repository) *CreateUserHandler {
+func NewCreateUserHandler(repo users.Repository) *CreateUserHandler {
 	return &CreateUserHandler{repo: repo}
 }
 
 // Execute exécute la commande CreateUser.
 func (h *CreateUserHandler) Execute(ctx context.Context, req CreateUserRequest) (*application.UserResponse, error) {
-	u, err := user.NewUser(0, req.Name, req.Email)
+	u, err := users.NewUser(0, req.Name, req.Email)
 	if err != nil {
 		return nil, err
 	}

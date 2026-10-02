@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
 	"github.com/fdanielsin/inbackend/internal/infrastructure/pgsetup"
 	"github.com/fdanielsin/inbackend/tests/testsupport"
@@ -311,7 +311,7 @@ func TestTaskRepository_Create_UnknownUser_ReturnsUserNotFound(t *testing.T) {
 		t.Run(fmt.Sprintf("user %d", userID), func(t *testing.T) {
 			_, err := repo.Create(ctx, &task.Task{Title: "Orphan", UserID: userID})
 
-			assert.ErrorIs(t, err, user.ErrUserNotFound, "user %d", userID)
+			assert.ErrorIs(t, err, users.ErrUserNotFound, "user %d", userID)
 		})
 	}
 	count, err := repo.Count(ctx)
@@ -326,12 +326,12 @@ func TestUserRepository_Create_OtherUniqueViolationIsNotEmailTaken(t *testing.T)
 	require.NoError(t, db.Exec("CREATE UNIQUE INDEX qa_unique_name ON user_models (name)").Error)
 	t.Cleanup(func() { _ = db.Exec("DROP INDEX IF EXISTS qa_unique_name").Error })
 	repo := pgstore.NewUserRepository(db)
-	_, err := repo.Create(ctx, &user.User{Name: "Ada", Email: "ada@x.io"})
+	_, err := repo.Create(ctx, &users.User{Name: "Ada", Email: "ada@x.io"})
 	require.NoError(t, err)
 
-	_, err = repo.Create(ctx, &user.User{Name: "Ada", Email: "other@x.io"})
+	_, err = repo.Create(ctx, &users.User{Name: "Ada", Email: "other@x.io"})
 
 	require.Error(t, err)
-	assert.NotErrorIs(t, err, user.ErrUserEmailTaken)
+	assert.NotErrorIs(t, err, users.ErrUserEmailTaken)
 	assert.Equal(t, "23505", sqlState(err))
 }

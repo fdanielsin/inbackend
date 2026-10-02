@@ -6,7 +6,7 @@ import (
 	"net/http"
 
 	"github.com/fdanielsin/inbackend/internal/domain/task"
-	"github.com/fdanielsin/inbackend/internal/domain/user"
+	"github.com/fdanielsin/inbackend/internal/domain/users"
 )
 
 // Codes d'erreur stables exposés dans le champ error_code (voir openapi.yaml).
@@ -45,11 +45,11 @@ var domainErrors = []struct {
 	err error
 	api APIError
 }{
-	{user.ErrUserNotFound, APIError{http.StatusNotFound, CodeUserNotFound, MsgUserNotFound}},
-	{user.ErrUserNameEmpty, APIError{http.StatusBadRequest, CodeValidationFailed, MsgUserNameEmpty}},
-	{user.ErrUserEmailEmpty, APIError{http.StatusBadRequest, CodeValidationFailed, MsgUserEmailEmpty}},
-	{user.ErrUserEmailInvalid, APIError{http.StatusBadRequest, CodeValidationFailed, MsgUserEmailInvalid}},
-	{user.ErrUserEmailTaken, APIError{http.StatusConflict, CodeEmailTaken, MsgEmailTaken}},
+	{users.ErrUserNotFound, APIError{http.StatusNotFound, CodeUserNotFound, MsgUserNotFound}},
+	{users.ErrUserNameEmpty, APIError{http.StatusBadRequest, CodeValidationFailed, MsgUserNameEmpty}},
+	{users.ErrUserEmailEmpty, APIError{http.StatusBadRequest, CodeValidationFailed, MsgUserEmailEmpty}},
+	{users.ErrUserEmailInvalid, APIError{http.StatusBadRequest, CodeValidationFailed, MsgUserEmailInvalid}},
+	{users.ErrUserEmailTaken, APIError{http.StatusConflict, CodeEmailTaken, MsgEmailTaken}},
 	{task.ErrTaskNotFound, APIError{http.StatusNotFound, CodeTaskNotFound, MsgTaskNotFound}},
 	{task.ErrTaskTitleEmpty, APIError{http.StatusBadRequest, CodeValidationFailed, MsgTaskTitleEmpty}},
 	{task.ErrTaskUserIDInvalid, APIError{http.StatusBadRequest, CodeValidationFailed, MsgTaskUserIDInvalid}},
