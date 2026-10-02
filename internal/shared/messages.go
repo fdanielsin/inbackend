@@ -49,11 +49,11 @@ var catalog = map[MessageKey]map[Lang]string{
 	MsgInternalError:          {LangEnglish: "Internal server error", LangFrench: "Erreur interne du serveur"},
 	MsgUserNotFound:           {LangEnglish: "User not found", LangFrench: "Utilisateur introuvable"},
 	MsgUserNameEmpty:          {LangEnglish: "User name cannot be empty", LangFrench: "Le nom de l'utilisateur ne peut pas être vide"},
-	MsgUserEmailEmpty:         {LangEnglish: "User email cannot be empty", LangFrench: "L'email de l'utilisateur ne peut pas être vide"},
-	MsgUserEmailInvalid:       {LangEnglish: "User email is invalid", LangFrench: "L'email de l'utilisateur est invalide"},
+	MsgUserEmailEmpty:         {LangEnglish: "User email cannot be empty", LangFrench: "L'adresse e-mail de l'utilisateur ne peut pas être vide"},
+	MsgUserEmailInvalid:       {LangEnglish: "User email is invalid", LangFrench: "L'adresse e-mail de l'utilisateur est invalide"},
 	MsgUserNameTooLong:        {LangEnglish: "User name cannot exceed 100 characters", LangFrench: "Le nom de l'utilisateur ne peut pas dépasser 100 caractères"},
 	MsgUserEmailTooLong:       {LangEnglish: "User email cannot exceed 254 characters", LangFrench: "L'adresse e-mail de l'utilisateur ne peut pas dépasser 254 caractères"},
-	MsgEmailTaken:             {LangEnglish: "Email already in use", LangFrench: "Cet email est déjà utilisé"},
+	MsgEmailTaken:             {LangEnglish: "Email already in use", LangFrench: "Cette adresse e-mail est déjà utilisée"},
 	MsgTaskNotFound:           {LangEnglish: "Task not found", LangFrench: "Tâche introuvable"},
 	MsgTaskTitleEmpty:         {LangEnglish: "Task title cannot be empty", LangFrench: "Le titre de la tâche ne peut pas être vide"},
 	MsgTaskTitleTooLong:       {LangEnglish: "Task title cannot exceed 200 characters", LangFrench: "Le titre de la tâche ne peut pas dépasser 200 caractères"},
@@ -73,8 +73,8 @@ var catalog = map[MessageKey]map[Lang]string{
 	MsgTaskCreated:            {LangEnglish: "Task created", LangFrench: "Tâche créée"},
 	MsgTaskUpdated:            {LangEnglish: "Task updated", LangFrench: "Tâche mise à jour"},
 	MsgTaskDeleted:            {LangEnglish: "Task deleted", LangFrench: "Tâche supprimée"},
-	MsgServiceHealthy:         {LangEnglish: "Service is healthy", LangFrench: "Service en bonne santé"},
-	MsgServiceReady:           {LangEnglish: "Service is ready", LangFrench: "Service prêt"},
+	MsgServiceHealthy:         {LangEnglish: "Service is healthy", LangFrench: "Le service est opérationnel"},
+	MsgServiceReady:           {LangEnglish: "Service is ready", LangFrench: "Le service est prêt"},
 }
 
 // Languages retourne les langues prises en charge.
