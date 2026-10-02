@@ -10,6 +10,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"slices"
 	"strconv"
 	"syscall"
 
@@ -46,6 +47,11 @@ func run(ctx context.Context, log *slog.Logger) error {
 		return errors.New("DATABASE_URL not set")
 	}
 
+	origins, err := corsOrigins(os.Getenv("ENV"), os.Getenv("CORS_ALLOWED_ORIGINS"))
+	if err != nil {
+		return err
+	}
+
 	docsEnabled, err := apiDocsEnabled(os.Getenv("ENV"), os.Getenv("API_DOCS_ENABLED"))
 	if err != nil {
 		return err
@@ -62,7 +68,7 @@ func run(ctx context.Context, log *slog.Logger) error {
 	}
 	defer closeDB(db, log)
 
-	opts := []app.Option{app.WithLogger(log), app.WithAllowedOrigins(app.ParseAllowedOrigins(os.Getenv("CORS_ALLOWED_ORIGINS"))), app.WithRequestValidator(validator)}
+	opts := []app.Option{app.WithLogger(log), app.WithAllowedOrigins(origins), app.WithRequestValidator(validator)}
 	if docsEnabled {
 		opts = append(opts, app.WithAPIDocs(apiContract))
 	}
@@ -79,6 +85,17 @@ func run(ctx context.Context, log *slog.Logger) error {
 
 	log.Info("Starting server", slog.String("port", port))
 	return app.Serve(ctx, e, listener)
+}
+
+// corsOrigins lit CORS_ALLOWED_ORIGINS. Quand env vaut exactement "production", la
+// liste doit nommer les origines autorisées : absente, vide ou contenant "*", elle
+// empêche le démarrage. Le message ne reprend pas la valeur reçue.
+func corsOrigins(env, value string) ([]string, error) {
+	origins := app.ParseAllowedOrigins(value)
+	if env == "production" && slices.Contains(origins, "*") {
+		return nil, errors.New("CORS_ALLOWED_ORIGINS must list the allowed origins when ENV=production (not empty, not *)")
+	}
+	return origins, nil
 }
 
 // apiDocsEnabled décide si /openapi.yaml et /docs existent : la valeur de

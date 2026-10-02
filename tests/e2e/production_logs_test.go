@@ -17,7 +17,7 @@ import (
 // THEN every output line is JSON with time, level, source (the real caller) and msg; successful probes (Debug) are hidden;
 // the 400 is a WARN access line; no personal data is written
 func TestServerOutput_ProductionIsJSONWithoutDebug(t *testing.T) {
-	s := startServer(t, "ENV=production")
+	s := startServer(t, "ENV=production", "CORS_ALLOWED_ORIGINS=https://app.example")
 	base := "http://" + s.addr
 	body := fmt.Sprintf(`{"name":%q,"email":%q}`, personName, personEmail)
 

@@ -325,7 +325,7 @@ func TestRequestValidation_BodyLimitComesFirst(t *testing.T) {
 // GIVEN the real binary in production, so without /docs / WHEN an unknown field is sent
 // THEN 400: the validation does not depend on API_DOCS_ENABLED
 func TestRequestValidation_RealBinaryWithoutTheDocs(t *testing.T) {
-	server := startServer(t, "ENV=production")
+	server := startServer(t, "ENV=production", "CORS_ALLOWED_ORIGINS=https://app.example")
 	base := "http://" + server.addr
 
 	assert.Equal(t, http.StatusNotFound, getStatus(t, base+"/docs"))

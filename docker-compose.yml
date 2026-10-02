@@ -20,6 +20,7 @@ services:
     environment:
       PORT: "8080"
       ENV: ${ENV:-development}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
       DATABASE_URL: postgres://${POSTGRES_USER:-inbackend}:${POSTGRES_PASSWORD:-inbackend}@postgres:5432/${POSTGRES_DB:-inbackend}?sslmode=disable
     depends_on:
       postgres:

@@ -7,14 +7,17 @@ Les variables d'environnement sont décrites dans le [README](../README.md).
 
 ```bash
 make build
-DATABASE_URL="postgres://user:pass@host:5432/inbackend?sslmode=require" ENV=production ./app
+DATABASE_URL="postgres://user:pass@host:5432/inbackend?sslmode=require" ENV=production \
+CORS_ALLOWED_ORIGINS=https://app.example.com ./app
 ```
 
 Les migrations en attente sont appliquées au démarrage
 ([ADR 0007](./decisions/0007-versioned-migrations.md)). En production :
 
 - `ENV=production` : logs JSON au niveau Info (texte au niveau Debug sinon) ;
-- `CORS_ALLOWED_ORIGINS` : lister les origines autorisées (`*` par défaut) ;
+- `CORS_ALLOWED_ORIGINS` : lister les origines autorisées, obligatoire quand `ENV` vaut exactement
+  `production` : absente, vide ou contenant `*`, le serveur refuse de démarrer (`*` par défaut
+  dans les autres cas) ;
 - `DATABASE_URL` : URL `postgres://` ou `postgresql://` (le format `clé=valeur`
   est refusé), avec `sslmode=require` si la base l'impose.
 
@@ -42,6 +45,9 @@ docker compose down -v             # arrête et supprime le volume de la base
 
 Compose utilise des identifiants de développement (`inbackend` / `inbackend`),
 modifiables avec `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` et `PORT`.
+`ENV` et `CORS_ALLOWED_ORIGINS` sont transmis au backend : avec `ENV=production`,
+`CORS_ALLOWED_ORIGINS` doit lister les origines, sinon le backend ne démarre pas ;
+vide ou absente, elle vaut `*` hors production.
 Le job `docker` de la CI exécute cette même séquence. Compose est testé avec
 Docker seulement ; le chemin Podman n'est pas testé.
 

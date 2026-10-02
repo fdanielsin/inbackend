@@ -484,6 +484,12 @@ Décisions en attente :
 Prochaine étape :
 ```
 
+## Pistes
+
+- Valider les origines de `CORS_ALLOWED_ORIGINS` comme des URL d'origine (schéma et
+  hôte, sans chemin) : aujourd'hui seule la présence de `*` est contrôlée, en
+  production, et une faute de frappe dans une origine est acceptée.
+
 ## Dernière mise à jour
 
 2026-10-01 : lot 7 sondes (voir « Lot 7 »), lot 6 outillage (voir « Lot 6 »), lot 5 migrations (voir « Lot 5 »), après le lot 4 erreurs et contrat.

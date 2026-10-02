@@ -114,7 +114,8 @@ n'existe pas non plus de package de configuration dédié : `main.go` lit
 - Ordre des middlewares : `Language` (négocie la langue, voir ci-dessous), `RequestID` (X-Request-Id repris s'il correspond à
   `[A-Za-z0-9._-]{1,64}`, sinon UUID ; logger de requête porté par le contexte),
   `AccessLog` (méthode, chemin sans query, route, statut, durée ; jamais de
-  corps), `Recover`, CORS (`CORS_ALLOWED_ORIGINS`, `*` par défaut), `BodyLimit`
+  corps), `Recover`, CORS (`CORS_ALLOWED_ORIGINS`, `*` par défaut sauf si `ENV=production`, où elle est
+  obligatoire et sans `*`), `BodyLimit`
   (1 MiB exacts, avec ou sans Content-Length : `http.MaxBytesReader` ; le
   `BodyLimit` d'Echo n'est pas utilisé car il laisse passer un JSON complet qui
   dépasse de quelques octets sans Content-Length).

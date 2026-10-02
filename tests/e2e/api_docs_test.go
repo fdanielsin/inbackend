@@ -238,7 +238,7 @@ func TestAPIDocs_RealBinaryFollowsEnvAndSetting(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run("ENV="+c.env+" API_DOCS_ENABLED="+c.value, func(t *testing.T) {
-			status, spec := docsStatus(t, "ENV="+c.env, "API_DOCS_ENABLED="+c.value)
+			status, spec := docsStatus(t, "ENV="+c.env, "API_DOCS_ENABLED="+c.value, "CORS_ALLOWED_ORIGINS=https://app.example")
 
 			if c.enabled {
 				assert.Equal(t, http.StatusOK, status)

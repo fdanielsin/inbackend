@@ -32,6 +32,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- Le serveur refuse de démarrer quand `ENV=production` et que `CORS_ALLOWED_ORIGINS` est absente, vide ou contient `*` : changement cassant pour un déploiement de production sans origines CORS ([#29](https://github.com/fdanielsin/inbackend/pull/29)).
 - Paquets internes renommés pour ne plus entrer en collision avec la bibliothèque standard ou une dépendance : `logger` en `applog`, `database` en `pgsetup`, `domain/user` en `users`, `domain/task` en `tasks` (ADR 0008) ; aucun effet sur l'API ([#27](https://github.com/fdanielsin/inbackend/pull/27)).
 - Seul `application/json` est accepté pour un corps de requête : XML et formulaire répondent 400 `INVALID_BODY` ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
 - `null` sur une propriété facultative (`description`, `completed`, `title` en `PUT`) répond 400 `INVALID_BODY` au lieu d'être ignoré ; `user_id` au-dessus de 4 294 967 295 répond 400 au lieu de 404 ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
