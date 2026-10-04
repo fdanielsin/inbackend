@@ -74,15 +74,15 @@ mutate:
 
 migrate-up:
 	@echo "⬆️ Applying migrations..."
-	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" up
+	@$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" up
 
 migrate-down:
 	@echo "⬇️ Reverting the last migration..."
-	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" down 1
+	@$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" down 1
 
 migrate-force:
 	@test -n "$(version)" || (echo "usage: make migrate-force version=N" && exit 1)
-	$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" force $(version)
+	@$(MIGRATE) -path $(MIGRATIONS_DIR) -database "$(MIGRATE_DATABASE_URL)" force $(version)
 
 migrate-new:
 	@test -n "$(name)" || (echo "usage: make migrate-new name=add_something" && exit 1)
