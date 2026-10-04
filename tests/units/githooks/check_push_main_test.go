@@ -18,6 +18,19 @@ type repo struct {
 	dir string
 }
 
+// gitEnv est l'environnement des commandes git des tests : celui du processus sans
+// aucune variable GIT_* (dans un hook, git exporte GIT_DIR, GIT_INDEX_FILE... qui
+// feraient écrire les tests dans le vrai dépôt), puis des réglages explicites.
+func gitEnv(extra ...string) []string {
+	var env []string
+	for _, kv := range os.Environ() {
+		if !strings.HasPrefix(kv, "GIT_") {
+			env = append(env, kv)
+		}
+	}
+	return append(env, append([]string{"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null"}, extra...)...)
+}
+
 func newRepo(t *testing.T) *repo {
 	t.Helper()
 	r := &repo{t: t, dir: t.TempDir()}
@@ -29,9 +42,7 @@ func (r *repo) git(args ...string) string {
 	r.t.Helper()
 	cmd := exec.CommandContext(r.t.Context(), "git", args...) //nolint:gosec // G204: arguments written by this test file
 	cmd.Dir = r.dir
-	cmd.Env = append(os.Environ(),
-		"GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null",
-		"GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.com",
+	cmd.Env = gitEnv("GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@example.com",
 		"GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@example.com")
 	out, err := cmd.CombinedOutput()
 	require.NoError(r.t, err, string(out))
@@ -52,7 +63,7 @@ func (r *repo) push(releaseTag string, lines ...string) (string, error) {
 	cmd := exec.CommandContext(r.t.Context(), "sh", script) //nolint:gosec // G204: runs this repository's own guard script
 	cmd.Dir = r.dir
 	cmd.Stdin = strings.NewReader(strings.Join(lines, "\n") + "\n")
-	cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+	cmd.Env = gitEnv()
 	if releaseTag != "" {
 		cmd.Env = append(cmd.Env, "RELEASE_TAG="+releaseTag)
 	}
@@ -160,4 +171,25 @@ func TestPushToMain_NothingToPushIsAllowed(t *testing.T) {
 	_, err := r.push("")
 
 	require.NoError(t, err)
+}
+
+// GIVEN the git variables that a hook inherits (GIT_DIR, GIT_WORK_TREE, GIT_INDEX_FILE) pointing at another repository
+// WHEN the tests create commits and tags and run the guard / THEN that repository gets no commit and no tag
+// (regression: the pre-push hook ran these tests and they wrote 16 commits and a tag into the real repository)
+func TestGitCommands_IgnoreTheEnvironmentInheritedFromAHook(t *testing.T) {
+	sentinel := newRepo(t)
+	gitDir := filepath.Join(sentinel.dir, ".git")
+	t.Setenv("GIT_DIR", gitDir)
+	t.Setenv("GIT_WORK_TREE", sentinel.dir)
+	t.Setenv("GIT_INDEX_FILE", filepath.Join(gitDir, "index"))
+
+	r := newRepo(t)
+	sha := r.commit("one")
+	r.git("tag", "v1.1.0")
+	_, err := r.push("v1.1.0", line("refs/heads/develop", sha, "refs/heads/main"))
+
+	require.NoError(t, err, "the guard must see the tag of its own repository")
+	assert.Equal(t, sha, r.git("rev-parse", "HEAD"))
+	assert.Equal(t, "0", sentinel.git("rev-list", "--all", "--count"), "the sentinel repository must stay empty")
+	assert.Empty(t, sentinel.git("tag", "-l"), "the sentinel repository must have no tag")
 }
