@@ -125,7 +125,7 @@ func TestHealth_ReturnsContractBody(t *testing.T) {
 		assert.True(t, env.Success, path)
 		assert.Equal(t, "Service is healthy", env.Message, path)
 		assert.Equal(t, "ok", env.Data.Status, path)
-		assert.Equal(t, "1.0.0", env.Data.Version, path)
+		assert.Equal(t, "1.1.0", env.Data.Version, path)
 		_, err := uuid.Parse(env.Data.ID)
 		require.NoError(t, err, "id must be a UUID (%s)", path)
 		ids = append(ids, env.Data.ID)
