@@ -4,14 +4,17 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-10-04
+
 > **À vérifier avant de mettre à jour (de 1.0.0 vers 1.1.0).** Changements qui
 > peuvent casser un déploiement ou un client existant :
 >
 > - `ENV=production` : le serveur refuse de démarrer si `CORS_ALLOWED_ORIGINS` est absente, vide ou contient `*` ; lister les origines.
 > - `ENV=production` : `/openapi.yaml` et `/docs` répondent 404 sauf `API_DOCS_ENABLED=true`.
 > - Logs : `slog` seul ; en production, JSON avec `time`, `level` en majuscules, objet `source`, `latency` en nanosecondes ; adapter les parseurs et alertes de logs.
+> - Base de données de la 1.0.0 : la 1.0.0 créait les tables `users` et `tasks`, la 1.1.0 lit `user_models` et `task_models`. Le serveur refuse de démarrer (code 1, « database has 1.0.0 tables ») tant que `users` ou `tasks` existe ; rien n'est copié ni supprimé automatiquement. Sauvegarder la base, puis suivre la procédure SQL de `docs/troubleshooting.md` (renommer les anciennes tables, `make migrate-up`, copier avec les ids, recaler les séquences).
 > - `DATABASE_URL` : URL `postgres://` ou `postgresql://` obligatoire, le format `clé=valeur` est refusé.
-> - Migrations : elles s'appliquent au démarrage et la migration 2 réécrit les emails existants en minuscules (espaces retirés). Elles peuvent bloquer le démarrage (emails en doublon une fois normalisés, tâches orphelines) et une migration refusée laisse la base « dirty » : corriger les données ne suffit pas, il faut ensuite `make migrate-force version=N` (N donné par le message d'erreur), lancé depuis un checkout du dépôt avec Go (l'image ne l'a pas), voir `docs/troubleshooting.md`. Rien n'est supprimé ; sauvegarder la base avant.
+> - Migrations : elles s'appliquent au démarrage et la migration 2 réécrit les emails en minuscules (espaces retirés). Une base 1.0.0 passe par la procédure de `docs/troubleshooting.md` : les migrations tournent sur des tables vides, et doublons d'emails ou tâches orphelines se traitent aux étapes « contrôler » et « copier ». Pour une base créée par une version de développement (`user_models` déjà remplie), une migration refusée (doublons une fois normalisés, tâches orphelines) laisse la base « dirty » : corriger les données, puis `make migrate-force version=N` (N donné par le message d'erreur), depuis un checkout du dépôt avec Go (l'image ne l'a pas). Sauvegarder la base avant.
 > - Corps de requête : v1.0.0 ne validait rien. Seul `application/json` est accepté, une propriété inconnue ou `null` sur une propriété facultative est refusée (400 `INVALID_BODY`). Répondent 400 `VALIDATION_FAILED` : nom, email et titre absents ou faits d'espaces, format d'email invalide, `user_id` absent ou 0, valeur trop longue. Nom, titre et description sont rognés et l'email est mis en minuscules à la création : la valeur relue diffère de celle envoyée.
 > - Codes de statut : 409 `EMAIL_TAKEN` (au lieu de 500) ; 404 `TASK_NOT_FOUND` sur `DELETE /tasks/{id}` (au lieu de 200) et sur `PUT /tasks/{id}` (v1.0.0 insérait une nouvelle tâche, réponse 200) ; 404 `USER_NOT_FOUND` à la création d'une tâche ; 400 `INVALID_ID` pour un identifiant de chemin non numérique ou au-delà de 4 294 967 295 (v1.0.0 : 404 sur `GET /users/{id}`, 500 ailleurs) ; 413 `PAYLOAD_TOO_LARGE` au-delà de 1 MiB.
 > - Messages `error` et `message` en français ou en anglais selon `Accept-Language` ; ne pas comparer les textes, utiliser `error_code`.
@@ -26,6 +29,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Hook `pre-push` : refuse un push vers `main`, sauf avec `RELEASE_TAG` pointant sur le commit poussé (`scripts/check-push-main.sh`) ; activation locale par `git config core.hooksPath .githooks`.
 - Image Docker du backend publiée sur `ghcr.io/fdanielsin/inbackend` (privée) à chaque push sur `develop` et sur les tags `v*` (tags sha complet, `develop`, nom du tag), avec `HEALTHCHECK`, labels OCI et rétention des versions (`develop`, `v*` et 10 versions sha gardés, suppression activée par la variable de dépôt `PRUNE_IMAGE_VERSIONS`) ; un push plus récent sur la même ref annule le run de CI en cours ([#31](https://github.com/fdanielsin/inbackend/pull/31)) ; la CI se lance aussi à la main (`workflow_dispatch`) et le job `docker` contrôle `/openapi.yaml`.
 - Lint plus strict : `govet` shadow, `revive` import-shadowing, `importas` (alias `usercommands` et `userqueries` seulement), `forbidigo` (`os.Exit` hors `main.go`), `testifylint` ; contrôle des noms de paquets dans `make lint` (`make lint-packages`, exceptions justifiées dans `scripts/package-name-exceptions.txt`) ([#30](https://github.com/fdanielsin/inbackend/pull/30)).
 - Corps de requête validés contre le contrat : propriété inconnue refusée (400 `INVALID_BODY`) ; nom (100), email (254), titre (200) et description (2000) limités en caractères, `user_id` limité à 4 294 967 295 (400 `VALIDATION_FAILED`) ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
@@ -37,7 +41,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 - Délais du serveur HTTP, arrêt gracieux sur SIGINT/SIGTERM et pool SQL borné.
 - `CORS_ALLOWED_ORIGINS` (`*` par défaut).
 - `make cover` : couverture de `internal/` avec minimum bloquant de 85 %, aussi en CI (`Q-04`).
-- Migrations versionnées golang-migrate (`make migrate-up/down/force/new`, ADR 0007) ; `AutoMigrate` retiré (`B-05`).
+- Migrations versionnées golang-migrate (`make migrate-up/down/force/new`, ADR 0007) ; `AutoMigrate` retiré (`B-05`). Le démarrage refuse une base qui contient encore les tables `users` et `tasks` de la 1.0.0, avec la procédure de copie dans `docs/troubleshooting.md`.
 - `B-02` : clé étrangère `task_models.user_id` -> `user_models.id` ; créer une tâche pour un utilisateur inexistant répond 404 `USER_NOT_FOUND`.
 - Champ `error_code` (code stable, enum dans le contrat) dans toute réponse d'erreur ; une seule table erreur → statut/code/message (lot 4).
 - `make mutate` : tests de mutation (gremlins) sur le diff, hors CI.
@@ -49,6 +53,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- `GET /health` renvoie `version` 1.1.0 et le contrat déclare `info.version` 1.1.0.
 - Le serveur refuse de démarrer quand `ENV=production` et que `CORS_ALLOWED_ORIGINS` est absente, vide ou contient `*` : changement cassant pour un déploiement de production sans origines CORS ([#29](https://github.com/fdanielsin/inbackend/pull/29)).
 - Paquets internes renommés pour ne plus entrer en collision avec la bibliothèque standard ou une dépendance : `logger` en `applog`, `database` en `pgsetup`, `domain/user` en `users`, `domain/task` en `tasks` (ADR 0008) ; aucun effet sur l'API ([#27](https://github.com/fdanielsin/inbackend/pull/27)).
 - Seul `application/json` est accepté pour un corps de requête : XML et formulaire répondent 400 `INVALID_BODY` ([#23](https://github.com/fdanielsin/inbackend/pull/23)).
@@ -105,5 +110,6 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 - Endpoint de statistiques agrégées.
 
-[Unreleased]: https://github.com/fdanielsin/inbackend/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/fdanielsin/inbackend/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/fdanielsin/inbackend/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/fdanielsin/inbackend/releases/tag/v1.0.0

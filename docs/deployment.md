@@ -24,6 +24,12 @@ Les migrations en attente sont appliquées au démarrage
 SIGINT et SIGTERM arrêtent le serveur proprement : 10 s pour les requêtes en
 cours, puis fermeture du pool SQL.
 
+## Mise à jour depuis la 1.0.0
+
+Le serveur refuse de démarrer sur une base qui contient les tables `users` et
+`tasks` de la 1.0.0 : copier d'abord les données avec la procédure SQL de
+[`troubleshooting.md`](./troubleshooting.md).
+
 ## Image Docker
 
 ```bash
@@ -128,6 +134,30 @@ d'organisation, remplacer `users/` par `orgs/` dans le script. Essai sans GitHub
 `OWNER=x scripts/prune-image-versions.sh versions.json` lit un JSON de versions
 (`id`, `created_at`, `metadata.container.tags`) et ne supprime jamais : avec
 `PRUNE_IMAGE_VERSIONS=true` il refuse (exit 2), sinon il fait un dry-run sans appeler `gh`.
+
+## Publier une version
+
+`main` ne change que par une release. Le hook `.githooks/pre-push` (garde dans
+`scripts/check-push-main.sh`, testée par `tests/units/githooks`) refuse tout push
+vers `main`, suppression comprise, sauf si `RELEASE_TAG` nomme un tag qui pointe
+sur le commit poussé. Activation, une fois par clone :
+`git config core.hooksPath .githooks`.
+
+```bash
+git tag v1.1.0 <sha>                                   # tag sur le commit de la release
+RELEASE_TAG=v1.1.0 git push origin <sha>:refs/heads/main
+git push origin v1.1.0                                 # la CI publie l'image v1.1.0
+```
+
+Limites : le hook est local, s'active à la main et se contourne avec
+`--no-verify` ; il ne voit ni un merge fait sur GitHub ni un autre poste (`main`
+n'est pas protégée côté GitHub). La règle d'équipe reste : `main` ne change que
+par une PR de release `develop` vers `main`, CI verte.
+
+Un tag `v*` lance toute la CI puis `publish-image` : l'image reçoit les tags sha
+complet et `v1.1.0` (pas `develop`). Le push de `main` lance la CI sans rien
+publier. Aligner la date de la section du CHANGELOG, `info.version` du contrat et
+la `version` de `GET /health` sur le tag avant de le poser.
 
 ## Docker Compose
 
