@@ -294,7 +294,7 @@ git log -1 --oneline | grep -E '^[a-z]+(\([a-z-]+\))?:'
 - [x] A successful remote run is independently verified for the current commit
 - [ ] Branch protection rules are independently verified in GitHub
 - [x] .gitignore updated (exclude `coverage.out` if needed)
-- [x] Pre-commit/pre-push hooks exist (`.githooks/pre-commit`, `.githooks/pre-push`) ; activation locale non automatique, nécessite `git config core.hooksPath .githooks`
+- [x] Pre-commit/pre-push hooks exist (`.githooks/pre-commit`, `.githooks/pre-push`) ; activation locale non automatique, nécessite `git config core.hooksPath .githooks` ; le pre-push refuse aussi tout push vers `main` sauf `RELEASE_TAG` sur le commit poussé (voir `docs/deployment.md`)
 - [ ] GitHub issue templates (optional, prompt for `Closes #NNN`)
 
 ---
