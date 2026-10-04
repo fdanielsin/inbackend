@@ -70,7 +70,8 @@ func TestInitDB_UnreachableDatabase_ReturnsAWrappedError(t *testing.T) {
 	err := initDBObserved(t, "postgres://qauser:qa-s3cr3t-pw@127.0.0.1:1/testdb?sslmode=disable&connect_timeout=2")
 
 	require.Error(t, err)
-	assert.True(t, strings.HasPrefix(err.Error(), "migrate database: "), err.Error())
+	assert.True(t, strings.HasPrefix(err.Error(), "migrate database: connect to the database: "), err.Error())
+	assert.NotContains(t, err.Error(), "1.0.0", "a connection failure must not point to the 1.0.0 upgrade")
 	require.Error(t, errors.Unwrap(err), "the cause is wrapped, not flattened")
 	assert.NotContains(t, err.Error(), "qa-s3cr3t-pw")
 }

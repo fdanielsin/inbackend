@@ -204,3 +204,22 @@ func TestStartup_AcceptsPostgresqlScheme(t *testing.T) {
 		return resp.StatusCode == http.StatusOK
 	}, 20*time.Second, 100*time.Millisecond)
 }
+
+// GIVEN a database created by v1.0.0 (tables users and tasks) / WHEN the real binary starts
+// THEN it exits with code 1, explains why without user data, and creates nothing in the database
+func TestStartup_Release1_0_0Database_ExitsWithCode1(t *testing.T) {
+	pg.Require(t)
+	dsn := pg.NewDatabaseFromRelease1_0_0(t)
+	db := testsupport.OpenDSN(t, dsn)
+	require.NoError(t, db.Exec("INSERT INTO users (id, name, email) VALUES (1, 'Ada', 'ada@x.io')").Error)
+
+	code, out := runUntilExit(t, buildServer(t), serverEnv("DATABASE_URL="+dsn, "PORT="+freePort(t)))
+
+	assert.Equal(t, 1, code, out)
+	assert.Contains(t, out, "failed to initialize database: migrate database: database has 1.0.0 tables (users, tasks)")
+	assert.Contains(t, out, "see docs/troubleshooting.md in the inbackend repository")
+	assert.NotContains(t, out, "ada@x.io")
+	var created int64
+	require.NoError(t, db.Raw("SELECT count(*) FROM information_schema.tables WHERE table_name IN ('schema_migrations', 'user_models', 'task_models')").Scan(&created).Error)
+	assert.Zero(t, created)
+}

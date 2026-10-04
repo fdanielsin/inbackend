@@ -15,8 +15,12 @@ import (
 //go:embed migrations/*.sql
 var migrationFiles embed.FS
 
-// Migrate applique toutes les migrations en attente (ADR 0007).
+// Migrate applique toutes les migrations en attente (ADR 0007), après avoir
+// refusé une base qui contient les tables de la 1.0.0 (ErrLegacySchema).
 func Migrate(dsn string) error {
+	if err := rejectLegacySchema(dsn); err != nil {
+		return err
+	}
 	return run(dsn, func(m *migrate.Migrate) error { return m.Up() })
 }
 

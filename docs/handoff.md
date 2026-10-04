@@ -324,11 +324,13 @@ Branche `test/lot3-backend` (worktree `inbackend/.worktrees/lot3-backend`).
 ## Lot 5 : migrations (branche `feat/lot5-migrations`)
 
 - golang-migrate (ADR 0007) : SQL embarqué dans
-  `internal/infrastructure/database/migrations/`, appliqué au démarrage par
-  `database.Migrate` ; `database.MigrateTo(dsn, version)` sert aux tests ;
+  `internal/infrastructure/pgsetup/migrations/`, appliqué au démarrage par
+  `pgsetup.Migrate` ; `pgsetup.MigrateTo(dsn, version)` sert aux tests ;
   `make migrate-up/down/force/new`. `AutoMigrate` retiré.
-- 000001 = schéma de l'ancien AutoMigrate (tables `user_models`/`task_models`,
-  comparé par `pg_dump` : identique hors `schema_migrations`). 000002 = emails
+- 000001 = schéma créé par AutoMigrate pour les modèles `pgstore` (tables
+  `user_models`/`task_models`, comparé par `pg_dump` : identique hors
+  `schema_migrations`) ; ce n'est pas celui de la 1.0.0 (`users`/`tasks`,
+  refusées au démarrage, ADR 0007 règle 7). 000002 = emails
   (refuse sur doublons par casse, normalise, index unique sur `lower(email)`).
   000003 = clé étrangère et index sur `task_models.user_id` (refuse sur
   orphelins). Les refus ne donnent que des nombres.

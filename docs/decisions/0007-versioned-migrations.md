@@ -44,17 +44,27 @@ fonctionnalités ont besoin de faire évoluer le schéma de façon sûre.
 5. Les contraintes sont nommées explicitement : le code détecte une violation
    par son code SQLSTATE et le nom de la contrainte (`constraints.go`).
 6. Chaque migration est testée en montée, en descente puis en montée, sur base
-   vide et, pour 000001, sur une base créée par l'ancien `AutoMigrate`.
+   vide et, pour 000001, sur une base créée par GORM `AutoMigrate` pour les
+   modèles `pgstore`.
+7. Les tables de la 1.0.0 (`users`, `tasks`) ne sont pas migrées : `Migrate`
+   refuse la base, avant toute écriture, tant qu'elles existent dans le schéma
+   courant (`ErrLegacySchema`, code de sortie 1). Décision utilisateur du
+   2026-10-03 : pas de renommage ni de reprise automatique, une copie SQL
+   manuelle documentée dans `troubleshooting.md` et testée. Limite : le CLI
+   `make migrate-up` ne passe pas par `Migrate` et ne fait pas ce contrôle ; il
+   crée alors des tables vides, le serveur refuse quand même, et la procédure
+   reste valable car elle vérifie que les tables cibles sont vides.
 
 ## Migrations actuelles
 
 | Version | Effet |
 | --- | --- |
-| 000001 | Schéma initial (`user_models`, `task_models`, `idx_user_models_email`), identique à l'ancien `AutoMigrate`, idempotent. |
+| 000001 | Schéma initial (`user_models`, `task_models`, `idx_user_models_email`), identique à ce que `AutoMigrate` crée pour les modèles `pgstore`, idempotent. Pas de reprise des tables `users` et `tasks` de la 1.0.0 (règle 7). |
 | 000002 | Emails : refuse s'il existe des doublons une fois les espaces retirés et passé en minuscules ; sinon normalise les emails existants et remplace l'index par l'index unique `idx_user_models_email_lower` sur `lower(email)`. La mise en minuscules n'est pas réversible. |
 | 000003 | Clé étrangère `fk_task_models_user` (`task_models.user_id` -> `user_models.id`) et index `idx_task_models_user_id` ; refuse s'il existe des tâches orphelines. |
 
-Les tables gardent les noms `user_models` et `task_models` de GORM ; un
+Les tables s'appellent `user_models` et `task_models` (noms de GORM pour les
+modèles `pgstore`) ; la 1.0.0 utilisait `users` et `tasks` (règle 7). Un
 renommage serait une migration séparée.
 
 ## Échec d'une migration

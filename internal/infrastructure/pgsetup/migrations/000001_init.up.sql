@@ -1,5 +1,7 @@
--- Schéma initial : identique à celui que créait GORM AutoMigrate, idempotent pour
--- les bases déjà créées par lui.
+-- Schéma initial : identique à celui que créerait GORM AutoMigrate pour les modèles
+-- de pgstore (user_models, task_models), idempotent pour une base créée ainsi. Les
+-- tables users et tasks de la 1.0.0 ne sont pas migrées : pgsetup refuse de
+-- démarrer tant qu'elles existent (docs/troubleshooting.md).
 CREATE TABLE IF NOT EXISTS user_models (
     id    bigserial PRIMARY KEY,
     name  text,

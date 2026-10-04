@@ -145,9 +145,10 @@ func TestMigrateTo_EachDownRestoresThePreviousSchema(t *testing.T) {
 	assert.Equal(t, snapshots[latestMigration], snapshotSchema(t, db), "up again after a full down")
 }
 
-// GIVEN two empty databases / WHEN one is created by the former GORM AutoMigrate and the other by migration 1
-// THEN both schemas are identical, and migrating the AutoMigrate one keeps its data (existing deployments)
-func TestMigration1_MatchesTheFormerAutoMigrateSchema(t *testing.T) {
+// GIVEN two empty databases / WHEN one is created by GORM AutoMigrate on the pgstore models (user_models, task_models)
+// and the other by migration 1 / THEN both schemas are identical, and migrating the AutoMigrate one keeps its data
+// (the 1.0.0 tables users and tasks are a different case: see legacy_schema_test.go)
+func TestMigration1_MatchesTheGORMSchemaOfTheStoreModels(t *testing.T) {
 	legacyDSN := pg.NewEmptyDatabase(t)
 	legacy := testsupport.OpenDSN(t, legacyDSN)
 	require.NoError(t, legacy.AutoMigrate(&pgstore.UserModel{}, &pgstore.TaskModel{}))
