@@ -488,9 +488,7 @@ Prochaine étape :
 
 ## Pistes
 
-- Valider les origines de `CORS_ALLOWED_ORIGINS` comme des URL d'origine (schéma et
-  hôte, sans chemin) : aujourd'hui seule la présence de `*` est contrôlée, en
-  production, et une faute de frappe dans une origine est acceptée.
+Aucune.
 
 ## Dernière mise à jour
 

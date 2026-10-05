@@ -42,11 +42,6 @@ func main() {
 }
 
 func run(ctx context.Context, log *slog.Logger) error {
-	dsn := os.Getenv("DATABASE_URL")
-	if dsn == "" {
-		return errors.New("DATABASE_URL not set")
-	}
-
 	origins, err := corsOrigins(os.Getenv("ENV"), os.Getenv("CORS_ALLOWED_ORIGINS"))
 	if err != nil {
 		return err
@@ -55,6 +50,11 @@ func run(ctx context.Context, log *slog.Logger) error {
 	docsEnabled, err := apiDocsEnabled(os.Getenv("ENV"), os.Getenv("API_DOCS_ENABLED"))
 	if err != nil {
 		return err
+	}
+
+	dsn := os.Getenv("DATABASE_URL")
+	if dsn == "" {
+		return errors.New("DATABASE_URL not set")
 	}
 
 	validator, err := httpapi.NewRequestValidator(apiContract, app.ValidatedOperations...)
@@ -89,11 +89,15 @@ func run(ctx context.Context, log *slog.Logger) error {
 
 // corsOrigins lit CORS_ALLOWED_ORIGINS. Quand env vaut exactement "production", la
 // liste doit nommer les origines autorisées : absente, vide ou contenant "*", elle
-// empêche le démarrage. Le message ne reprend pas la valeur reçue.
+// empêche le démarrage. Toute origine mal formée l'empêche aussi (voir
+// app.ValidateAllowedOrigins). Les messages ne reprennent pas la valeur reçue.
 func corsOrigins(env, value string) ([]string, error) {
 	origins := app.ParseAllowedOrigins(value)
 	if env == "production" && slices.Contains(origins, "*") {
 		return nil, errors.New("CORS_ALLOWED_ORIGINS must list the allowed origins when ENV=production (not empty, not *)")
+	}
+	if err := app.ValidateAllowedOrigins(origins); err != nil {
+		return nil, err
 	}
 	return origins, nil
 }

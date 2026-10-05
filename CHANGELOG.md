@@ -4,6 +4,14 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+> **À vérifier avant de mettre à jour (de 1.1.0 vers la prochaine version).**
+>
+> - `CORS_ALLOWED_ORIGINS` : une origine mal formée empêche le démarrage (chemin, slash final, majuscules, port par défaut, motif `https://*.example.com`, `*` mêlé à d'autres origines) ; vérifier chaque entrée avant de déployer.
+
+### Changed
+
+- `CORS_ALLOWED_ORIGINS` est validée au démarrage, avant `DATABASE_URL` : chaque origine doit être `http(s)://hôte[:port]` en minuscules, le refus donne le rang de l'entrée et la raison sans recopier la valeur.
+
 ## [1.1.0] - 2026-10-04
 
 > **À vérifier avant de mettre à jour (de 1.0.0 vers 1.1.0).** Changements qui

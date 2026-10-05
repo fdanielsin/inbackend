@@ -60,7 +60,7 @@ The server reads these environment variables (see `.env.example`):
 | `DATABASE_URL` | none (required) | PostgreSQL URL, `postgres://` or `postgresql://` |
 | `PORT` | `8080` | HTTP port |
 | `ENV` | `development` | `production` logs JSON at Info level; anything else logs text at Debug level |
-| `CORS_ALLOWED_ORIGINS` | `*` | Allowed origins, comma-separated. Required when `ENV=production` (exactly that value): absent, empty or containing `*` stops the server at startup |
+| `CORS_ALLOWED_ORIGINS` | `*` | Allowed origins, comma-separated. Each entry must be `http://` or `https://` + lowercase host (+ `:port`), with no path, trailing slash, credentials, query, fragment, default port (80 or 443) or `*.` pattern; `*` is accepted only alone. A bad entry stops the server at startup. Required when `ENV=production` (exactly that value): absent, empty or containing `*` also stops it |
 | `API_DOCS_ENABLED` | `true`, `false` when `ENV=production` | Serves the contract on `/openapi.yaml` and Swagger UI on `/docs` (loaded from a CDN) |
 
 ## Commands

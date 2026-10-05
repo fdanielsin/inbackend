@@ -17,7 +17,10 @@ Les migrations en attente sont appliquées au démarrage
 - `ENV=production` : logs JSON au niveau Info (texte au niveau Debug sinon) ;
 - `CORS_ALLOWED_ORIGINS` : lister les origines autorisées, obligatoire quand `ENV` vaut exactement
   `production` : absente, vide ou contenant `*`, le serveur refuse de démarrer (`*` par défaut
-  dans les autres cas) ;
+  dans les autres cas). Chaque origine s'écrit `https://hôte[:port]` (ou `http://`) en
+  minuscules, sans chemin, slash final, identifiants, query, fragment, port par défaut (80 pour
+  http, 443 pour https) ni motif `https://*.example.com` : rien n'est corrigé, le serveur refuse
+  de démarrer en donnant le rang de l'entrée et la raison, sans recopier la valeur ;
 - `DATABASE_URL` : URL `postgres://` ou `postgresql://` (le format `clé=valeur`
   est refusé), avec `sslmode=require` si la base l'impose.
 
