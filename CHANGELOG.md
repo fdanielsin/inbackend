@@ -10,7 +10,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
-- `CORS_ALLOWED_ORIGINS` est validée au démarrage, avant `DATABASE_URL` : chaque origine doit être `http(s)://hôte[:port]` en minuscules, le refus donne le rang de l'entrée et la raison sans recopier la valeur.
+- `CORS_ALLOWED_ORIGINS` est validée au démarrage, avant `DATABASE_URL` : chaque origine doit être `http(s)://hôte[:port]` en minuscules, le refus donne le rang de l'entrée et la raison sans recopier la valeur ([#35](https://github.com/fdanielsin/inbackend/pull/35)).
 
 ## [1.1.0] - 2026-10-04
 
