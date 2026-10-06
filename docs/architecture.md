@@ -254,8 +254,8 @@ Le code Go suit deux références, avec les écarts volontaires ci-dessous :
   externes, et non à côté du code ([ADR 0004](./decisions/0004-test-strategy.md)) ;
 - `testify` est utilisé pour les assertions (le guide Google préfère les
   comparaisons écrites dans le test) ;
-- le logger est injecté (`InitLogger` le retourne, `app.WithLogger` et les
-  constructeurs de controllers le reçoivent), mais `InitLogger` appelle aussi
+- le logger est injecté (`Init` le retourne, `app.WithLogger` et les
+  constructeurs de controllers le reçoivent), mais `Init` appelle aussi
   `slog.SetDefault` : le repli de `NewRouter` et les tests de capture de logs
   s'appuient sur `slog.Default` ;
 - le paquet `shared` (enveloppe de réponse et table des erreurs) garde son nom,

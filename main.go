@@ -28,7 +28,7 @@ import (
 var apiContract []byte
 
 func main() {
-	log := applog.InitLogger()
+	log := applog.Init()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	err := run(ctx, log)

@@ -170,14 +170,14 @@ func captureStderr(t *testing.T, fn func()) string {
 	return string(out)
 }
 
-// GIVEN ENV=production / WHEN InitLogger / THEN the logger writes JSON to stderr and becomes slog's default
-func TestInitLogger_WritesToStderrAndBecomesTheDefault(t *testing.T) {
+// GIVEN ENV=production / WHEN Init / THEN the logger writes JSON to stderr and becomes slog's default
+func TestInit_WritesToStderrAndBecomesTheDefault(t *testing.T) {
 	previous := slog.Default()
 	t.Cleanup(func() { slog.SetDefault(previous) })
 	t.Setenv("ENV", "production")
 
 	stderr := captureStderr(t, func() {
-		log := applog.InitLogger()
+		log := applog.Init()
 		assert.Same(t, log, slog.Default())
 		slog.Info("default-entry")
 	})
