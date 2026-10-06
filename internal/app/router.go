@@ -129,12 +129,23 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	return e
 }
 
+// SplitAllowedOrigins découpe CORS_ALLOWED_ORIGINS sur les virgules et retire les
+// espaces de chaque élément, vides compris : la position d'un élément est celle
+// qu'un opérateur compte dans la variable.
+func SplitAllowedOrigins(value string) []string {
+	entries := strings.Split(value, ",")
+	for i, entry := range entries {
+		entries[i] = strings.TrimSpace(entry)
+	}
+	return entries
+}
+
 // ParseAllowedOrigins lit CORS_ALLOWED_ORIGINS : origines séparées par des
 // virgules, espaces et éléments vides ignorés ; vide donne ["*"].
 func ParseAllowedOrigins(value string) []string {
 	var origins []string
-	for _, origin := range strings.Split(value, ",") {
-		if origin = strings.TrimSpace(origin); origin != "" {
+	for _, origin := range SplitAllowedOrigins(value) {
+		if origin != "" {
 			origins = append(origins, origin)
 		}
 	}

@@ -132,7 +132,9 @@ func TestStartup_RefusesMalformedCORSOrigins(t *testing.T) {
 		{"default port written", "production", "https://a.example:443", "entry 1 is not a valid origin: default port must be omitted (80 for http, 443 for https)"},
 		{"port out of range", "development", "https://a.example:65536", "entry 1 is not a valid origin: port must be a number from 1 to 65535 without leading zero"},
 		{"userinfo", "production", "https://user:secretpw@a.example", "entry 1 is not a valid origin: must not contain credentials (userinfo)"},
-		{"separators do not shift the rank of the next entry", "production", ",, https://a.example, a.example", "entry 2 is not a valid origin: must start with lowercase http:// or https://"},
+		{"empty items count in the rank", "production", ",, https://a.example, a.example", "entry 4 is not a valid origin: must start with lowercase http:// or https://"},
+		{"numeric host that is not an IPv4", "production", "https://a.example,http://010.0.0.1", "entry 2 is not a valid origin: a host whose last label is numeric must be a canonical IPv4 address (four decimal bytes from 0 to 255, no leading zero)"},
+		{"IPv4-mapped IPv6", "production", "http://[::ffff:1.2.3.4]", "entry 1 is not a valid origin: IPv4-mapped IPv6 addresses are not supported"},
 		{"any origin among others outside production", "development", "https://a.example,*", "entry 2 is not a valid origin: the wildcard * cannot be combined with other origins"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

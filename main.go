@@ -96,7 +96,7 @@ func corsOrigins(env, value string) ([]string, error) {
 	if env == "production" && slices.Contains(origins, "*") {
 		return nil, errors.New("CORS_ALLOWED_ORIGINS must list the allowed origins when ENV=production (not empty, not *)")
 	}
-	if err := app.ValidateAllowedOrigins(origins); err != nil {
+	if err := app.ValidateAllowedOrigins(app.SplitAllowedOrigins(value)); err != nil {
 		return nil, err
 	}
 	return origins, nil

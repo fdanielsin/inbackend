@@ -19,8 +19,12 @@ Les migrations en attente sont appliquées au démarrage
   `production` : absente, vide ou contenant `*`, le serveur refuse de démarrer (`*` par défaut
   dans les autres cas). Chaque origine s'écrit `https://hôte[:port]` (ou `http://`) en
   minuscules, sans chemin, slash final, identifiants, query, fragment, port par défaut (80 pour
-  http, 443 pour https) ni motif `https://*.example.com` : rien n'est corrigé, le serveur refuse
-  de démarrer en donnant le rang de l'entrée et la raison, sans recopier la valeur ;
+  http, 443 pour https) ni motif `https://*.example.com`. Un hôte dont le dernier label est
+  numérique doit être une IPv4 canonique (quatre octets décimaux de 0 à 255, sans zéro de tête :
+  `http://10.0.0.1`, pas `http://010.0.0.1`) ; une IPv6 mappée IPv4 est refusée. Rien n'est corrigé :
+  le serveur refuse de démarrer en donnant la raison et le rang de l'entrée, compté sur les positions
+  séparées par des virgules, éléments vides compris (`,, https://a.example, a.example` échoue à
+  l'entrée 4), sans recopier la valeur ;
 - `DATABASE_URL` : URL `postgres://` ou `postgresql://` (le format `clé=valeur`
   est refusé), avec `sslmode=require` si la base l'impose.
 

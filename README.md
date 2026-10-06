@@ -60,7 +60,7 @@ The server reads these environment variables (see `.env.example`):
 | `DATABASE_URL` | none (required) | PostgreSQL URL, `postgres://` or `postgresql://` |
 | `PORT` | `8080` | HTTP port |
 | `ENV` | `development` | `production` logs JSON at Info level; anything else logs text at Debug level |
-| `CORS_ALLOWED_ORIGINS` | `*` | Allowed origins, comma-separated. Each entry must be `http://` or `https://` + lowercase host (+ `:port`), with no path, trailing slash, credentials, query, fragment, default port (80 or 443) or `*.` pattern; `*` is accepted only alone. A bad entry stops the server at startup. Required when `ENV=production` (exactly that value): absent, empty or containing `*` also stops it |
+| `CORS_ALLOWED_ORIGINS` | `*` | Allowed origins, comma-separated. Each entry must be `http://` or `https://` + lowercase host (+ `:port`), with no path, trailing slash, credentials, query, fragment, default port (80 or 443) or `*.` pattern; a host ending in a number must be a canonical IPv4 address (`http://10.0.0.1`), and IPv4-mapped IPv6 (`[::ffff:1.2.3.4]`) is refused; `*` is accepted only alone. A bad entry stops the server at startup, and the error gives its rank counted over the comma-separated positions, empty ones included (`,, https://a.example, a.example` fails at entry 4). Required when `ENV=production` (exactly that value): absent, empty or containing `*` also stops it |
 | `API_DOCS_ENABLED` | `true`, `false` when `ENV=production` | Serves the contract on `/openapi.yaml` and Swagger UI on `/docs` (loaded from a CDN) |
 
 ## Commands

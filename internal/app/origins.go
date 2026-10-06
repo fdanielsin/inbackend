@@ -20,6 +20,8 @@ var (
 	errOriginHostEmpty     = errors.New("host is missing")
 	errOriginHostPattern   = errors.New("wildcard host patterns are not supported: list each origin")
 	errOriginHostInvalid   = errors.New("host is not a valid lowercase ASCII host name or bracketed IP address")
+	errOriginHostNumeric   = errors.New("a host whose last label is numeric must be a canonical IPv4 address (four decimal bytes from 0 to 255, no leading zero)")
+	errOriginIPv6Mapped    = errors.New("IPv4-mapped IPv6 addresses are not supported")
 	errOriginPortInvalid   = errors.New("port must be a number from 1 to 65535 without leading zero")
 	errOriginPortDefault   = errors.New("default port must be omitted (80 for http, 443 for https)")
 )
@@ -33,14 +35,16 @@ const (
 // ValidateAllowedOrigins vérifie chaque origine de CORS_ALLOWED_ORIGINS sans la
 // corriger. Une origine est « http|https://hôte[:port] » : minuscules, sans
 // chemin, slash final, userinfo, query ni fragment ; le port va de 1 à 65535, sans
-// zéro de tête ni port par défaut. "*" n'est accepté que seul. L'erreur donne le
-// rang (à partir de 1) de l'origine fautive dans la liste et la raison, jamais sa valeur.
-func ValidateAllowedOrigins(origins []string) error {
-	if i := slices.Index(origins, "*"); i >= 0 && len(origins) > 1 {
+// zéro de tête ni port par défaut. "*" n'est accepté que seul. Les éléments vides
+// sont ignorés mais comptés : l'erreur donne le rang (à partir de 1) de l'élément
+// fautif tel qu'un opérateur le compte dans la variable (voir SplitAllowedOrigins), et la
+// raison, jamais sa valeur.
+func ValidateAllowedOrigins(entries []string) error {
+	if i := slices.Index(entries, "*"); i >= 0 && countNonEmpty(entries) > 1 {
 		return fmt.Errorf("CORS_ALLOWED_ORIGINS entry %d is not a valid origin: %w", i+1, errOriginMixedWildcard)
 	}
-	for i, origin := range origins {
-		if origin == "*" {
+	for i, origin := range entries {
+		if origin == "" || origin == "*" {
 			continue
 		}
 		if err := validateOrigin(origin); err != nil {
@@ -48,6 +52,16 @@ func ValidateAllowedOrigins(origins []string) error {
 		}
 	}
 	return nil
+}
+
+func countNonEmpty(entries []string) int {
+	count := 0
+	for _, entry := range entries {
+		if entry != "" {
+			count++
+		}
+	}
+	return count
 }
 
 func validateOrigin(origin string) error {
@@ -110,12 +124,54 @@ func validateHost(host string) error {
 	case len(host) > maxHostLength:
 		return errOriginHostInvalid
 	}
-	for label := range strings.SplitSeq(host, ".") {
+	labels := strings.Split(host, ".")
+	for _, label := range labels {
 		if !validLabel(label) {
 			return errOriginHostInvalid
 		}
 	}
+	if endsInANumber(labels[len(labels)-1]) && !isCanonicalIPv4(labels) {
+		return errOriginHostNumeric
+	}
 	return nil
+}
+
+// endsInANumber suit le « ends in a number checker » de WHATWG URL
+// (https://url.spec.whatwg.org/#ends-in-a-number-checker) : un hôte dont le dernier
+// label est fait de chiffres, ou de « 0x » suivi de chiffres hexadécimaux, est lu par
+// le navigateur comme une IPv4 qu'il réécrit ou refuse (host parser,
+// https://url.spec.whatwg.org/#concept-host-parser), jamais comme un nom.
+func endsInANumber(lastLabel string) bool {
+	if allIn(lastLabel, "0123456789") {
+		return true
+	}
+	hex, isHex := strings.CutPrefix(lastLabel, "0x")
+	return isHex && allIn(hex, "0123456789abcdef")
+}
+
+// isCanonicalIPv4 : quatre octets décimaux de 0 à 255, sans zéro de tête.
+func isCanonicalIPv4(labels []string) bool {
+	if len(labels) != 4 {
+		return false
+	}
+	for _, label := range labels {
+		if label == "" || !allIn(label, "0123456789") || (len(label) > 1 && label[0] == '0') {
+			return false
+		}
+		if value, err := strconv.Atoi(label); err != nil || value > 255 {
+			return false
+		}
+	}
+	return true
+}
+
+func allIn(value, alphabet string) bool {
+	for _, r := range value {
+		if !strings.ContainsRune(alphabet, r) {
+			return false
+		}
+	}
+	return true
 }
 
 // validateIPv6 exige la forme canonique entre crochets, celle que le navigateur envoie.
@@ -125,7 +181,13 @@ func validateIPv6(host string) error {
 	}
 	inner := host[1 : len(host)-1]
 	addr, err := netip.ParseAddr(inner)
-	if err != nil || !addr.Is6() || addr.Zone() != "" || addr.String() != inner {
+	if err != nil || !addr.Is6() || addr.Zone() != "" {
+		return errOriginHostInvalid
+	}
+	if addr.Is4In6() {
+		return errOriginIPv6Mapped
+	}
+	if addr.String() != inner {
 		return errOriginHostInvalid
 	}
 	return nil

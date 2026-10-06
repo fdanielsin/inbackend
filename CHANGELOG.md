@@ -6,7 +6,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 > **À vérifier avant de mettre à jour (de 1.1.0 vers la prochaine version).**
 >
-> - `CORS_ALLOWED_ORIGINS` : une origine mal formée empêche le démarrage (chemin, slash final, majuscules, port par défaut, motif `https://*.example.com`, `*` mêlé à d'autres origines) ; vérifier chaque entrée avant de déployer.
+> - `CORS_ALLOWED_ORIGINS` : une origine mal formée empêche le démarrage (chemin, slash final, majuscules, port par défaut, motif `https://*.example.com`, hôte numérique qui n'est pas une IPv4 canonique, IPv6 mappée IPv4, `*` mêlé à d'autres origines) ; vérifier chaque entrée avant de déployer.
 
 ### Changed
 

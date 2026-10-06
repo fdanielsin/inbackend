@@ -23,6 +23,8 @@ const (
 	reasonHost     = "host is not a valid lowercase ASCII host name or bracketed IP address"
 	reasonPort     = "port must be a number from 1 to 65535 without leading zero"
 	reasonDefault  = "default port must be omitted (80 for http, 443 for https)"
+	reasonNumeric  = "a host whose last label is numeric must be a canonical IPv4 address (four decimal bytes from 0 to 255, no leading zero)"
+	reasonMapped   = "IPv4-mapped IPv6 addresses are not supported"
 	reasonMixed    = "the wildcard * cannot be combined with other origins"
 )
 
@@ -41,6 +43,12 @@ func TestValidateAllowedOrigins_AcceptsWellFormedOrigins(t *testing.T) {
 		"http://localhost:5173",
 		"https://localhost",
 		"http://127.0.0.1:8080",
+		"http://0.0.0.0",           // 0 alone is canonical
+		"http://255.255.255.255",   // highest byte
+		"https://10.20.30.40:8443", // IPv4 with a port
+		"http://1.2.3.4a",          // last label not numeric: a name, not an IPv4
+		"https://123abc",
+		"https://example.0xg", // "0x" followed by a non-hexadecimal digit is not a number
 		"http://[::1]:3000",
 		"https://[2001:db8::1]",
 		"https://a",
@@ -103,6 +111,19 @@ func TestValidateAllowedOrigins_RefusesMalformedOrigins(t *testing.T) {
 		{"IPv4 in brackets", "http://[127.0.0.1]", reasonHost},
 		{"IPv6 unclosed", "http://[::1", reasonHost},
 		{"IPv6 followed by junk", "http://[::1]x", reasonHost},
+		{"IPv4 with three bytes", "http://1.2.3", reasonNumeric},
+		{"IPv4 with five bytes", "http://1.2.3.4.5", reasonNumeric},
+		{"IPv4 with leading zero (octal for a browser)", "http://010.0.0.1", reasonNumeric},
+		{"IPv4 with a lone leading zero pair", "http://1.2.3.00", reasonNumeric},
+		{"IPv4 in hexadecimal", "http://0x7f.0.0.1", reasonNumeric},
+		{"IPv4 byte above 255", "http://999.1.1.1", reasonNumeric},
+		{"IPv4 byte 256", "http://1.2.3.256", reasonNumeric},
+		{"name ending in a number", "https://example.123", reasonNumeric},
+		{"host made of digits", "https://123", reasonNumeric},
+		{"name ending in 0x", "https://example.0x", reasonNumeric},
+		{"name ending in hexadecimal", "https://example.0x1f", reasonNumeric},
+		{"IPv4-mapped IPv6 as Go writes it", "http://[::ffff:1.2.3.4]", reasonMapped},
+		{"IPv4-mapped IPv6 as a browser writes it", "http://[::ffff:102:304]", reasonMapped},
 		{"wildcard subdomain", "https://*.example.com", reasonPattern},
 		{"wildcard host", "https://*", reasonPattern},
 		{"wildcard in middle", "https://app.*.com", reasonPattern},
@@ -129,6 +150,19 @@ func TestValidateAllowedOrigins_RefusesMalformedOrigins(t *testing.T) {
 			assert.NotContains(t, err.Error(), tc.origin, "the value received is not echoed")
 		})
 	}
+}
+
+// GIVEN empty items between commas / WHEN validated / THEN they are ignored but counted in the rank,
+// as an operator counts the comma-separated positions of the variable
+func TestValidateAllowedOrigins_RankCountsEveryCommaSeparatedPosition(t *testing.T) {
+	entries := app.SplitAllowedOrigins(",, https://a.example, a.example")
+
+	require.Equal(t, []string{"", "", "https://a.example", "a.example"}, entries)
+	require.EqualError(t, app.ValidateAllowedOrigins(entries), refusal("4", reasonScheme))
+	require.EqualError(t, app.ValidateAllowedOrigins(app.SplitAllowedOrigins(" , https://a.example/")), refusal("2", reasonPath))
+	require.EqualError(t, app.ValidateAllowedOrigins(app.SplitAllowedOrigins(",https://a.example,*")), refusal("3", reasonMixed))
+	require.NoError(t, app.ValidateAllowedOrigins(app.SplitAllowedOrigins(",,")), "nothing to refuse")
+	require.NoError(t, app.ValidateAllowedOrigins(app.SplitAllowedOrigins(" , * ,")), "a sole wildcard among separators")
 }
 
 // GIVEN several faulty origins / WHEN validated / THEN the first one is reported, with its rank in the list
