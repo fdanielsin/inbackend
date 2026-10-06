@@ -42,7 +42,7 @@ func (hc *HealthController) HealthCheck(c *echo.Context) error {
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(map[string]any{
 		"status":  "ok",
-		"version": "1.1.0",
+		"version": "1.2.0",
 		"id":      uuid.New().String(),
 	}, shared.Message(requestLanguage(c), shared.MsgServiceHealthy)))
 }
