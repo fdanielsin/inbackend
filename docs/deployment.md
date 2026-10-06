@@ -151,9 +151,9 @@ sur le commit poussé. Activation, une fois par clone :
 `git config core.hooksPath .githooks`.
 
 ```bash
-git tag v1.1.0 <sha>                                   # tag sur le commit de la release
-RELEASE_TAG=v1.1.0 git push origin <sha>:refs/heads/main
-git push origin v1.1.0                                 # la CI publie l'image v1.1.0
+git tag v1.2.0 <sha>                                   # tag sur le commit de la release
+RELEASE_TAG=v1.2.0 git push origin <sha>:refs/heads/main
+git push origin v1.2.0                                 # la CI publie l'image v1.2.0
 ```
 
 Limites : le hook est local, s'active à la main et se contourne avec
@@ -162,7 +162,7 @@ n'est pas protégée côté GitHub). La règle d'équipe reste : `main` ne chang
 par une PR de release `develop` vers `main`, CI verte.
 
 Un tag `v*` lance toute la CI puis `publish-image` : l'image reçoit les tags sha
-complet et `v1.1.0` (pas `develop`). Le push de `main` lance la CI sans rien
+complet et `v1.2.0` (pas `develop`). Le push de `main` lance la CI sans rien
 publier. Aligner la date de la section du CHANGELOG, `info.version` du contrat et
 la `version` de `GET /health` sur le tag avant de le poser.
 

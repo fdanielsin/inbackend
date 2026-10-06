@@ -4,12 +4,15 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
-> **À vérifier avant de mettre à jour (de 1.1.0 vers la prochaine version).**
+## [1.2.0] - 2026-10-06
+
+> **À vérifier avant de mettre à jour (de 1.1.0 vers 1.2.0).**
 >
-> - `CORS_ALLOWED_ORIGINS` : une origine mal formée empêche le démarrage (chemin, slash final, majuscules, port par défaut, motif `https://*.example.com`, hôte numérique qui n'est pas une IPv4 canonique, IPv6 mappée IPv4, `*` mêlé à d'autres origines) ; vérifier chaque entrée avant de déployer.
+> - `CORS_ALLOWED_ORIGINS` : une origine mal formée empêche le démarrage, avec le rang de l'entrée et la raison dans l'erreur (schéma autre que `http://` ou `https://`, identifiants, chemin, slash final, query, fragment, majuscules, port par défaut, motif `https://*.example.com`, hôte numérique qui n'est pas une IPv4 canonique, IPv6 mappée IPv4, `*` mêlé à d'autres origines) ; vérifier chaque entrée avant de déployer.
 
 ### Changed
 
+- `GET /health` renvoie `version` 1.2.0 et le contrat déclare `info.version` 1.2.0.
 - `CORS_ALLOWED_ORIGINS` est validée au démarrage, avant `DATABASE_URL` : chaque origine doit être `http(s)://hôte[:port]` en minuscules, le refus donne le rang de l'entrée et la raison sans recopier la valeur ([#35](https://github.com/fdanielsin/inbackend/pull/35)).
 
 ## [1.1.0] - 2026-10-04
@@ -118,6 +121,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 - Endpoint de statistiques agrégées.
 
-[Unreleased]: https://github.com/fdanielsin/inbackend/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/fdanielsin/inbackend/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/fdanielsin/inbackend/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/fdanielsin/inbackend/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/fdanielsin/inbackend/releases/tag/v1.0.0

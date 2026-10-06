@@ -53,7 +53,7 @@
 
 Le détail des identifiants et le plan complet (lots frontend et QA compris) sont
 dans `docs/roadmap.md` à la racine du workspace. Ici, l'état du backend à la
-release 1.1.0 (voir le [CHANGELOG](../CHANGELOG.md)) :
+release 1.2.0 (voir le [CHANGELOG](../CHANGELOG.md)) :
 
 - **Fait et mergé dans `develop`** : CI verte (lot 0) ; `Q-01` (mise à jour
   partielle d'une tâche) ; `B-03` et `B-04` (409 `EMAIL_TAKEN`, 404
@@ -64,7 +64,8 @@ release 1.1.0 (voir le [CHANGELOG](../CHANGELOG.md)) :
   `Q-03` (Docker et compose).
 - **Fait hors audit** : sondes `/health` et `/ready`, logs `slog` seul, messages
   français et anglais, contrat et Swagger UI servis par l'API, corps de requête
-  validés, CORS obligatoire en production, paquets renommés (ADR 0008), lint
+  validés, CORS obligatoire en production avec origines validées, paquets
+  renommés (ADR 0008), lint
   strict, image publiée sur GHCR, hook pre-push qui protège `main`.
 - **À faire ou à décider** : `B-07` (pagination de `ListUsers` et
   `ListUserTasks`, décision de contrat ouverte) ; `Q-13` ; lot 8 des
