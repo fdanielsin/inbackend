@@ -105,6 +105,14 @@ répond. Pour figer le contrat, tirer le tag sha : `develop` change à chaque pu
   Si le paquet est un jour recréé autrement, redonner ce rôle au dépôt dans les
   réglages du paquet.
 
+### Déclencheurs de la CI
+
+La CI se lance sur les push de `main` et `develop`, sur les tags `v*`, sur les pull
+requests vers `main` ou `develop` et à la main (`workflow_dispatch`). Une branche de
+travail (`feature/`, `bugfix/`, `hotfix/`, `release/`, `chore/`) n'a aucun run au
+push : elle est testée par sa pull request, sinon chaque push et sa PR lanceraient
+chacun la CI complète. Une branche sans PR n'a donc pas de CI.
+
 ### Ordre des publications
 
 Le workflow porte `concurrency: group <workflow>-<ref>, cancel-in-progress: true` :
