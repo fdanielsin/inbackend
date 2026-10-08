@@ -4,6 +4,10 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- La CI ne se lance plus au push des branches de travail mais sur leur pull request, ce qui évite les runs en double ([#39](https://github.com/fdanielsin/inbackend/pull/39)).
+
 ## [1.2.0] - 2026-10-06
 
 > **À vérifier avant de mettre à jour (de 1.1.0 vers 1.2.0).**
