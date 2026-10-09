@@ -2,7 +2,10 @@ package persistence
 
 import (
 	"context"
+	"strings"
+	"sync"
 	"testing"
+	"time"
 
 	"github.com/fdanielsin/inbackend/internal/domain/tasks"
 	"github.com/fdanielsin/inbackend/internal/domain/users"
@@ -10,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 // createTestUser persists a real user so that task fixtures reference an existing owner.
@@ -136,8 +140,10 @@ func TestTaskRepository_ListByUserID_FiltersOnCompleted(t *testing.T) {
 	second := createTestTask(t, repo, aliceID, "Task 2")
 	third := createTestTask(t, repo, aliceID, "Task 3")
 	bobTask := createTestTask(t, repo, bobID, "Bob task")
-	completeTestTask(t, repo, first)
+	// The highest id is completed first (an UPDATE writes a new row version further in the heap):
+	// the rows are no longer stored in id order, so only an ORDER BY applied with the filter too sorts them.
 	completeTestTask(t, repo, third)
+	completeTestTask(t, repo, first)
 	completeTestTask(t, repo, bobTask)
 	yes, no := true, false
 
@@ -193,6 +199,64 @@ func TestTaskRepository_ListByUserID_FilterBoundaries(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotNil(t, listed)
 			assert.Equal(t, tc.want, taskIDs(listed))
+		})
+	}
+}
+
+// sqlRecorder is a GORM logger that keeps the SQL of every statement it traces.
+type sqlRecorder struct {
+	mu         sync.Mutex
+	statements []string
+}
+
+func (r *sqlRecorder) LogMode(logger.LogLevel) logger.Interface { return r }
+func (r *sqlRecorder) Info(context.Context, string, ...any)     {}
+func (r *sqlRecorder) Warn(context.Context, string, ...any)     {}
+func (r *sqlRecorder) Error(context.Context, string, ...any)    {}
+func (r *sqlRecorder) Trace(_ context.Context, _ time.Time, fc func() (string, int64), _ error) {
+	sql, _ := fc()
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.statements = append(r.statements, sql)
+}
+
+// GIVEN a listing with each value of the completed filter
+// WHEN ListByUserID runs / THEN the SQL always orders by ascending id and filters only when asked.
+// The order cannot be proved from the rows alone: the planner may hand them back by id
+// even without ORDER BY (HOT updates keep the index entries in id order), so the statement is checked.
+func TestTaskRepository_ListByUserID_AlwaysOrdersByID(t *testing.T) {
+	db := setupTestDB(t)
+	recorder := &sqlRecorder{}
+	repo := pgstore.NewTaskRepository(db.Session(&gorm.Session{Logger: recorder}))
+	ownerID := createTestUser(t, db, "owner@example.com")
+	createTestTask(t, repo, ownerID, "Task 1")
+	yes, no := true, false
+
+	for name, tc := range map[string]struct {
+		filter    tasks.ListFilter
+		condition string
+	}{
+		"no filter":     {tasks.ListFilter{}, ""},
+		"completed":     {tasks.ListFilter{Completed: &yes}, "completed = true"},
+		"not completed": {tasks.ListFilter{Completed: &no}, "completed = false"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			recorder.mu.Lock()
+			recorder.statements = nil
+			recorder.mu.Unlock()
+
+			_, err := repo.ListByUserID(context.Background(), ownerID, tc.filter)
+
+			require.NoError(t, err)
+			recorder.mu.Lock()
+			defer recorder.mu.Unlock()
+			require.Len(t, recorder.statements, 1)
+			assert.Contains(t, recorder.statements[0], "ORDER BY id ASC")
+			if tc.condition == "" {
+				assert.NotContains(t, recorder.statements[0], "completed")
+			} else {
+				assert.Contains(t, strings.ToLower(recorder.statements[0]), tc.condition)
+			}
 		})
 	}
 }
