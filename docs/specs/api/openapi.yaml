@@ -787,7 +787,9 @@ components:
 
             - aucun espace ni caractère de contrôle ;
             - un seul `@` ;
-            - partie locale de 1 à 64 caractères ;
+            - partie locale de 1 à 64 caractères, sans point au début ni à la
+              fin et sans deux points consécutifs (`.q@b.co`, `q.@b.co` et
+              `q..x@b.co` sont refusés, `q.x@b.co` accepté) ;
             - domaine d'au moins deux labels séparés par des points ;
             - chaque label fait de 1 à 63 caractères : lettres (Unicode
               admis, `\p{L}`), signes combinants (`\p{M}`, pour les alphabets

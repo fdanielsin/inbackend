@@ -47,18 +47,18 @@ const (
 	punycodePrefix          = "xn--"
 )
 
-// hasValidEmailFormat vérifie un seul « @ », une partie locale de 1 à 64
-// caractères, un domaine d'au moins deux labels valides et un TLD valide, sans
-// espace ni caractère de contrôle ; ce n'est pas une validation RFC 5322.
+// hasValidEmailFormat vérifie un seul « @ », une partie locale valide, un
+// domaine d'au moins deux labels valides et un TLD valide, sans espace ni
+// caractère de contrôle ; ce n'est pas une validation RFC 5322.
 func hasValidEmailFormat(email string) bool {
 	if strings.IndexFunc(email, func(r rune) bool { return unicode.IsSpace(r) || unicode.IsControl(r) }) >= 0 {
 		return false
 	}
 	local, domain, found := strings.Cut(email, "@")
-	if !found || strings.Contains(domain, "@") {
+	if !found {
 		return false
 	}
-	if localLength := utf8.RuneCountInString(local); localLength < 1 || localLength > maxEmailLocalPartLength {
+	if !isValidLocalPart(local) {
 		return false
 	}
 	labels := strings.Split(domain, ".")
@@ -71,6 +71,15 @@ func hasValidEmailFormat(email string) bool {
 		}
 	}
 	return isValidTLD(labels[len(labels)-1])
+}
+
+// isValidLocalPart : 1 à 64 caractères, sans point au début ni à la fin et sans
+// deux points consécutifs (dot-atom de la RFC 5322).
+func isValidLocalPart(local string) bool {
+	if length := utf8.RuneCountInString(local); length < 1 || length > maxEmailLocalPartLength {
+		return false
+	}
+	return !strings.HasPrefix(local, ".") && !strings.HasSuffix(local, ".") && !strings.Contains(local, "..")
 }
 
 // isValidDomainLabel : 1 à 63 caractères, lettres Unicode, signes combinants,

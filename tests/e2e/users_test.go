@@ -36,23 +36,26 @@ func TestCreateUser_RejectsInvalidPayloads(t *testing.T) {
 		code    string
 		message string
 	}{
-		"empty name":           {`{"name":"","email":"john@example.com"}`, "VALIDATION_FAILED", "User name cannot be empty"},
-		"empty email":          {`{"name":"John","email":""}`, "VALIDATION_FAILED", "User email cannot be empty"},
-		"email of spaces only": {`{"name":"John","email":"   "}`, "VALIDATION_FAILED", "User email cannot be empty"},
-		"email without @":      {`{"name":"John","email":"john.example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"email with two @":     {`{"name":"John","email":"john@@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"email without local":  {`{"name":"John","email":"@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"email without domain": {`{"name":"John","email":"john@"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"domain without a dot": {`{"name":"John","email":"john@localhost"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"TLD of one letter":    {`{"name":"John","email":"john@example.c"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"underscore in domain": {`{"name":"John","email":"john@exa_mple.com"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"hyphen at label edge": {`{"name":"John","email":"john@-example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"local part of 65":     {`{"name":"John","email":"` + strings.Repeat("a", 65) + `@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"label of 64":          {`{"name":"John","email":"john@` + strings.Repeat("b", 64) + `.com"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"TLD of 25 letters":    {`{"name":"John","email":"john@example.` + strings.Repeat("c", 25) + `"}`, "VALIDATION_FAILED", "User email is invalid"},
-		"empty object":         {`{}`, "VALIDATION_FAILED", "User name cannot be empty"},
-		"malformed JSON":       {`{"name":"John",`, "INVALID_BODY", "Invalid request body"},
-		"wrong type":           {`{"name":1,"email":"john@example.com"}`, "INVALID_BODY", "Invalid request body"},
+		"empty name":            {`{"name":"","email":"john@example.com"}`, "VALIDATION_FAILED", "User name cannot be empty"},
+		"empty email":           {`{"name":"John","email":""}`, "VALIDATION_FAILED", "User email cannot be empty"},
+		"email of spaces only":  {`{"name":"John","email":"   "}`, "VALIDATION_FAILED", "User email cannot be empty"},
+		"email without @":       {`{"name":"John","email":"john.example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"email with two @":      {`{"name":"John","email":"john@@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"email without local":   {`{"name":"John","email":"@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"email without domain":  {`{"name":"John","email":"john@"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"domain without a dot":  {`{"name":"John","email":"john@localhost"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"leading dot in local":  {`{"name":"John","email":".q@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"trailing dot in local": {`{"name":"John","email":"q.@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"double dot in local":   {`{"name":"John","email":"q..x@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"TLD of one letter":     {`{"name":"John","email":"john@example.c"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"underscore in domain":  {`{"name":"John","email":"john@exa_mple.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"hyphen at label edge":  {`{"name":"John","email":"john@-example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"local part of 65":      {`{"name":"John","email":"` + strings.Repeat("a", 65) + `@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"label of 64":           {`{"name":"John","email":"john@` + strings.Repeat("b", 64) + `.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"TLD of 25 letters":     {`{"name":"John","email":"john@example.` + strings.Repeat("c", 25) + `"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"empty object":          {`{}`, "VALIDATION_FAILED", "User name cannot be empty"},
+		"malformed JSON":        {`{"name":"John",`, "INVALID_BODY", "Invalid request body"},
+		"wrong type":            {`{"name":1,"email":"john@example.com"}`, "INVALID_BODY", "Invalid request body"},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -81,6 +84,7 @@ func TestCreateUser_AcceptsEmailsAtTheLimits(t *testing.T) {
 		"john@example." + strings.Repeat("c", 24),
 		"ivan@пример.рф",
 		"john@example.xn--p1ai",
+		"q.x@example.com",
 	} {
 		t.Run(email[:min(len(email), 20)], func(t *testing.T) {
 			s := newTestServer(t)
