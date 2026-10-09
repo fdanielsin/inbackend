@@ -2,6 +2,12 @@ package tasks
 
 import "context"
 
+// ListFilter restreint ListByUserID ; son zéro ne filtre rien.
+type ListFilter struct {
+	// Completed ne garde que les tâches terminées (true) ou non terminées (false) ; nil : toutes.
+	Completed *bool
+}
+
 // Repository définit le contrat pour l'accès aux données Task.
 // L'implémentation concrète (PostgreSQL/GORM) est en infrastructure.
 type Repository interface {
@@ -11,8 +17,8 @@ type Repository interface {
 	// GetByID récupère une tâche par son ID.
 	GetByID(ctx context.Context, id uint) (*Task, error)
 
-	// ListByUserID récupère toutes les tâches d'un utilisateur.
-	ListByUserID(ctx context.Context, userID uint) ([]*Task, error)
+	// ListByUserID récupère les tâches d'un utilisateur, par id croissant, selon le filtre.
+	ListByUserID(ctx context.Context, userID uint, filter ListFilter) ([]*Task, error)
 
 	// Update met à jour une tâche existante.
 	Update(ctx context.Context, task *Task) error

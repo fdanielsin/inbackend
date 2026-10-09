@@ -4,6 +4,10 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+
+- `GET /api/v1/users/{id}/tasks?completed=true|false` ne garde que les tâches terminées ou non ; sans paramètre, toutes ; toute autre valeur donne 400 `VALIDATION_FAILED`.
+
 ### Changed
 
 - Création d'utilisateur : e-mail refusé (400 `VALIDATION_FAILED`) si la partie locale dépasse 64 caractères, commence ou finit par un point ou contient `..`, si un label dépasse 63, s'il contient `_` ou un tiret au bord, ou si le TLD n'a pas 2 à 24 lettres (ou la forme `xn--`) ; `a@b.c` n'est plus accepté. Les utilisateurs existants ne changent pas.

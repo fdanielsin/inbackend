@@ -70,7 +70,7 @@ func TestTaskRepository_ListByUserID_HappyPath(t *testing.T) {
 	createTestTask(t, repo, bobID, "Task 3")
 
 	// THEN: List only Alice's tasks
-	aliceTasks, err := repo.ListByUserID(context.Background(), aliceID)
+	aliceTasks, err := repo.ListByUserID(context.Background(), aliceID, tasks.ListFilter{})
 	require.NoError(t, err)
 	require.Len(t, aliceTasks, 2)
 	assert.Equal(t, "Task 1", aliceTasks[0].Title)
@@ -96,7 +96,7 @@ func TestTaskRepository_ListByUserID_OrderedByIDAfterUpdate(t *testing.T) {
 	stored.Title = "Task 1 edited"
 	require.NoError(t, repo.Update(ctx, stored))
 
-	listed, err := repo.ListByUserID(ctx, ownerID)
+	listed, err := repo.ListByUserID(ctx, ownerID, tasks.ListFilter{})
 
 	require.NoError(t, err)
 	ids := make([]uint, len(listed))
@@ -104,4 +104,95 @@ func TestTaskRepository_ListByUserID_OrderedByIDAfterUpdate(t *testing.T) {
 		ids[i] = tk.ID
 	}
 	assert.Equal(t, []uint{first, second, third}, ids, "tasks must be ordered by id")
+}
+
+// completeTestTask marks a stored task as completed.
+func completeTestTask(t *testing.T, repo *pgstore.TaskRepository, id uint) {
+	t.Helper()
+	stored, err := repo.GetByID(context.Background(), id)
+	require.NoError(t, err)
+	stored.Completed = true
+	require.NoError(t, repo.Update(context.Background(), stored))
+}
+
+func taskIDs(listed []*tasks.Task) []uint {
+	ids := make([]uint, len(listed))
+	for i, task := range listed {
+		ids[i] = task.ID
+	}
+	return ids
+}
+
+// GIVEN a user with completed and pending tasks, and another user with both
+// WHEN ListByUserID with no filter, true and false
+// THEN all, only the completed, only the pending tasks of that user, each by ascending id
+func TestTaskRepository_ListByUserID_FiltersOnCompleted(t *testing.T) {
+	ctx := context.Background()
+	db := setupTestDB(t)
+	repo := pgstore.NewTaskRepository(db)
+	aliceID := createTestUser(t, db, "alice@example.com")
+	bobID := createTestUser(t, db, "bob@example.com")
+	first := createTestTask(t, repo, aliceID, "Task 1")
+	second := createTestTask(t, repo, aliceID, "Task 2")
+	third := createTestTask(t, repo, aliceID, "Task 3")
+	bobTask := createTestTask(t, repo, bobID, "Bob task")
+	completeTestTask(t, repo, first)
+	completeTestTask(t, repo, third)
+	completeTestTask(t, repo, bobTask)
+	yes, no := true, false
+
+	for name, tc := range map[string]struct {
+		filter tasks.ListFilter
+		want   []uint
+	}{
+		"no filter":     {tasks.ListFilter{}, []uint{first, second, third}},
+		"completed":     {tasks.ListFilter{Completed: &yes}, []uint{first, third}},
+		"not completed": {tasks.ListFilter{Completed: &no}, []uint{second}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			listed, err := repo.ListByUserID(ctx, aliceID, tc.filter)
+
+			require.NoError(t, err)
+			assert.Equal(t, tc.want, taskIDs(listed))
+			for _, task := range listed {
+				assert.Equal(t, aliceID, task.UserID)
+			}
+		})
+	}
+}
+
+// GIVEN a user whose tasks are all completed, or all pending, or who has none
+// WHEN ListByUserID with each filter / THEN the matching set, or an empty non-nil slice
+func TestTaskRepository_ListByUserID_FilterBoundaries(t *testing.T) {
+	ctx := context.Background()
+	db := setupTestDB(t)
+	repo := pgstore.NewTaskRepository(db)
+	doneUserID := createTestUser(t, db, "done@example.com")
+	pendingUserID := createTestUser(t, db, "pending@example.com")
+	idleUserID := createTestUser(t, db, "idle@example.com")
+	doneTask := createTestTask(t, repo, doneUserID, "Done")
+	completeTestTask(t, repo, doneTask)
+	pendingTask := createTestTask(t, repo, pendingUserID, "Pending")
+	yes, no := true, false
+
+	for name, tc := range map[string]struct {
+		userID uint
+		filter tasks.ListFilter
+		want   []uint
+	}{
+		"all completed, completed":     {doneUserID, tasks.ListFilter{Completed: &yes}, []uint{doneTask}},
+		"all completed, not completed": {doneUserID, tasks.ListFilter{Completed: &no}, []uint{}},
+		"all pending, completed":       {pendingUserID, tasks.ListFilter{Completed: &yes}, []uint{}},
+		"all pending, not completed":   {pendingUserID, tasks.ListFilter{Completed: &no}, []uint{pendingTask}},
+		"no task, completed":           {idleUserID, tasks.ListFilter{Completed: &yes}, []uint{}},
+		"no task, not completed":       {idleUserID, tasks.ListFilter{Completed: &no}, []uint{}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			listed, err := repo.ListByUserID(ctx, tc.userID, tc.filter)
+
+			require.NoError(t, err)
+			assert.NotNil(t, listed)
+			assert.Equal(t, tc.want, taskIDs(listed))
+		})
+	}
 }

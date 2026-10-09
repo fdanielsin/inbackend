@@ -66,6 +66,13 @@ func respondInvalidID(c *echo.Context, log *slog.Logger, key shared.MessageKey, 
 	return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.CodeInvalidID, shared.Message(requestLanguage(c), key)))
 }
 
+// respondInvalidCompletedFilter répond 400 quand le paramètre « completed » n'est ni « true » ni « false ».
+// La valeur reçue n'est pas journalisée.
+func respondInvalidCompletedFilter(c *echo.Context, log *slog.Logger) error {
+	log.Warn("Invalid completed filter", slog.String("error_code", shared.CodeValidationFailed))
+	return c.JSON(http.StatusBadRequest, shared.ErrorResponse(shared.CodeValidationFailed, shared.Message(requestLanguage(c), shared.MsgTaskCompletedFilter)))
+}
+
 // NewErrorHandler renvoie le HTTPErrorHandler d'Echo : les erreurs qu'Echo
 // produit lui-même (route inconnue, méthode non supportée, corps trop gros,
 // panique récupérée) sortent dans la même enveloppe que celles des controllers.

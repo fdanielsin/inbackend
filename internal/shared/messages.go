@@ -33,6 +33,7 @@ const (
 	MsgPayloadTooLarge        MessageKey = "PayloadTooLarge"
 	MsgInvalidUserID          MessageKey = "InvalidUserID"
 	MsgInvalidTaskID          MessageKey = "InvalidTaskID"
+	MsgTaskCompletedFilter    MessageKey = "TaskCompletedFilter"
 	MsgRouteNotFound          MessageKey = "RouteNotFound"
 	MsgMethodNotAllowed       MessageKey = "MethodNotAllowed"
 	MsgInvalidRequest         MessageKey = "InvalidRequest"
@@ -65,6 +66,7 @@ var catalog = map[MessageKey]map[Lang]string{
 	MsgPayloadTooLarge:        {LangEnglish: "Request body too large", LangFrench: "Corps de requête trop volumineux"},
 	MsgInvalidUserID:          {LangEnglish: "Invalid user ID", LangFrench: "Identifiant d'utilisateur invalide"},
 	MsgInvalidTaskID:          {LangEnglish: "Invalid task ID", LangFrench: "Identifiant de tâche invalide"},
+	MsgTaskCompletedFilter:    {LangEnglish: "Query parameter completed must be true or false", LangFrench: "Le paramètre de requête completed doit valoir true ou false"},
 	MsgRouteNotFound:          {LangEnglish: "Route not found", LangFrench: "Route introuvable"},
 	MsgMethodNotAllowed:       {LangEnglish: "Method not allowed", LangFrench: "Méthode non autorisée"},
 	MsgInvalidRequest:         {LangEnglish: "Invalid request", LangFrench: "Requête invalide"},

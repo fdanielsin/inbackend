@@ -113,7 +113,7 @@ func TestTaskRepository_Delete_RemovesOnlyTargetedTask(t *testing.T) {
 
 	_, err := repo.GetByID(ctx, second)
 	require.ErrorIs(t, err, tasks.ErrTaskNotFound)
-	remaining, err := repo.ListByUserID(ctx, ownerID)
+	remaining, err := repo.ListByUserID(ctx, ownerID, tasks.ListFilter{})
 	require.NoError(t, err)
 	require.Len(t, remaining, 2)
 	assert.Equal(t, []uint{first, third}, []uint{remaining[0].ID, remaining[1].ID})
@@ -139,7 +139,7 @@ func TestTaskRepository_Delete_AbsentTask_ReturnsNotFound(t *testing.T) {
 	require.NoError(t, repo.Delete(ctx, removed))
 	require.ErrorIs(t, repo.Delete(ctx, removed), tasks.ErrTaskNotFound, "a second delete must report the task as absent")
 
-	remaining, err := repo.ListByUserID(ctx, ownerID)
+	remaining, err := repo.ListByUserID(ctx, ownerID, tasks.ListFilter{})
 	require.NoError(t, err)
 	require.Len(t, remaining, 1)
 	assert.Equal(t, kept, remaining[0].ID)
@@ -209,7 +209,7 @@ func TestTaskRepository_ListByUserID_UserWithoutTasks(t *testing.T) {
 	idleID := createTestUser(t, db, "idle@example.com")
 	createTestTask(t, repo, busyID, "Task 1")
 
-	listed, err := repo.ListByUserID(context.Background(), idleID)
+	listed, err := repo.ListByUserID(context.Background(), idleID, tasks.ListFilter{})
 
 	require.NoError(t, err)
 	assert.NotNil(t, listed)

@@ -60,10 +60,15 @@ func (r *TaskRepository) GetByID(ctx context.Context, id uint) (*tasks.Task, err
 	}, nil
 }
 
-// ListByUserID récupère toutes les tâches d'un utilisateur.
-func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint) ([]*tasks.Task, error) {
+// ListByUserID récupère les tâches d'un utilisateur, par id croissant, selon le filtre.
+func (r *TaskRepository) ListByUserID(ctx context.Context, userID uint, filter tasks.ListFilter) ([]*tasks.Task, error) {
+	query := r.db.WithContext(ctx).Where("user_id = ?", userID)
+	if filter.Completed != nil {
+		query = query.Where("completed = ?", *filter.Completed)
+	}
+
 	var gormTasks []TaskModel
-	result := r.db.WithContext(ctx).Where("user_id = ?", userID).Order("id ASC").Find(&gormTasks)
+	result := query.Order("id ASC").Find(&gormTasks)
 
 	if result.Error != nil {
 		return nil, result.Error

@@ -108,12 +108,39 @@ func (tc *TaskController) ListUserTasks(c *echo.Context) error {
 		return respondInvalidID(c, log, shared.MsgInvalidUserID, idStr)
 	}
 
-	log.Info("Listing user tasks", slog.Uint64("userID", id))
+	completed, valid := parseCompletedFilter(c)
+	if !valid {
+		return respondInvalidCompletedFilter(c, log)
+	}
 
-	resp, err := tc.listUserTasksHandler.Execute(c.Request().Context(), queries.ListUserTasksRequest{UserID: uint(id)})
+	log.Info("Listing user tasks", slog.Uint64("userID", id), slog.Bool("filtered", completed != nil))
+
+	resp, err := tc.listUserTasksHandler.Execute(c.Request().Context(), queries.ListUserTasksRequest{UserID: uint(id), Completed: completed})
 	if err != nil {
 		return respondWithError(c, log, "Error listing user tasks", err, slog.Uint64("userID", id))
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))
+}
+
+// parseCompletedFilter lit le paramètre de requête « completed » : absent, il
+// ne filtre pas (nil) ; sinon il doit apparaître une seule fois, valant
+// exactement « true » ou « false » (pas de strconv.ParseBool, qui accepterait
+// 1, t, T, TRUE…).
+func parseCompletedFilter(c *echo.Context) (completed *bool, valid bool) {
+	values, present := c.QueryParams()["completed"]
+	if !present {
+		return nil, true
+	}
+	if len(values) != 1 {
+		return nil, false
+	}
+	switch values[0] {
+	case "true":
+		return new(true), true
+	case "false":
+		return new(false), true
+	default:
+		return nil, false
+	}
 }

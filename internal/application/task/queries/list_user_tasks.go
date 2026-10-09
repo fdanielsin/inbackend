@@ -9,6 +9,8 @@ import (
 // ListUserTasksRequest est le DTO de la requête ListUserTasks.
 type ListUserTasksRequest struct {
 	UserID uint
+	// Completed ne garde que les tâches terminées (true) ou non terminées (false) ; nil : toutes.
+	Completed *bool
 }
 
 // ListUserTasksResponse est la réponse de la requête ListUserTasks.
@@ -32,7 +34,7 @@ func NewListUserTasksHandler(repo tasks.Repository) *ListUserTasksHandler {
 
 // Execute exécute la requête ListUserTasks.
 func (h *ListUserTasksHandler) Execute(ctx context.Context, req ListUserTasksRequest) ([]*ListUserTasksResponse, error) {
-	listed, err := h.repo.ListByUserID(ctx, req.UserID)
+	listed, err := h.repo.ListByUserID(ctx, req.UserID, tasks.ListFilter{Completed: req.Completed})
 	if err != nil {
 		return nil, err
 	}

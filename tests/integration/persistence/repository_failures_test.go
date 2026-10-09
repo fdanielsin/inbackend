@@ -25,7 +25,9 @@ func repositoryCalls(ctx context.Context, db *gorm.DB) map[string]error {
 	_, errs["User.Count"] = userRepo.Count(ctx)
 	_, errs["Task.Create"] = taskRepo.Create(ctx, &tasks.Task{Title: "Buy milk", UserID: 1})
 	_, errs["Task.GetByID"] = taskRepo.GetByID(ctx, 1)
-	_, errs["Task.ListByUserID"] = taskRepo.ListByUserID(ctx, 1)
+	_, errs["Task.ListByUserID"] = taskRepo.ListByUserID(ctx, 1, tasks.ListFilter{})
+	completed := true
+	_, errs["Task.ListByUserID filtered"] = taskRepo.ListByUserID(ctx, 1, tasks.ListFilter{Completed: &completed})
 	errs["Task.Update"] = taskRepo.Update(ctx, &tasks.Task{ID: 1, Title: "Buy milk", UserID: 1})
 	errs["Task.Delete"] = taskRepo.Delete(ctx, 1)
 	_, errs["Task.Count"] = taskRepo.Count(ctx)

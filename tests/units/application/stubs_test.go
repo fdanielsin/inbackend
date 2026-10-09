@@ -49,6 +49,7 @@ type stubTaskRepository struct {
 	created  []tasks.Task
 	updated  []tasks.Task
 	deleted  []uint
+	filters  []tasks.ListFilter
 }
 
 func (r *stubTaskRepository) Create(_ context.Context, t *tasks.Task) (uint, error) {
@@ -60,7 +61,8 @@ func (r *stubTaskRepository) GetByID(_ context.Context, id uint) (*tasks.Task, e
 	return r.getFn(id)
 }
 
-func (r *stubTaskRepository) ListByUserID(_ context.Context, userID uint) ([]*tasks.Task, error) {
+func (r *stubTaskRepository) ListByUserID(_ context.Context, userID uint, filter tasks.ListFilter) ([]*tasks.Task, error) {
+	r.filters = append(r.filters, filter)
 	return r.listFn(userID)
 }
 

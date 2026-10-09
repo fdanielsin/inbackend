@@ -117,6 +117,23 @@ func TestListUserTasksHandler_Execute_RepositoryErrorIsPropagated(t *testing.T) 
 	assert.ErrorIs(t, err, errDatabaseDown)
 }
 
+// GIVEN each value of the completed filter / WHEN ListUserTasks / THEN the repository receives exactly that filter
+func TestListUserTasksHandler_Execute_ForwardsTheCompletedFilter(t *testing.T) {
+	yes, no := true, false
+
+	for name, completed := range map[string]*bool{"absent": nil, "true": &yes, "false": &no} {
+		t.Run(name, func(t *testing.T) {
+			repo := &stubTaskRepository{listFn: func(uint) ([]*tasks.Task, error) { return nil, nil }}
+
+			_, err := queries.NewListUserTasksHandler(repo).Execute(context.Background(), queries.ListUserTasksRequest{UserID: 4, Completed: completed})
+
+			require.NoError(t, err)
+			require.Len(t, repo.filters, 1)
+			assert.Equal(t, completed, repo.filters[0].Completed)
+		})
+	}
+}
+
 // statsRepositories answers counts only: a stats query that loads the users
 // (List) instead of counting them fails, because listFn is not expected.
 func statsRepositories(userCount int64, usersErr error, taskCount int64, tasksErr error) (*stubUserRepository, *stubTaskRepository) {

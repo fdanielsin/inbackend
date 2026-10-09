@@ -85,6 +85,7 @@ var allMessageKeys = []shared.MessageKey{
 	shared.MsgTaskDeleted, shared.MsgServiceHealthy, shared.MsgServiceReady,
 	shared.MsgUserNameTooLong, shared.MsgUserEmailTooLong, shared.MsgTaskTitleTooLong,
 	shared.MsgTaskDescriptionTooLong, shared.MsgTaskUserIDOutOfRange, shared.MsgUnknownField,
+	shared.MsgTaskCompletedFilter,
 }
 
 // GIVEN the catalogue / THEN it holds exactly the declared keys, each with a non-empty text per language,
@@ -124,6 +125,7 @@ func TestMessages_EnglishTextsAreUnchanged(t *testing.T) {
 		shared.MsgTaskDescriptionTooLong: "Task description cannot exceed 2000 characters",
 		shared.MsgTaskUserIDOutOfRange:   "Task user_id is out of range",
 		shared.MsgUnknownField:           "Request body contains an unknown field",
+		shared.MsgTaskCompletedFilter:    "Query parameter completed must be true or false",
 	}
 	require.Len(t, want, len(allMessageKeys))
 	for key, text := range want {
@@ -154,6 +156,7 @@ func TestMessages_FrenchTexts(t *testing.T) {
 		shared.MsgTaskDescriptionTooLong: "La description de la tâche ne peut pas dépasser 2000 caractères",
 		shared.MsgTaskUserIDOutOfRange:   "Le user_id de la tâche est hors limites",
 		shared.MsgUnknownField:           "Le corps de la requête contient un champ inconnu",
+		shared.MsgTaskCompletedFilter:    "Le paramètre de requête completed doit valoir true ou false",
 	}
 	require.Len(t, want, len(allMessageKeys))
 	for key, text := range want {

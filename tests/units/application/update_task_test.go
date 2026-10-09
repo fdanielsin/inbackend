@@ -45,7 +45,7 @@ func (r *fakeTaskRepository) GetByID(_ context.Context, id uint) (*tasks.Task, e
 	return &cp, nil
 }
 
-func (r *fakeTaskRepository) ListByUserID(_ context.Context, _ uint) ([]*tasks.Task, error) {
+func (r *fakeTaskRepository) ListByUserID(_ context.Context, _ uint, _ tasks.ListFilter) ([]*tasks.Task, error) {
 	panic("not used by these tests")
 }
 

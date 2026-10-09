@@ -279,13 +279,16 @@ paths:
   /api/v1/users/{id}/tasks:
     parameters:
       - $ref: '#/components/parameters/Id'
+      - $ref: '#/components/parameters/CompletedFilter'
       - $ref: '#/components/parameters/AcceptLanguage'
     get:
       tags: [Tasks]
       summary: Lister les tâches d'un utilisateur
       description: |
         Les tâches sont retournées triées par `id` croissant (ordre de
-        création), garanti par le serveur.
+        création), garanti par le serveur. Le paramètre `completed` ne garde
+        que les tâches terminées (`true`) ou non terminées (`false`) ; absent,
+        toutes les tâches sont retournées.
       operationId: listUserTasks
       responses:
         '200':
@@ -308,13 +311,13 @@ paths:
                         items:
                           $ref: '#/components/schemas/Task'
         '400':
-          $ref: '#/components/responses/InvalidUserId'
+          $ref: '#/components/responses/InvalidUserIdOrCompletedFilter'
         '500':
           $ref: '#/components/responses/InternalServerError'
     head:
       tags: [Tasks]
       summary: Lister les tâches d'un utilisateur, sans corps
-      description: Répond comme `GET /api/v1/users/{id}/tasks`, sans corps (RFC 9110, section 9.3.2).
+      description: Répond comme `GET /api/v1/users/{id}/tasks`, y compris avec `completed`, sans corps (RFC 9110, section 9.3.2).
       operationId: listUserTasksHead
       responses:
         '200':
@@ -325,7 +328,7 @@ paths:
             Vary:
               $ref: '#/components/headers/Vary'
         '400':
-          $ref: '#/components/responses/HeadInvalidUserId'
+          $ref: '#/components/responses/HeadInvalidUserIdOrCompletedFilter'
         '500':
           $ref: '#/components/responses/HeadInternalServerError'
   /api/v1/tasks:
@@ -620,6 +623,18 @@ components:
         type: integer
         format: uint32
         minimum: 0
+    CompletedFilter:
+      name: completed
+      in: query
+      required: false
+      description: |
+        Filtre sur l'état des tâches : `true` pour les tâches terminées,
+        `false` pour les autres ; absent, aucun filtre. Seules les valeurs
+        exactes `true` et `false` (en minuscules) sont acceptées : toute autre
+        valeur (`True`, `1`, `yes`, valeur vide), ou un paramètre répété, donne
+        400 `VALIDATION_FAILED`. Un paramètre de requête inconnu est ignoré.
+      schema:
+        type: boolean
   schemas:
     SuccessResponse:
       type: object
@@ -666,7 +681,7 @@ components:
       x-enumDescriptions:
         INVALID_BODY: Corps JSON absent, mal formé, de mauvais type ou contenant une propriété inconnue (400).
         INVALID_ID: Identifiant de chemin non numérique ou hors de la plage uint32 (400).
-        VALIDATION_FAILED: Règle de validation violée (titre, nom ou email vide ou fait d'espaces, format d'email invalide, user_id absent, valeur trop longue) ; `error` précise laquelle (400).
+        VALIDATION_FAILED: Règle de validation violée (titre, nom ou email vide ou fait d'espaces, format d'email invalide, user_id absent, valeur trop longue, valeur invalide du paramètre `completed`) ; `error` précise laquelle (400).
         USER_NOT_FOUND: Utilisateur introuvable (404).
         TASK_NOT_FOUND: Tâche introuvable (404).
         EMAIL_TAKEN: Un utilisateur avec cet email (une fois normalisé) existe déjà (409).
@@ -908,6 +923,20 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
+    InvalidUserIdOrCompletedFilter:
+      description: |
+        Identifiant utilisateur invalide (`INVALID_ID`) ou valeur invalide du
+        paramètre `completed` (`VALIDATION_FAILED`) ; l'identifiant est vérifié
+        en premier
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
     InvalidTaskId:
       description: Identifiant tâche invalide (`INVALID_ID`)
       headers:
@@ -985,6 +1014,15 @@ components:
           $ref: '#/components/headers/CacheControlNoStore'
     HeadInvalidUserId:
       description: Identifiant utilisateur invalide (`INVALID_ID`), sans corps
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
+    HeadInvalidUserIdOrCompletedFilter:
+      description: |
+        Identifiant utilisateur invalide (`INVALID_ID`) ou valeur invalide du
+        paramètre `completed` (`VALIDATION_FAILED`), sans corps
       headers:
         Content-Language:
           $ref: '#/components/headers/ContentLanguage'
