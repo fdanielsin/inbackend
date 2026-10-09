@@ -29,10 +29,10 @@ func TestNewUser_EmptyNameAndEmail_ReportsNameFirst(t *testing.T) {
 
 // GIVEN: A one-character name and the shortest valid email / WHEN: NewUser / THEN: accepted
 func TestNewUser_ShortestValidFields_AreAccepted(t *testing.T) {
-	u, err := users.NewUser(0, "J", "a@b.c")
+	u, err := users.NewUser(0, "J", "a@b.co")
 
 	require.NoError(t, err)
-	assert.Equal(t, users.User{ID: 0, Name: "J", Email: "a@b.c"}, *u)
+	assert.Equal(t, users.User{ID: 0, Name: "J", Email: "a@b.co"}, *u)
 }
 
 // GIVEN: An email with surrounding spaces and capitals, ASCII or not / WHEN: NewUser / THEN: trimmed and lower-cased; the name is kept as typed

@@ -6,6 +6,7 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- Création d'utilisateur : e-mail refusé (400 `VALIDATION_FAILED`) si la partie locale dépasse 64 caractères, un label 63, s'il contient `_` ou un tiret au bord, ou si le TLD n'a pas 2 à 24 lettres (ou la forme `xn--`) ; `a@b.c` n'est plus accepté. Les utilisateurs existants ne changent pas.
 - La CI ne se lance plus au push des branches de travail mais sur leur pull request, ce qui évite les runs en double ([#39](https://github.com/fdanielsin/inbackend/pull/39)).
 
 ## [1.2.0] - 2026-10-06

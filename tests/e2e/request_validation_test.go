@@ -226,15 +226,27 @@ func taskField(task taskJSON, field string) string {
 	return task.Description
 }
 
-// textOfRunes builds a value of exactly n runes from unit; an email keeps a valid shape.
+// textOfRunes builds a value of exactly n runes from unit; an email keeps a valid shape: a local part
+// of 64 runes (the only place where unit may be non-ASCII) and an ASCII domain of labels of 63 at most.
 func textOfRunes(field string, unit string, n int) string {
 	if field == "user email" {
-		const domain = "@example.com"
-		local := strings.Repeat(unit, (n-len(domain))/len([]rune(unit)))
-		return local + strings.Repeat("a", n-len(domain)-len([]rune(local))) + domain
+		const localLength, tld = 64, ".com"
+		local := strings.Repeat(unit, localLength/len([]rune(unit)))
+		local += strings.Repeat("a", localLength-len([]rune(local)))
+		return local + "@" + asciiLabels(n-localLength-1-len(tld)) + tld
 	}
 	whole := strings.Repeat(unit, n/len([]rune(unit)))
 	return whole + strings.Repeat("a", n-len([]rune(whole)))
+}
+
+// asciiLabels returns dot-separated labels of 63 characters at most, totalling exactly n characters (n >= 2).
+func asciiLabels(n int) string {
+	var labels []string
+	for n > 63 {
+		labels = append(labels, strings.Repeat("a", 62))
+		n -= 63
+	}
+	return strings.Join(append(labels, strings.Repeat("a", n)), ".")
 }
 
 // GIVEN each text field at its maximum length in runes, ASCII, emoji (4 bytes each) and ZWJ sequences

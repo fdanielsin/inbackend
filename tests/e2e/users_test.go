@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/fdanielsin/inbackend/internal/infrastructure/persistence/pgstore"
@@ -43,6 +44,12 @@ func TestCreateUser_RejectsInvalidPayloads(t *testing.T) {
 		"email without local":  {`{"name":"John","email":"@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
 		"email without domain": {`{"name":"John","email":"john@"}`, "VALIDATION_FAILED", "User email is invalid"},
 		"domain without a dot": {`{"name":"John","email":"john@localhost"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"TLD of one letter":    {`{"name":"John","email":"john@example.c"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"underscore in domain": {`{"name":"John","email":"john@exa_mple.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"hyphen at label edge": {`{"name":"John","email":"john@-example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"local part of 65":     {`{"name":"John","email":"` + strings.Repeat("a", 65) + `@example.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"label of 64":          {`{"name":"John","email":"john@` + strings.Repeat("b", 64) + `.com"}`, "VALIDATION_FAILED", "User email is invalid"},
+		"TLD of 25 letters":    {`{"name":"John","email":"john@example.` + strings.Repeat("c", 25) + `"}`, "VALIDATION_FAILED", "User email is invalid"},
 		"empty object":         {`{}`, "VALIDATION_FAILED", "User name cannot be empty"},
 		"malformed JSON":       {`{"name":"John",`, "INVALID_BODY", "Invalid request body"},
 		"wrong type":           {`{"name":1,"email":"john@example.com"}`, "INVALID_BODY", "Invalid request body"},
@@ -59,11 +66,28 @@ func TestCreateUser_RejectsInvalidPayloads(t *testing.T) {
 	}
 }
 
-// GIVEN a one-character name and the shortest valid email "a@b.c" / WHEN POST / THEN 201
+// GIVEN a one-character name and the shortest valid email "a@b.co" / WHEN POST / THEN 201
 func TestCreateUser_AcceptsShortestValidFields(t *testing.T) {
 	s := newTestServer(t)
 
-	assert.Equal(t, userJSON{ID: 1, Name: "J", Email: "a@b.c"}, s.createUser("J", "a@b.c"))
+	assert.Equal(t, userJSON{ID: 1, Name: "J", Email: "a@b.co"}, s.createUser("J", "a@b.co"))
+}
+
+// GIVEN emails at the accepted limits, an IDN and a punycode TLD / WHEN POST / THEN 201 for each
+func TestCreateUser_AcceptsEmailsAtTheLimits(t *testing.T) {
+	for _, email := range []string{
+		strings.Repeat("a", 64) + "@example.com",
+		"john@" + strings.Repeat("b", 63) + ".com",
+		"john@example." + strings.Repeat("c", 24),
+		"ivan@пример.рф",
+		"john@example.xn--p1ai",
+	} {
+		t.Run(email[:min(len(email), 20)], func(t *testing.T) {
+			s := newTestServer(t)
+
+			assert.Equal(t, email, s.createUser("John", email).Email)
+		})
+	}
 }
 
 // GIVEN an email with surrounding spaces and capitals / WHEN POST / THEN 201 with the trimmed, lower-case email, stored so

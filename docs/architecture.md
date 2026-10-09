@@ -152,8 +152,9 @@ casse comprise (400 `INVALID_BODY`), `null` sur une propriété facultative (400
 retrait des espaces, et `maximum` d'un nombre (400 `VALIDATION_FAILED`). Le reste
 garde ses codes et textes, rendus par `Bind` et le domaine : type, corps absent
 ou `null`, champ obligatoire, vide, `minLength: 1`, `minimum: 1` de `user_id`,
-format d'email. Le domaine retire aussi les espaces de début et de fin du nom, de
-l'email, du titre et de la description.
+format d'email (partie locale ≤ 64, labels LDH ≤ 63, TLD de 2 à 24 lettres ou
+`xn--` ; règle exacte dans le contrat). Le domaine retire aussi les espaces de
+début et de fin du nom, de l'email, du titre et de la description.
 
 Un validateur générique (`openapi3filter` de kin-openapi) n'a pas été retenu :
 pour un contrat OpenAPI 3.1 il ne rend que du texte anglais, sans mot-clé ni
