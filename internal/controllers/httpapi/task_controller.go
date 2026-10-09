@@ -3,7 +3,9 @@ package httpapi
 import (
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/fdanielsin/inbackend/internal/application/task/commands"
 	"github.com/fdanielsin/inbackend/internal/application/task/queries"
@@ -123,24 +125,33 @@ func (tc *TaskController) ListUserTasks(c *echo.Context) error {
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))
 }
 
-// parseCompletedFilter lit le paramètre de requête « completed » : absent, il
-// ne filtre pas (nil) ; sinon il doit apparaître une seule fois, valant
-// exactement « true » ou « false » (pas de strconv.ParseBool, qui accepterait
-// 1, t, T, TRUE…).
+// parseCompletedFilter lit le paramètre de requête « completed » dans la
+// requête brute : absent, il ne filtre pas (nil) ; sinon il doit apparaître une
+// seule fois, valant exactement « true » ou « false » une fois décodé (pas de
+// strconv.ParseBool, qui accepterait 1, t, T, TRUE…). La requête brute est lue
+// paire par paire parce que url.Query écarte en silence les paires invalides
+// (« ; » brut, pourcentage mal formé) : « completed=true; » serait lu comme absent.
+// Les paires dont la clé n'est pas « completed » (sensible à la casse) sont ignorées.
 func parseCompletedFilter(c *echo.Context) (completed *bool, valid bool) {
-	values, present := c.QueryParams()["completed"]
-	if !present {
-		return nil, true
+	occurrences := 0
+	for pair := range strings.SplitSeq(c.Request().URL.RawQuery, "&") {
+		rawKey, rawValue, _ := strings.Cut(pair, "=")
+		if key, err := url.QueryUnescape(rawKey); err != nil || key != "completed" {
+			continue
+		}
+		occurrences++
+		if occurrences > 1 {
+			return nil, false
+		}
+		value, _ := url.QueryUnescape(rawValue) // une valeur mal encodée devient vide, donc refusée ci-dessous
+		switch value {
+		case "true":
+			completed = new(true)
+		case "false":
+			completed = new(false)
+		default:
+			return nil, false
+		}
 	}
-	if len(values) != 1 {
-		return nil, false
-	}
-	switch values[0] {
-	case "true":
-		return new(true), true
-	case "false":
-		return new(false), true
-	default:
-		return nil, false
-	}
+	return completed, true
 }

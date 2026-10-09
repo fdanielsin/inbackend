@@ -41,18 +41,26 @@ func TestListUserTasks_FiltersOnCompleted(t *testing.T) {
 	second := s.createTask(owner.ID, "Second", "")
 	third := s.createTask(owner.ID, "Third", "")
 	s.createTask(other.ID, "Not mine", "")
-	s.completeTask(first.ID)
+	// The highest id is completed first, so that the rows are not stored in id order any more:
+	// only an ORDER BY, applied with the filter too, returns them by ascending id.
 	s.completeTask(third.ID)
+	s.completeTask(first.ID)
 
 	for name, tc := range map[string]struct {
 		query string
 		want  []uint
 	}{
-		"completed":       {"?completed=true", []uint{first.ID, third.ID}},
-		"not completed":   {"?completed=false", []uint{second.ID}},
-		"no parameter":    {"", []uint{first.ID, second.ID, third.ID}},
-		"unknown ignored": {"?other=1", []uint{first.ID, second.ID, third.ID}},
-		"other and valid": {"?other=1&completed=true", []uint{first.ID, third.ID}},
+		"completed":                 {"?completed=true", []uint{first.ID, third.ID}},
+		"not completed":             {"?completed=false", []uint{second.ID}},
+		"no parameter":              {"", []uint{first.ID, second.ID, third.ID}},
+		"unknown ignored":           {"?other=1", []uint{first.ID, second.ID, third.ID}},
+		"other and valid":           {"?other=1&completed=true", []uint{first.ID, third.ID}},
+		"malformed other":           {"?x=%zz", []uint{first.ID, second.ID, third.ID}},
+		"malformed other and valid": {"?x=%zz&completed=true", []uint{first.ID, third.ID}},
+		"key is case sensitive":     {"?Completed=true", []uint{first.ID, second.ID, third.ID}},
+		"encoded key":               {"?%63ompleted=false", []uint{second.ID}},
+		"encoded value":             {"?completed=%74rue", []uint{first.ID, third.ID}},
+		"semicolon in another key":  {"?x=1;y=2&completed=false", []uint{second.ID}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			r := s.in(t).listTasksFiltered(owner.ID, tc.query)
@@ -121,6 +129,12 @@ func TestListUserTasks_InvalidCompletedFilter_Returns400(t *testing.T) {
 		"very long":          "?completed=" + strings.Repeat("x", 5000),
 		"injection":          "?completed=true%27%20OR%201%3D1--",
 		"unicode":            "?completed=vrai%E2%9C%93",
+		"raw semicolon":      "?completed=true;",
+		"semicolon and pair": "?completed=true;x=1",
+		"bad percent value":  "?completed=%zz",
+		"encoded semicolon":  "?completed=true%3B",
+		"encoded key, bad":   "?%63ompleted=maybe",
+		"bad percent, valid": "?completed=%zz&completed=true",
 	} {
 		t.Run(name, func(t *testing.T) {
 			path := fmt.Sprintf("/api/v1/users/%d/tasks%s", owner.ID, query)
@@ -160,4 +174,45 @@ func TestListUserTasks_FilterWithDatabaseDown_Returns500(t *testing.T) {
 
 	requireError(t, s.do(http.MethodGet, fmt.Sprintf("/api/v1/users/%d/tasks?completed=false", owner.ID), ""),
 		http.StatusInternalServerError, "INTERNAL_ERROR", "Internal server error")
+}
+
+// GIVEN an invalid completed filter carrying a recognizable value / WHEN GET /users/{id}/tasks
+// THEN the refusal is logged (warning with the stable code) but neither the answer nor any log line contains the value
+func TestListUserTasks_InvalidCompletedFilter_NeverEchoesTheValue(t *testing.T) {
+	const marker = "Marker-4d1f9c"
+	logs := captureLogs(t)
+	s := newTestServer(t)
+	owner := s.createUser("Owner", "owner@example.com")
+
+	for _, query := range []string{"?completed=" + marker, "?completed=true&completed=" + marker, "?completed=%4Darker-4d1f9c"} {
+		r := s.do(http.MethodGet, fmt.Sprintf("/api/v1/users/%d/tasks%s", owner.ID, query), "")
+
+		requireError(t, r, http.StatusBadRequest, "VALIDATION_FAILED", english(shared.MsgTaskCompletedFilter))
+		assert.NotContains(t, string(r.body), marker)
+	}
+	refusals := logLines(t, logs, "Invalid completed filter")
+	require.Len(t, refusals, 3, "each refusal is logged once")
+	for _, line := range refusals {
+		assert.Equal(t, "VALIDATION_FAILED", line["error_code"])
+	}
+	assert.NotContains(t, logs.String(), marker)
+	assert.NotContains(t, logs.String(), "4d1f9c")
+}
+
+// GIVEN the contract / THEN GET and HEAD /users/{id}/tasks both declare the optional boolean query
+// parameter "completed", and no other operation does
+func TestContract_DeclaresTheCompletedFilterOnTheTwoListOperations(t *testing.T) {
+	for _, operationID := range []string{"listUserTasks", "listUserTasksHead"} {
+		t.Run(operationID, func(t *testing.T) {
+			param := contract.QueryParameter(operationID, "completed")
+
+			require.NotNil(t, param, "the completed query parameter must be declared")
+			assert.False(t, param.Required)
+			require.NotNil(t, param.Schema)
+			assert.True(t, param.Schema.Value.Type.Is("boolean"), "type: %v", param.Schema.Value.Type)
+		})
+	}
+	for _, operationID := range []string{"listUsers", "getUser", "createTask", "updateTask", "getStats"} {
+		assert.Nil(t, contract.QueryParameter(operationID, "completed"), operationID)
+	}
 }

@@ -57,6 +57,24 @@ func LoadContract() (*Contract, error) {
 	return &Contract{doc: doc, router: router, produced: map[string]bool{}}, nil
 }
 
+// QueryParameter returns the query parameter called name of an operation, declared on the
+// operation itself or on its path item (references resolved), or nil when it has none.
+func (c *Contract) QueryParameter(operationID, name string) *openapi3.Parameter {
+	for _, item := range c.doc.Paths.Map() {
+		for _, op := range item.Operations() {
+			if op.OperationID != operationID {
+				continue
+			}
+			for _, declared := range append(append(openapi3.Parameters{}, op.Parameters...), item.Parameters...) {
+				if declared.Value != nil && declared.Value.In == openapi3.ParameterInQuery && declared.Value.Name == name {
+					return declared.Value
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // ValidateResponse fails the test when the request is not an operation of the
 // contract, or when the response status, headers or body do not match it.
 // The request itself is not validated: tests send invalid input on purpose.
