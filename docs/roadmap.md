@@ -68,9 +68,11 @@ release 1.2.0 (voir le [CHANGELOG](../CHANGELOG.md)) :
   renommés (ADR 0008), lint
   strict, image publiée sur GHCR, hook pre-push qui protège `main`.
 - **À faire ou à décider** : `B-07` (pagination de `ListUsers` et
-  `ListUserTasks`, décision de contrat ouverte) ; `Q-13` ; lot 8 des
+  `ListUserTasks`, décision de contrat ouverte) ; lot 8 des
   fonctionnalités (`FP-01` à `FP-04`, filtre `?completed=` `BP-02`), sur
-  décision utilisateur.
+  décision utilisateur. `Q-13` (portes CI) : définition perdue avec le rapport
+  d'audit du 2026-09-29 ; les portes actuelles sont l'agrégat « All checks
+  passed ».
 
 ## Règle de progression
 
