@@ -62,14 +62,15 @@ release 1.2.0 (voir le [CHANGELOG](../CHANGELOG.md)) :
   `B-08` (plus de donnée personnelle dans les logs) ; `Q-04`, `Q-05`, `Q-11`,
   `B-06` (couverture minimale, lint, govulncheck, Redocly, hook pre-push) ;
   `Q-03` (Docker et compose).
-- **Fait hors audit** : sondes `/health` et `/ready`, logs `slog` seul, messages
+- **Fait hors audit** : filtre `?completed=true|false` des tâches d'un
+  utilisateur (`BP-02`), sondes `/health` et `/ready`, logs `slog` seul, messages
   français et anglais, contrat et Swagger UI servis par l'API, corps de requête
   validés, CORS obligatoire en production avec origines validées, paquets
   renommés (ADR 0008), lint
   strict, image publiée sur GHCR, hook pre-push qui protège `main`.
 - **À faire ou à décider** : `B-07` (pagination de `ListUsers` et
   `ListUserTasks`, décision de contrat ouverte) ; lot 8 des
-  fonctionnalités (`FP-01` à `FP-04`, filtre `?completed=` `BP-02`), sur
+  fonctionnalités (`FP-01` à `FP-04`), sur
   décision utilisateur. `Q-13` (portes CI) : définition perdue avec le rapport
   d'audit du 2026-09-29 ; les portes actuelles sont l'agrégat « All checks
   passed ».
