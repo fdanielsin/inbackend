@@ -41,7 +41,7 @@ Le serveur refuse de démarrer sur une base qui contient les tables `users` et
 
 ```bash
 docker build -t inbackend:latest .
-docker run -p 8080:8080 -e DATABASE_URL="postgres://user:pass@host:5432/inbackend?sslmode=disable" inbackend:latest
+docker run -p 8080:8080 -e DATABASE_URL="postgres://user:pass@host:5432/inbackend?sslmode=disable" inbackend:latest   # <!-- docs-check: port du produit -->
 ```
 
 L'image est construite en deux étapes (`golang:1.26.8-alpine` puis
@@ -178,7 +178,7 @@ la `version` de `GET /health` sur le tag avant de le poser.
 
 ```bash
 docker compose up --build --wait   # PostgreSQL 16 et le backend, attend les healthchecks
-curl http://localhost:8080/ready
+curl http://localhost:8080/ready   # <!-- docs-check: port du produit -->
 docker compose down -v             # arrête et supprime le volume de la base
 ```
 
