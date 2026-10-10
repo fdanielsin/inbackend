@@ -16,8 +16,10 @@ const (
 	loggerKey    = "logger"
 	languageKey  = "language"
 
-	headerAcceptLanguage  = "Accept-Language"
-	headerContentLanguage = "Content-Language"
+	headerAcceptLanguage      = "Accept-Language"
+	headerContentLanguage     = "Content-Language"
+	headerContentTypeOptions  = "X-Content-Type-Options"
+	contentTypeOptionsNoSniff = "nosniff"
 )
 
 // probeRoutes sont les sondes appelées en continu : réussies, elles sont
@@ -41,6 +43,20 @@ func RequestID(base *slog.Logger) echo.MiddlewareFunc {
 			c.Response().Header().Set(echo.HeaderXRequestID, id)
 			c.Set(requestIDKey, id)
 			c.Set(loggerKey, base.With(slog.String("request_id", id)))
+			return next(c)
+		}
+	}
+}
+
+// SecurityHeaders pose sur toute réponse l'en-tête qui interdit au navigateur de
+// deviner le type du contenu (X-Content-Type-Options: nosniff). Il se pose avant
+// d'appeler la suite et doit être le premier middleware : ainsi il couvre aussi
+// les réponses qui court-circuitent la suite (préappel CORS, 404, 413, panique
+// récupérée) et celles de la suite qui échouent.
+func SecurityHeaders() echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			c.Response().Header().Set(headerContentTypeOptions, contentTypeOptionsNoSniff)
 			return next(c)
 		}
 	}

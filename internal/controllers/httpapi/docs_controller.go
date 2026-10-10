@@ -91,6 +91,5 @@ func (dc *DocsController) SwaggerUI(c *echo.Context) error {
 func setDocsHeaders(c *echo.Context, contentLanguage shared.Lang) {
 	header := c.Response().Header()
 	header.Set(headerContentLanguage, string(contentLanguage))
-	header.Set("X-Content-Type-Options", "nosniff")
 	header.Set(echo.HeaderCacheControl, "no-cache")
 }

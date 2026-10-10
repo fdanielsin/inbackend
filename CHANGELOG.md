@@ -6,10 +6,12 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- Toute réponse de l'API porte `X-Content-Type-Options: nosniff`, erreurs, préflight CORS et 413 compris (avant, seulement `/docs` et `/openapi.yaml`).
 - `GET /api/v1/users/{id}/tasks?completed=true|false` ne garde que les tâches terminées ou non ; sans paramètre, toutes ; toute autre valeur donne 400 `VALIDATION_FAILED`.
 
 ### Changed
 
+- Le contrat déclare que `PUT /api/v1/tasks/{id}` répond aussi 400 `INVALID_ID` (comportement inchangé), et les tests refusent désormais un code d'erreur que la description de la réponse ne nomme pas.
 - Création d'utilisateur : e-mail refusé (400 `VALIDATION_FAILED`) si la partie locale dépasse 64 caractères, commence ou finit par un point ou contient `..`, si un label dépasse 63, s'il contient `_` ou un tiret au bord, ou si le TLD n'a pas 2 à 24 lettres (ou la forme `xn--`) ; `a@b.c` n'est plus accepté. Les utilisateurs existants ne changent pas.
 - La CI ne se lance plus au push des branches de travail mais sur leur pull request, ce qui évite les runs en double ([#39](https://github.com/fdanielsin/inbackend/pull/39)).
 

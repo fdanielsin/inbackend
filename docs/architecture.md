@@ -111,10 +111,10 @@ n'existe pas non plus de package de configuration dédié : `main.go` lit
   `WriteTimeout` 30 s, `IdleTimeout` 60 s ; SIGINT/SIGTERM déclenchent un arrêt
   gracieux (10 s pour les requêtes en cours), puis fermeture du pool SQL.
 - Pool SQL : 25 connexions ouvertes au plus, 5 inactives, durée de vie 30 min.
-- Ordre des middlewares : `Language` (négocie la langue, voir ci-dessous), `RequestID` (X-Request-Id repris s'il correspond à
+- Ordre des middlewares : `SecurityHeaders` (`X-Content-Type-Options: nosniff` sur toute réponse, y compris préflight CORS, 404, 413 et panique : il passe avant tous les autres pour que rien ne le court-circuite), `Language` (négocie la langue, voir ci-dessous), `RequestID` (X-Request-Id repris s'il correspond à
   `[A-Za-z0-9._-]{1,64}`, sinon UUID ; logger de requête porté par le contexte),
   `AccessLog` (méthode, chemin sans query, route, statut, durée ; jamais de
-  corps), `Recover`, CORS (`CORS_ALLOWED_ORIGINS`, `*` par défaut sauf si `ENV=production`, où elle est
+  corps ni de requête brute, prouvé par `tests/e2e/query_not_logged_test.go`), `Recover`, CORS (`CORS_ALLOWED_ORIGINS`, `*` par défaut sauf si `ENV=production`, où elle est
   obligatoire et sans `*` ; chaque origine est validée au démarrage par
   `app.ValidateAllowedOrigins`, avant `DATABASE_URL`), `BodyLimit`
   (1 MiB exacts, avec ou sans Content-Length : `http.MaxBytesReader` ; le

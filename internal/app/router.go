@@ -94,6 +94,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	e.Logger = log
 
 	e.HTTPErrorHandler = httpapi.NewErrorHandler(log)
+	e.Use(httpapi.SecurityHeaders())
 	e.Use(httpapi.Language())
 	e.Use(httpapi.RequestID(log))
 	e.Use(httpapi.AccessLog(log))
