@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
@@ -100,9 +101,34 @@ func (c *Contract) ValidateResponse(t testing.TB, req *http.Request, status int,
 		t.Fatalf("contract: %s %s -> %d does not match openapi.yaml: %v\nbody: %s", req.Method, req.URL.Path, status, err, body)
 	}
 
+	if status >= http.StatusBadRequest {
+		requireErrorCodeDescribed(t, route.Operation, req, status, body)
+	}
+
 	c.mu.Lock()
 	c.produced[pairKey(route.Operation.OperationID, status)] = true
 	c.mu.Unlock()
+}
+
+// requireErrorCodeDescribed fails the test when the error_code of an error response is not named, between
+// backticks, in the description of the response that the contract declares for this operation and status:
+// whoever reads the contract must learn every code the server can answer.
+func requireErrorCodeDescribed(t testing.TB, operation *openapi3.Operation, req *http.Request, status int, body []byte) {
+	t.Helper()
+	var envelope struct {
+		ErrorCode string `json:"error_code"`
+	}
+	if json.Unmarshal(body, &envelope) != nil || envelope.ErrorCode == "" {
+		return
+	}
+	description := ""
+	if declared := operation.Responses.Status(status); declared != nil && declared.Value != nil && declared.Value.Description != nil {
+		description = *declared.Value.Description
+	}
+	if !strings.Contains(description, "`"+envelope.ErrorCode+"`") {
+		t.Fatalf("contract: %s %s -> %d answers error_code %s, which the description of the declared response does not name: %q",
+			req.Method, req.URL.Path, status, envelope.ErrorCode, description)
+	}
 }
 
 // ValidateErrorEnvelope fails the test unless body is an ErrorResponse of the

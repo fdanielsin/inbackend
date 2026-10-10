@@ -11,6 +11,9 @@ info:
     - toute réponse porte l'en-tête `X-Request-Id` (l'identifiant envoyé par le
       client est repris s'il est composé de 1 à 64 caractères parmi
       `A-Za-z0-9._-`, sinon le serveur en génère un) ;
+    - toute réponse, erreurs, préappel CORS et réponse à HEAD compris, porte
+      l'en-tête `X-Content-Type-Options: nosniff` : le navigateur ne doit pas
+      deviner un autre type que celui annoncé ;
     - une route inconnue répond `404` `ROUTE_NOT_FOUND` et une méthode non
       supportée sur une route connue répond `405` `METHOD_NOT_ALLOWED` (avec
       l'en-tête `Allow`), tous deux dans l'enveloppe d'erreur ;
@@ -414,7 +417,7 @@ paths:
                       data:
                         $ref: '#/components/schemas/UpdatedTask'
         '400':
-          $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/InvalidBodyOrTaskId'
         '404':
           $ref: '#/components/responses/TaskNotFound'
         '413':
@@ -903,6 +906,21 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     BadRequest:
       description: Corps invalide (`INVALID_BODY`) ou erreur de validation (`VALIDATION_FAILED`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InvalidBodyOrTaskId:
+      description: |
+        Corps invalide (`INVALID_BODY`), erreur de validation
+        (`VALIDATION_FAILED`) ou identifiant de tâche invalide (`INVALID_ID`) ;
+        le corps est vérifié avant l'identifiant, donc un corps invalide sur un
+        identifiant invalide donne `INVALID_BODY`
       headers:
         Content-Language:
           $ref: '#/components/headers/ContentLanguage'
