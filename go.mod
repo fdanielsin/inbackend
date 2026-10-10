@@ -2,7 +2,7 @@ module github.com/fdanielsin/inbackend
 
 go 1.26.0
 
-toolchain go1.26.8
+toolchain go1.26.9
 
 require (
 	github.com/getkin/kin-openapi v0.149.0

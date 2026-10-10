@@ -15,6 +15,10 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 - Création d'utilisateur : e-mail refusé (400 `VALIDATION_FAILED`) si la partie locale dépasse 64 caractères, commence ou finit par un point ou contient `..`, si un label dépasse 63, s'il contient `_` ou un tiret au bord, ou si le TLD n'a pas 2 à 24 lettres (ou la forme `xn--`) ; `a@b.c` n'est plus accepté. Les utilisateurs existants ne changent pas.
 - La CI ne se lance plus au push des branches de travail mais sur leur pull request, ce qui évite les runs en double ([#39](https://github.com/fdanielsin/inbackend/pull/39)).
 
+### Security
+
+- Go 1.26.9 (`toolchain` de `go.mod` et image `golang:1.26.9-alpine`) corrige 12 vulnérabilités atteignables de la bibliothèque standard (net/http, html/template, crypto/tls, mime/multipart : GO-2026-6599, 6600, 6603, 6605, 6607 à 6613, 6617) ; `make vuln` était rouge sur `develop` (inbackend#43).
+
 ## [1.2.0] - 2026-10-06
 
 > **À vérifier avant de mettre à jour (de 1.1.0 vers 1.2.0).**

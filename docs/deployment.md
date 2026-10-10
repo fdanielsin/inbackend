@@ -44,7 +44,7 @@ docker build -t inbackend:latest .
 docker run -p 8080:8080 -e DATABASE_URL="postgres://user:pass@host:5432/inbackend?sslmode=disable" inbackend:latest   # <!-- docs-check: port du produit -->
 ```
 
-L'image est construite en deux étapes (`golang:1.26.8-alpine` puis
+L'image est construite en deux étapes (`golang:1.26.9-alpine` puis
 `alpine:3.24.2`), sans CGO, et s'exécute avec un utilisateur non root
 (uid 10001). `make docker-build` et `make docker-run` utilisent Podman.
 

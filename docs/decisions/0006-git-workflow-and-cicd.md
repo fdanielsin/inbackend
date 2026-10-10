@@ -156,6 +156,11 @@ stdlib en 1.25.0, 16 en 1.26.0 et 0 en 1.26.8. Tous les jobs
 (`go-version-file: go.mod`) et le Dockerfile utilisent cette seule version, et
 govulncheck analyse la stdlib réellement embarquée.
 
+*Mise à jour du 2026-10-10 :* la ligne `toolchain` passe à `go1.26.9`, qui corrige
+12 vulnérabilités atteignables de la stdlib publiées après la 1.26.8 (`make vuln`
+était rouge sur `develop`) ; la règle ne change pas : une vulnérabilité connue
+bloque le merge (`SEC-R02`, `docs/security.md`).
+
 **Total time:** ~10-11 minutes, mesuré sur le run `develop` du 2026-09-29
 (22:02–22:13 UTC, `gh run view` sur le commit `d2fede3`). L'estimation
 précédente (~4-5 min) n'était plus à jour.

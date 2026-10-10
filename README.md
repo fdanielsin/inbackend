@@ -4,7 +4,7 @@ Go REST API for users and tasks, built with Echo, GORM and PostgreSQL.
 
 ## Requirements
 
-- Go 1.26.8 (`go.mod` pins the toolchain; Go downloads it when needed)
+- Go 1.26.9 (`go.mod` pins the toolchain; Go downloads it when needed)
 - PostgreSQL 14+, or Docker
 - Make
 - Docker or Podman for the integration and end-to-end tests (Testcontainers)

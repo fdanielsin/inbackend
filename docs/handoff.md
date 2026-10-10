@@ -207,7 +207,9 @@ comportement ni de contrat.
 
 ## Go 1.26 et Docker (Q-03)
 
-Branche `fix/Q03-go126-docker`.
+Branche `fix/Q03-go126-docker`. *Mise à jour du 2026-10-10 : le toolchain est
+maintenant `go1.26.9` (CHANGELOG, rubrique Security) ; le texte ci-dessous
+décrit le lot d'origine.*
 
 - **Go** : `go 1.26.0` + `toolchain go1.26.8` dans `go.mod`, version unique pour
   tous les jobs CI (`go-version-file: go.mod`) et le Dockerfile.
