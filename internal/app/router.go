@@ -86,6 +86,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	getStatsHandler := queries.NewGetStatsHandler(userRepo, taskRepo)
 
 	healthCtrl := httpapi.NewHealthController(log, databaseReadiness(db))
+	rootCtrl := httpapi.NewRootController(cfg.apiContract != nil)
 	userCtrl := httpapi.NewUserController(log, createUserHandler, getUserHandler, listUsersHandler)
 	taskCtrl := httpapi.NewTaskController(log, createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
 	statsCtrl := httpapi.NewStatsController(log, getStatsHandler)
@@ -110,6 +111,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 		e.Use(cfg.validator.Middleware(log))
 	}
 
+	getAndHead(e, "/", rootCtrl.Summary)
 	getAndHead(e, "/health", healthCtrl.HealthCheck)
 	getAndHead(e, "/ready", healthCtrl.Ready)
 	getAndHead(e, "/api/v1/users", userCtrl.ListUsers)

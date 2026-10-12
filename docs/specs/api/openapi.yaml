@@ -45,6 +45,8 @@ servers:
   - url: http://localhost:8080
     description: Développement local
 tags:
+  - name: Root
+    description: Sommaire de l'API, à la racine.
   - name: Health
     description: Vérification de disponibilité du service.
   - name: Users
@@ -59,6 +61,54 @@ tags:
       `API_DOCS_ENABLED` les active (par défaut hors production) ; sinon elles
       répondent `404` `ROUTE_NOT_FOUND`.
 paths:
+  /:
+    parameters:
+      - $ref: '#/components/parameters/AcceptLanguage'
+    get:
+      tags: [Root]
+      summary: Afficher le sommaire de l'API
+      description: |
+        Accueille et oriente : renvoie le nom de l'API, sa version et des liens
+        vers les routes publiques. Ne lit pas la base de données : elle répond
+        même quand `/ready` répond `503`.
+        Les liens sont des chemins depuis la racine, jamais construits à partir
+        de la requête (`Host`, `X-Forwarded-*`). `docs` et `openapi` sont
+        absents quand la documentation est désactivée (`API_DOCS_ENABLED`),
+        pour ne jamais pointer vers une `404`. Les paramètres de requête sont
+        ignorés. Seul le `message` dépend de `Accept-Language` ; `data` est
+        identique dans toutes les langues. `data` ne contient aucun autre champ
+        que ceux du schéma. Les chemins `/api` et `/api/v1` restent `404`.
+        La réponse n'est jamais mise en cache (`Cache-Control: no-store`).
+      operationId: getApiSummary
+      responses:
+        '200':
+          description: Sommaire de l'API
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiSummaryResponse'
+    head:
+      tags: [Root]
+      summary: Afficher le sommaire de l'API, sans corps
+      description: Répond comme `GET /`, sans corps (RFC 9110, section 9.3.2).
+      operationId: getApiSummaryHead
+      responses:
+        '200':
+          description: Sommaire de l'API (sans corps)
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+            Cache-Control:
+              $ref: '#/components/headers/CacheControlNoStore'
   /health:
     parameters:
       - $ref: '#/components/parameters/AcceptLanguage'
@@ -743,6 +793,46 @@ components:
         tasks:
           type: integer
           minimum: 0
+    ApiSummaryResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          required: [message, data]
+          properties:
+            message:
+              type: string
+              examples: [Welcome to the InDrive Backend API]
+            data:
+              type: object
+              additionalProperties: false
+              required: [name, version, links]
+              properties:
+                name:
+                  type: string
+                  const: InDrive Backend API
+                version:
+                  type: string
+                  description: Même valeur que `data.version` de `/health` et `info.version` de ce contrat.
+                  examples: [1.2.0]
+                links:
+                  type: object
+                  additionalProperties: false
+                  required: [health, ready]
+                  properties:
+                    docs:
+                      type: string
+                      const: /docs
+                      description: Absent quand la documentation est désactivée.
+                    openapi:
+                      type: string
+                      const: /openapi.yaml
+                      description: Absent quand la documentation est désactivée.
+                    health:
+                      type: string
+                      const: /health
+                    ready:
+                      type: string
+                      const: /ready
     HealthResponse:
       allOf:
         - $ref: '#/components/schemas/SuccessResponse'
@@ -886,7 +976,7 @@ components:
         type: string
         const: nosniff
     CacheControlNoStore:
-      description: Interdit toute mise en cache de la réponse (sondes).
+      description: Interdit toute mise en cache de la réponse (sondes et sommaire de la racine).
       schema:
         type: string
         const: no-store

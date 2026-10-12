@@ -58,6 +58,9 @@ func LoadContract() (*Contract, error) {
 	return &Contract{doc: doc, router: router, produced: map[string]bool{}}, nil
 }
 
+// Version returns info.version of the contract.
+func (c *Contract) Version() string { return c.doc.Info.Version }
+
 // QueryParameter returns the query parameter called name of an operation, declared on the
 // operation itself or on its path item (references resolved), or nil when it has none.
 func (c *Contract) QueryParameter(operationID, name string) *openapi3.Parameter {

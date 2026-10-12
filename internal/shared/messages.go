@@ -44,6 +44,7 @@ const (
 	MsgTaskDeleted            MessageKey = "TaskDeleted"
 	MsgServiceHealthy         MessageKey = "ServiceHealthy"
 	MsgServiceReady           MessageKey = "ServiceReady"
+	MsgWelcome                MessageKey = "Welcome"
 )
 
 var catalog = map[MessageKey]map[Lang]string{
@@ -77,6 +78,7 @@ var catalog = map[MessageKey]map[Lang]string{
 	MsgTaskDeleted:            {LangEnglish: "Task deleted", LangFrench: "Tâche supprimée"},
 	MsgServiceHealthy:         {LangEnglish: "Service is healthy", LangFrench: "Le service est opérationnel"},
 	MsgServiceReady:           {LangEnglish: "Service is ready", LangFrench: "Le service est prêt"},
+	MsgWelcome:                {LangEnglish: "Welcome to the InDrive Backend API", LangFrench: "Bienvenue sur l'API InDrive Backend"},
 }
 
 // Languages retourne les langues prises en charge.

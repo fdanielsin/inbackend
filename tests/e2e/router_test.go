@@ -25,12 +25,14 @@ func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 
 	assert.Equal(t, []string{
 		"DELETE /api/v1/tasks/:id",
+		"GET /",
 		"GET /api/v1/stats",
 		"GET /api/v1/users",
 		"GET /api/v1/users/:id",
 		"GET /api/v1/users/:id/tasks",
 		"GET /health",
 		"GET /ready",
+		"HEAD /",
 		"HEAD /api/v1/stats",
 		"HEAD /api/v1/users",
 		"HEAD /api/v1/users/:id",
@@ -125,7 +127,7 @@ func TestHealth_ReturnsContractBody(t *testing.T) {
 		assert.True(t, env.Success, path)
 		assert.Equal(t, "Service is healthy", env.Message, path)
 		assert.Equal(t, "ok", env.Data.Status, path)
-		assert.Equal(t, "1.2.0", env.Data.Version, path)
+		assert.Equal(t, contract.Version(), env.Data.Version, path)
 		_, err := uuid.Parse(env.Data.ID)
 		require.NoError(t, err, "id must be a UUID (%s)", path)
 		ids = append(ids, env.Data.ID)
