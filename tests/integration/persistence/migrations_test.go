@@ -19,7 +19,7 @@ import (
 )
 
 // latestMigration is the number of migrations shipped in internal/infrastructure/pgsetup/migrations.
-const latestMigration = 3
+const latestMigration = 4
 
 type migrationState struct {
 	Version int64
@@ -277,16 +277,20 @@ func TestMigrate_AcceptsPostgresqlScheme(t *testing.T) {
 	require.NoError(t, pgsetup.Migrate("postgresql://"+dsn[len("postgres://"):]))
 }
 
-// GIVEN a user with a task / WHEN the user is deleted directly in the database / THEN the foreign key refuses it (ON DELETE RESTRICT)
-func TestForeignKey_RefusesDeletingAUserWithTasks(t *testing.T) {
-	db := setupTestDB(t)
-	ownerID := createTestUser(t, db, "owner@example.com")
-	createTestTask(t, pgstore.NewTaskRepository(db), ownerID, "Keep me")
+// GIVEN a user with a task / WHEN the user is deleted directly in the database
+// THEN the foreign key cascades: the task goes with the user, in the same statement (USER-R13; was ON DELETE RESTRICT before migration 4)
+func TestForeignKey_CascadesDeletingAUserToItsTasks(t *testing.T) {
+	t.Run("USER-R13: deleting a user in SQL takes its tasks with it (happy path)", func(t *testing.T) {
+		db := setupTestDB(t)
+		ownerID := createTestUser(t, db, "owner@example.com")
+		createTestTask(t, pgstore.NewTaskRepository(db), ownerID, "Goes with its owner")
 
-	err := db.Exec("DELETE FROM user_models WHERE id = ?", ownerID).Error
+		require.NoError(t, db.Exec("DELETE FROM user_models WHERE id = ?", ownerID).Error)
 
-	require.Error(t, err)
-	assert.Equal(t, "23503", sqlState(err))
+		var remaining int64
+		require.NoError(t, db.Raw("SELECT count(*) FROM task_models").Scan(&remaining).Error)
+		assert.Zero(t, remaining)
+	})
 }
 
 // GIVEN a stored email / WHEN the same email in another case is inserted directly, bypassing the code
