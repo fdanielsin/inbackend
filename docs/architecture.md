@@ -114,7 +114,7 @@ n'existe pas non plus de package de configuration dédié : `main.go` lit
 - Ordre des middlewares : `SecurityHeaders` (`X-Content-Type-Options: nosniff` sur toute réponse, y compris préflight CORS, 404, 413 et panique : il passe avant tous les autres pour que rien ne le court-circuite), `Language` (négocie la langue, voir ci-dessous), `RequestID` (X-Request-Id repris s'il correspond à
   `[A-Za-z0-9._-]{1,64}`, sinon UUID ; logger de requête porté par le contexte),
   `AccessLog` (méthode, chemin sans query, route, statut, durée ; jamais de
-  corps ni de requête brute, prouvé par `tests/e2e/query_not_logged_test.go`), `Recover`, CORS (`CORS_ALLOWED_ORIGINS`, `*` par défaut sauf si `ENV=production`, où elle est
+  corps ni de requête brute, prouvé par `tests/e2e/query_not_logged_test.go`), `Recover`, CORS (`Access-Control-Max-Age: 600` ; `CORS_ALLOWED_ORIGINS`, `*` par défaut sauf si `ENV=production`, où elle est
   obligatoire et sans `*` ; chaque origine est validée au démarrage par
   `app.ValidateAllowedOrigins`, avant `DATABASE_URL`), `BodyLimit`
   (1 MiB exacts, avec ou sans Content-Length : `http.MaxBytesReader` ; le
@@ -143,8 +143,8 @@ de la page et reste sous `connect-src 'self'`.
 
 `httpapi.RequestValidator`, branché par `app.WithRequestValidator` après
 `BodyLimit` (le 413 passe avant), lit dans le contrat embarqué le schéma du corps
-de `POST /api/v1/users`, `POST /api/v1/tasks` et `PUT /api/v1/tasks/{id}`
-(`app.ValidatedOperations`). La validation ne dépend pas de `API_DOCS_ENABLED`.
+de `POST /api/v1/users`, `PUT /api/v1/users/{id}`, `POST /api/v1/tasks` et
+`PUT /api/v1/tasks/{id}` (`app.ValidatedOperations`). La validation ne dépend pas de `API_DOCS_ENABLED`.
 
 Le validateur est partiel volontairement. Il applique : propriété inconnue,
 casse comprise (400 `INVALID_BODY`), `null` sur une propriété facultative (400

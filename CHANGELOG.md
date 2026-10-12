@@ -6,12 +6,16 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- `DELETE /api/v1/users/{id}` supprime l'utilisateur et toutes ses tâches en une seule opération de la base : 200 avec l'enveloppe (message sans nom ni e-mail), 400 `INVALID_ID`, 404 `USER_NOT_FOUND` (aussi à la seconde suppression), 500. Avant, 405. L'e-mail du supprimé peut resservir ; son identifiant n'est jamais réattribué.
+- `PUT /api/v1/users/{id}` remplace le nom (obligatoire, mêmes règles que la création) et rend l'utilisateur tel qu'enregistré : 400 `VALIDATION_FAILED` (nom vide, d'espaces, de plus de 100 caractères, `{}` ou `null`), 400 `INVALID_BODY` pour toute autre propriété dont `email` et `id` (quelle qu'en soit la casse), 404 `USER_NOT_FOUND` sans jamais recréer l'utilisateur, 413. Le corps est vérifié avant l'identifiant. Avant, 405.
 - `GET /` (et `HEAD /`) répond 200 avec un sommaire JSON dans l'enveloppe commune : `data.name`, `data.version` et `data.links` (`docs`, `openapi`, `health`, `ready`), plus un `message` de bienvenue traduit (anglais, français). Les liens sont des chemins relatifs, `docs` et `openapi` sont absents quand la documentation est désactivée ; la réponse ne lit pas la base et n'est jamais mise en cache. Avant, la racine répondait 404 `ROUTE_NOT_FOUND` (inbackend#44).
 - Toute réponse de l'API porte `X-Content-Type-Options: nosniff`, erreurs, préflight CORS et 413 compris (avant, seulement `/docs` et `/openapi.yaml`) (inbackend#42).
 - `GET /api/v1/users/{id}/tasks?completed=true|false` ne garde que les tâches terminées ou non ; sans paramètre, toutes ; toute autre valeur donne 400 `VALIDATION_FAILED`.
 
 ### Changed
 
+- Migration `000004_task_user_cascade` : la clé étrangère `fk_task_models_user` passe à `ON DELETE CASCADE` (une instruction `ALTER TABLE`, même nom, aucune ligne modifiée ; verrou exclusif bref sur `user_models` et `task_models` à l'application, au prochain démarrage). Conséquence à connaître : un `DELETE` manuel d'un utilisateur en SQL supprime désormais ses tâches sans avertissement (avant, la base le refusait). La migration descendante remet le refus.
+- Les réponses de préflight CORS portent `Access-Control-Max-Age: 600`. Le cache du navigateur est par URL : il ne dispense pas du préflight du premier `DELETE` d'un utilisateur donné.
 - La version de l'API vient d'une seule constante (`shared.APIVersion`), lue par `GET /health` et `GET /` ; un test la compare à `info.version` du contrat (avant, une chaîne écrite à la main dans le controller de `/health`) (inbackend#44).
 - Le contrat déclare que `PUT /api/v1/tasks/{id}` répond aussi 400 `INVALID_ID` (comportement inchangé), et les tests refusent désormais un code d'erreur que la description de la réponse ne nomme pas (inbackend#42).
 - Création d'utilisateur : e-mail refusé (400 `VALIDATION_FAILED`) si la partie locale dépasse 64 caractères, commence ou finit par un point ou contient `..`, si un label dépasse 63, s'il contient `_` ou un tiret au bord, ou si le TLD n'a pas 2 à 24 lettres (ou la forme `xn--`) ; `a@b.c` n'est plus accepté. Les utilisateurs existants ne changent pas.

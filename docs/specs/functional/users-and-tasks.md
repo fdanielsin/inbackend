@@ -8,7 +8,8 @@ les tests existants.
 ## Utilisateurs
 
 - Un utilisateur possède un nom et un email non vides.
-- Un utilisateur peut être créé, listé ou récupéré par son identifiant.
+- Un utilisateur peut être créé, listé, récupéré par son identifiant, renommé (`PUT`, le nom seul : l'e-mail et l'identifiant ne changent jamais) ou supprimé avec toutes ses tâches (`DELETE`).
+- Un utilisateur absent lors d'un renommage ou d'une suppression renvoie `404 Not Found`, et un renommage ne recrée jamais un utilisateur.
 - Une création valide renvoie `201 Created`.
 - Une requête invalide renvoie `400 Bad Request`.
 - Un utilisateur absent renvoie `404 Not Found`.

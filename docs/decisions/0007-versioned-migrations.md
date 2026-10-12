@@ -62,6 +62,7 @@ fonctionnalités ont besoin de faire évoluer le schéma de façon sûre.
 | 000001 | Schéma initial (`user_models`, `task_models`, `idx_user_models_email`), identique à ce que `AutoMigrate` crée pour les modèles `pgstore`, idempotent. Pas de reprise des tables `users` et `tasks` de la 1.0.0 (règle 7). |
 | 000002 | Emails : refuse s'il existe des doublons une fois les espaces retirés et passé en minuscules ; sinon normalise les emails existants et remplace l'index par l'index unique `idx_user_models_email_lower` sur `lower(email)`. La mise en minuscules n'est pas réversible. |
 | 000003 | Clé étrangère `fk_task_models_user` (`task_models.user_id` -> `user_models.id`) et index `idx_task_models_user_id` ; refuse s'il existe des tâches orphelines. |
+| 000004 | `fk_task_models_user` passe à `ON DELETE CASCADE` (une seule instruction `ALTER TABLE`, nom conservé) ; aucune ligne modifiée ; `down` remet le refus de 000003. |
 
 Les tables s'appellent `user_models` et `task_models` (noms de GORM pour les
 modèles `pgstore`) ; la 1.0.0 utilisait `users` et `tasks` (règle 7). Un

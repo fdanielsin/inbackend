@@ -19,7 +19,7 @@
 | `id` | `uint` | clé primaire (`bigserial`) |
 | `title` | `string` | non vide à la création au niveau domaine |
 | `description` | `string` | facultatif |
-| `user_id` | `uint` | non nul à la création ; clé étrangère `fk_task_models_user` vers `user_models.id` (index `idx_task_models_user_id`) |
+| `user_id` | `uint` | non nul à la création ; clé étrangère `fk_task_models_user` vers `user_models.id`, `ON DELETE CASCADE` (index `idx_task_models_user_id`) |
 | `completed` | `bool` | valeur par défaut Go `false` |
 
 ## Persistance
@@ -33,7 +33,7 @@
 
 ## Limites connues
 
-- Pas de suppression d'utilisateur dans l'API : la clé étrangère est `RESTRICT`.
+- La clé étrangère `fk_task_models_user` est `ON DELETE CASCADE` (migration 000004) : supprimer un utilisateur supprime ses tâches dans la même instruction, y compris par un `DELETE` manuel en SQL, sans avertissement. Le nom de la contrainte est lu par le code (`pgstore/constraints.go`) : ne pas le changer. Les identifiants (`bigserial`) ne sont jamais réattribués par l'application ; seul un `TRUNCATE ... RESTART IDENTITY` ou une recréation du schéma (outillage de test) les réinitialise.
 - Pas de pagination des listes.
 - Les noms de tables `user_models` et `task_models` viennent de GORM ; un
   renommage serait une migration séparée.
