@@ -50,7 +50,7 @@ tags:
   - name: Health
     description: Vérification de disponibilité du service.
   - name: Users
-    description: Création et consultation des utilisateurs.
+    description: Création, consultation, renommage et suppression des utilisateurs.
   - name: Tasks
     description: Création, mise à jour, suppression et liste des tâches.
   - name: Statistics
@@ -329,6 +329,85 @@ paths:
           $ref: '#/components/responses/HeadUserNotFound'
         '500':
           $ref: '#/components/responses/HeadInternalServerError'
+    put:
+      tags: [Users]
+      summary: Modifier le nom d'un utilisateur
+      description: |
+        Remplace le nom d'un utilisateur existant, avec les règles de la
+        création (espaces de début et de fin retirés, non vide, 100 caractères
+        au plus comptés avant le retrait). `name` est obligatoire : un corps
+        `{}` ou `{"name": null}` répond `400` `VALIDATION_FAILED`. L'e-mail
+        et l'identifiant ne sont pas modifiables : une propriété autre que
+        `name` (dont `email` et `id`, quelle qu'en soit la casse) répond `400`
+        `INVALID_BODY` avant tout accès à la base. Le corps est vérifié avant
+        l'identifiant. Un utilisateur absent n'est jamais recréé : `404`.
+      operationId: updateUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: Utilisateur modifié ; la réponse reflète l'état réellement persisté.
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    required: [data]
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/InvalidBodyOrUserId'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '413':
+          $ref: '#/components/responses/PayloadTooLarge'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      tags: [Users]
+      summary: Supprimer un utilisateur et ses tâches
+      description: |
+        Supprime l'utilisateur et toutes ses tâches en une seule opération de
+        la base : ou bien tout disparaît, ou bien rien ne change. Répond `404`
+        si l'utilisateur n'existe pas ou a déjà été supprimé : la suppression
+        n'est donc pas idempotente côté statut HTTP. Le message ne contient ni
+        nom ni e-mail.
+      operationId: deleteUser
+      responses:
+        '200':
+          description: Utilisateur et tâches supprimés
+          headers:
+            Content-Language:
+              $ref: '#/components/headers/ContentLanguage'
+            Vary:
+              $ref: '#/components/headers/Vary'
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    required: [message]
+                    properties:
+                      message:
+                        type: string
+        '400':
+          $ref: '#/components/responses/InvalidUserId'
+        '404':
+          $ref: '#/components/responses/UserNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /api/v1/users/{id}/tasks:
     parameters:
       - $ref: '#/components/parameters/Id'
@@ -732,7 +811,7 @@ components:
         - DATABASE_UNAVAILABLE
         - INTERNAL_ERROR
       x-enumDescriptions:
-        INVALID_BODY: Corps JSON absent, mal formé, de mauvais type ou contenant une propriété inconnue (400).
+        INVALID_BODY: Corps JSON absent, mal formé, de mauvais type ou contenant une propriété inconnue, dont `email` ou `id` à la modification d'un utilisateur (400).
         INVALID_ID: Identifiant de chemin non numérique ou hors de la plage uint32 (400).
         VALIDATION_FAILED: Règle de validation violée (titre, nom ou email vide ou fait d'espaces, format d'email invalide, user_id absent, valeur trop longue, valeur invalide du paramètre `completed`) ; `error` précise laquelle (400).
         USER_NOT_FOUND: Utilisateur introuvable (404).
@@ -914,6 +993,16 @@ components:
             `a@b.c0m` (chiffre dans le TLD), une partie locale de 65
             caractères, un label de 64 caractères, un TLD de 25 lettres.
             Un email vide ou composé d'espaces est aussi refusé.
+    UpdateUserRequest:
+      type: object
+      additionalProperties: false
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Espaces de début et de fin retirés ; un nom vide ou fait d'espaces est refusé (400 `VALIDATION_FAILED`).
     CreateTaskRequest:
       type: object
       additionalProperties: false
@@ -1022,6 +1111,21 @@ components:
             $ref: '#/components/schemas/ErrorResponse'
     InvalidUserId:
       description: Identifiant utilisateur invalide (`INVALID_ID`)
+      headers:
+        Content-Language:
+          $ref: '#/components/headers/ContentLanguage'
+        Vary:
+          $ref: '#/components/headers/Vary'
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InvalidBodyOrUserId:
+      description: |
+        Corps invalide (`INVALID_BODY`), erreur de validation
+        (`VALIDATION_FAILED`) ou identifiant utilisateur invalide
+        (`INVALID_ID`) ; le corps est vérifié avant l'identifiant, donc un
+        corps invalide sur un identifiant invalide donne `INVALID_BODY`
       headers:
         Content-Language:
           $ref: '#/components/headers/ContentLanguage'
