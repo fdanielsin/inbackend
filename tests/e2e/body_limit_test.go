@@ -87,6 +87,7 @@ func TestBodyLimit_AppliesToEveryOperationWithABody(t *testing.T) {
 	for _, req := range []struct{ method, path string }{
 		{http.MethodPost, "/api/v1/tasks"},
 		{http.MethodPut, fmt.Sprintf("/api/v1/tasks/%d", task.ID)},
+		{http.MethodPut, fmt.Sprintf("/api/v1/users/%d", owner.ID)},
 	} {
 		for _, chunked := range []bool{false, true} {
 			t.Run(fmt.Sprintf("%s %s chunked=%v", req.method, req.path, chunked), func(t *testing.T) {
@@ -97,4 +98,7 @@ func TestBodyLimit_AppliesToEveryOperationWithABody(t *testing.T) {
 		}
 	}
 	assert.Equal(t, []taskJSON{task}, s.listTasks(owner.ID), "nothing may change")
+	var name string
+	require.NoError(t, s.db.Raw("SELECT name FROM user_models WHERE id = ?", owner.ID).Scan(&name).Error)
+	assert.Equal(t, "Owner", name, "a user too large to read is not renamed")
 }

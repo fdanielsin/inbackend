@@ -16,6 +16,8 @@ func TestEndpoints_DatabaseDown_Return500WithoutDetails(t *testing.T) {
 		{http.MethodPost, "/api/v1/tasks", `{"user_id":1,"title":"Buy milk"}`},
 		{http.MethodPut, "/api/v1/tasks/1", `{"completed":true}`},
 		{http.MethodDelete, "/api/v1/tasks/1", ""},
+		{http.MethodPut, "/api/v1/users/1", `{"name":"Grace"}`},
+		{http.MethodDelete, "/api/v1/users/1", ""},
 		{http.MethodGet, "/api/v1/stats", ""},
 	}
 	for _, req := range requests {

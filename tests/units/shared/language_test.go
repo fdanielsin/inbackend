@@ -85,7 +85,7 @@ var allMessageKeys = []shared.MessageKey{
 	shared.MsgTaskDeleted, shared.MsgServiceHealthy, shared.MsgServiceReady, shared.MsgWelcome,
 	shared.MsgUserNameTooLong, shared.MsgUserEmailTooLong, shared.MsgTaskTitleTooLong,
 	shared.MsgTaskDescriptionTooLong, shared.MsgTaskUserIDOutOfRange, shared.MsgUnknownField,
-	shared.MsgTaskCompletedFilter,
+	shared.MsgTaskCompletedFilter, shared.MsgUserUpdated, shared.MsgUserDeleted,
 }
 
 // GIVEN the catalogue / THEN it holds exactly the declared keys, each with a non-empty text per language,
@@ -127,6 +127,8 @@ func TestMessages_EnglishTextsAreUnchanged(t *testing.T) {
 		shared.MsgTaskUserIDOutOfRange:   "Task user_id is out of range",
 		shared.MsgUnknownField:           "Request body contains an unknown field",
 		shared.MsgTaskCompletedFilter:    "Query parameter completed must be true or false",
+		shared.MsgUserUpdated:            "User updated",
+		shared.MsgUserDeleted:            "User and their tasks deleted",
 	}
 	require.Len(t, want, len(allMessageKeys))
 	for key, text := range want {
@@ -159,6 +161,8 @@ func TestMessages_FrenchTexts(t *testing.T) {
 		shared.MsgTaskUserIDOutOfRange:   "Le user_id de la tâche est hors limites",
 		shared.MsgUnknownField:           "Le corps de la requête contient un champ inconnu",
 		shared.MsgTaskCompletedFilter:    "Le paramètre de requête completed doit valoir true ou false",
+		shared.MsgUserUpdated:            "Utilisateur mis à jour",
+		shared.MsgUserDeleted:            "Utilisateur et ses tâches supprimés",
 	}
 	require.Len(t, want, len(allMessageKeys))
 	for key, text := range want {

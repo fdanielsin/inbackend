@@ -14,7 +14,21 @@ type stubUserRepository struct {
 	getFn    func(id uint) (*users.User, error)
 	listFn   func() ([]*users.User, error)
 	countFn  func() (int64, error)
+	updateFn func(u *users.User) error
+	deleteFn func(id uint) error
 	created  []users.User
+	updated  []users.User
+	deleted  []uint
+}
+
+func (r *stubUserRepository) Update(_ context.Context, u *users.User) error {
+	r.updated = append(r.updated, *u)
+	return r.updateFn(u)
+}
+
+func (r *stubUserRepository) Delete(_ context.Context, id uint) error {
+	r.deleted = append(r.deleted, id)
+	return r.deleteFn(id)
 }
 
 func (r *stubUserRepository) Create(_ context.Context, u *users.User) (uint, error) {

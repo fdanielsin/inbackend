@@ -17,6 +17,14 @@ type Repository interface {
 	// List récupère tous les utilisateurs.
 	List(ctx context.Context) ([]*User, error)
 
+	// Update remplace le nom d'un utilisateur existant ; ErrUserNotFound si
+	// l'identifiant ne correspond à aucune ligne, sans jamais en créer une.
+	Update(ctx context.Context, user *User) error
+
+	// Delete supprime un utilisateur et toutes ses tâches en une seule
+	// opération ; ErrUserNotFound s'il n'existe pas (ou plus).
+	Delete(ctx context.Context, id uint) error
+
 	// Count retourne le nombre total d'utilisateurs.
 	Count(ctx context.Context) (int64, error)
 }

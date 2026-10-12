@@ -22,6 +22,12 @@ import (
 // maxRequestBody est la taille maximale d'un corps de requête (413 au-delà).
 const maxRequestBody int64 = 1 << 20
 
+// preflightMaxAge est la durée, en secondes, pendant laquelle un navigateur
+// garde la réponse à un préflight CORS. 600 s est le plafond de WebKit : même
+// comportement partout. Le cache est par URL : il ne dispense pas du préflight
+// du premier DELETE d'un utilisateur donné.
+const preflightMaxAge = 600
+
 // Option ajuste la configuration du routeur.
 type Option func(*routerConfig)
 
@@ -45,7 +51,7 @@ func WithAPIDocs(contract []byte) Option {
 
 // ValidatedOperations sont les opérations dont le corps JSON est validé contre
 // le contrat (voir httpapi.NewRequestValidator).
-var ValidatedOperations = []string{"POST /api/v1/users", "POST /api/v1/tasks", "PUT /api/v1/tasks/{id}"}
+var ValidatedOperations = []string{"POST /api/v1/users", "PUT /api/v1/users/{id}", "POST /api/v1/tasks", "PUT /api/v1/tasks/{id}"}
 
 // WithRequestValidator refuse les corps JSON qui violent le contrat (propriétés
 // inconnues, valeurs trop longues) ; sans cette option, aucune validation de
@@ -78,6 +84,8 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	createUserHandler := usercommands.NewCreateUserHandler(userRepo)
 	getUserHandler := userqueries.NewGetUserHandler(userRepo)
 	listUsersHandler := userqueries.NewListUsersHandler(userRepo)
+	updateUserHandler := usercommands.NewUpdateUserHandler(userRepo)
+	deleteUserHandler := usercommands.NewDeleteUserHandler(userRepo)
 
 	createTaskHandler := commands.NewCreateTaskHandler(taskRepo)
 	updateTaskHandler := commands.NewUpdateTaskHandler(taskRepo)
@@ -87,7 +95,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 
 	healthCtrl := httpapi.NewHealthController(log, databaseReadiness(db))
 	rootCtrl := httpapi.NewRootController(cfg.apiContract != nil)
-	userCtrl := httpapi.NewUserController(log, createUserHandler, getUserHandler, listUsersHandler)
+	userCtrl := httpapi.NewUserController(log, createUserHandler, getUserHandler, listUsersHandler, updateUserHandler, deleteUserHandler)
 	taskCtrl := httpapi.NewTaskController(log, createTaskHandler, updateTaskHandler, deleteTaskHandler, listUserTasksHandler)
 	statsCtrl := httpapi.NewStatsController(log, getStatsHandler)
 
@@ -105,6 +113,7 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 		AllowMethods:  []string{http.MethodGet, http.MethodHead, http.MethodPost, http.MethodPut, http.MethodDelete},
 		AllowHeaders:  []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 		ExposeHeaders: []string{echo.HeaderXRequestID},
+		MaxAge:        preflightMaxAge,
 	}))
 	e.Use(httpapi.BodyLimit(maxRequestBody))
 	if cfg.validator != nil {
@@ -117,6 +126,8 @@ func NewRouter(db *gorm.DB, opts ...Option) *echo.Echo {
 	getAndHead(e, "/api/v1/users", userCtrl.ListUsers)
 	e.POST("/api/v1/users", userCtrl.CreateUser)
 	getAndHead(e, "/api/v1/users/:id", userCtrl.GetUser)
+	e.PUT("/api/v1/users/:id", userCtrl.UpdateUser)
+	e.DELETE("/api/v1/users/:id", userCtrl.DeleteUser)
 	getAndHead(e, "/api/v1/users/:id/tasks", taskCtrl.ListUserTasks)
 	e.POST("/api/v1/tasks", taskCtrl.CreateTask)
 	e.PUT("/api/v1/tasks/:id", taskCtrl.UpdateTask)

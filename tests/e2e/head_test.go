@@ -210,7 +210,10 @@ func TestHead_AllowHeader(t *testing.T) {
 	base := liveServer(t, seededServer(t))
 
 	for _, rq := range []struct{ method, path string }{
-		{http.MethodDelete, "/health"}, {http.MethodPost, "/api/v1/users/1"}, {http.MethodPut, "/api/v1/stats"},
+		{http.MethodDelete, "/health"},
+		{http.MethodPost, "/api/v1/users/1"},
+		{http.MethodPut, "/api/v1/stats"},
+		{http.MethodPatch, "/api/v1/users/1"},
 	} {
 		t.Run(rq.method+" "+rq.path, func(t *testing.T) {
 			r := call(t, rq.method, base+rq.path, "", nil)
@@ -218,6 +221,10 @@ func TestHead_AllowHeader(t *testing.T) {
 			contract.ValidateErrorEnvelope(t, r.body)
 			assert.Contains(t, allowed(r), http.MethodGet, rq.path)
 			assert.Contains(t, allowed(r), http.MethodHead, rq.path)
+			if rq.path == "/api/v1/users/1" {
+				assert.Contains(t, allowed(r), http.MethodPut, rq.path)
+				assert.Contains(t, allowed(r), http.MethodDelete, rq.path)
+			}
 		})
 	}
 

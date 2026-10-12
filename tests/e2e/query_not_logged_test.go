@@ -67,6 +67,8 @@ func TestRequestLogs_NeverCarryTheQuery(t *testing.T) {
 			{method: http.MethodPost, path: "/api/v1/tasks?" + q, body: fmt.Sprintf(`{"user_id":%d,"title":"New"}`, owner.ID)},
 			{method: http.MethodPut, path: "/api/v1/tasks/1?" + q, body: `{"completed":true}`},
 			{method: http.MethodDelete, path: "/api/v1/tasks/1?" + q},
+			{method: http.MethodPut, path: "/api/v1/users/1?" + q, body: `{"name":"Grace"}`},
+			{method: http.MethodDelete, path: "/api/v1/users/2?" + q},
 		})
 	})
 
@@ -81,6 +83,10 @@ func TestRequestLogs_NeverCarryTheQuery(t *testing.T) {
 			get("/nope?" + q),
 			{method: http.MethodPost, path: "/health?" + q},
 			{method: http.MethodPut, path: "/api/v1/tasks/abc?" + q, body: `{"completed":true}`},
+			{method: http.MethodPut, path: "/api/v1/users/abc?" + q, body: `{"name":"Grace"}`},
+			{method: http.MethodPut, path: "/api/v1/users/999?" + q, body: `{"name":"Grace"}`},
+			{method: http.MethodDelete, path: "/api/v1/users/999?" + q},
+			{method: http.MethodDelete, path: "/api/v1/users/abc?" + q},
 			{method: http.MethodPost, path: "/api/v1/users?" + q, body: `{"name":`},
 			{method: http.MethodPost, path: "/api/v1/users?" + q, body: `{"name":"Ada","email":"ada@example.com"}`},
 		})

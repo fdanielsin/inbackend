@@ -103,3 +103,38 @@ func (r *UserRepository) Count(ctx context.Context) (int64, error) {
 	result := r.db.WithContext(ctx).Model(&UserModel{}).Count(&count)
 	return count, result.Error
 }
+
+// Update remplace le nom d'un utilisateur.
+//
+// Updates avec Select("name") n'écrit que le nom et ne crée jamais de ligne
+// (Save ferait un upsert qui recréerait un utilisateur supprimé) ; l'e-mail et
+// l'identifiant ne sont jamais écrits. RowsAffected == 0 : l'utilisateur
+// n'existe pas (ou plus, en cas de suppression concurrente).
+func (r *UserRepository) Update(ctx context.Context, u *users.User) error {
+	result := r.db.WithContext(ctx).
+		Model(&UserModel{}).
+		Where("id = ?", u.ID).
+		Select("name").
+		Updates(UserModel{Name: u.Name})
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return users.ErrUserNotFound
+	}
+	return nil
+}
+
+// Delete supprime un utilisateur ; ses tâches suivent par la clé étrangère
+// (ON DELETE CASCADE), dans la même instruction : tout ou rien, sans
+// transaction applicative. RowsAffected == 0 : il n'existe pas (ou plus).
+func (r *UserRepository) Delete(ctx context.Context, id uint) error {
+	result := r.db.WithContext(ctx).Delete(&UserModel{}, id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return users.ErrUserNotFound
+	}
+	return nil
+}

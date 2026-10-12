@@ -16,6 +16,8 @@ type UserController struct {
 	createUserHandler *commands.CreateUserHandler
 	getUserHandler    *queries.GetUserHandler
 	listUsersHandler  *queries.ListUsersHandler
+	updateUserHandler *commands.UpdateUserHandler
+	deleteUserHandler *commands.DeleteUserHandler
 	log               *slog.Logger
 }
 
@@ -25,11 +27,15 @@ func NewUserController(
 	createUserHandler *commands.CreateUserHandler,
 	getUserHandler *queries.GetUserHandler,
 	listUsersHandler *queries.ListUsersHandler,
+	updateUserHandler *commands.UpdateUserHandler,
+	deleteUserHandler *commands.DeleteUserHandler,
 ) *UserController {
 	return &UserController{
 		createUserHandler: createUserHandler,
 		getUserHandler:    getUserHandler,
 		listUsersHandler:  listUsersHandler,
+		updateUserHandler: updateUserHandler,
+		deleteUserHandler: deleteUserHandler,
 		log:               log,
 	}
 }
@@ -82,4 +88,49 @@ func (uc *UserController) ListUsers(c *echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, ""))
+}
+
+// UpdateUser gère PUT /api/v1/users/:id. Le corps est lié avant l'identifiant
+// lu : un corps invalide l'emporte sur un identifiant invalide (USER-R17). Rien
+// de personnel n'est journalisé, ni le nom ni l'ancien nom (USER-R15).
+func (uc *UserController) UpdateUser(c *echo.Context) error {
+	log := requestLogger(c, uc.log)
+	var req commands.UpdateUserRequest
+	if err := c.Bind(&req); err != nil {
+		return respondInvalidBody(c, log, err)
+	}
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		return respondInvalidID(c, log, shared.MsgInvalidUserID, idStr)
+	}
+	req.ID = uint(id)
+
+	log.Info("Updating user", slog.Uint64("id", id))
+
+	resp, err := uc.updateUserHandler.Execute(c.Request().Context(), req)
+	if err != nil {
+		return respondWithError(c, log, "Error updating user", err, slog.Uint64("id", id))
+	}
+
+	return c.JSON(http.StatusOK, shared.SuccessResponse(resp, shared.Message(requestLanguage(c), shared.MsgUserUpdated)))
+}
+
+// DeleteUser gère DELETE /api/v1/users/:id.
+func (uc *UserController) DeleteUser(c *echo.Context) error {
+	log := requestLogger(c, uc.log)
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 32)
+	if err != nil {
+		return respondInvalidID(c, log, shared.MsgInvalidUserID, idStr)
+	}
+
+	log.Info("Deleting user", slog.Uint64("id", id))
+
+	err = uc.deleteUserHandler.Execute(c.Request().Context(), commands.DeleteUserRequest{ID: uint(id)})
+	if err != nil {
+		return respondWithError(c, log, "Error deleting user", err, slog.Uint64("id", id))
+	}
+
+	return c.JSON(http.StatusOK, shared.SuccessResponseEmpty(shared.Message(requestLanguage(c), shared.MsgUserDeleted)))
 }

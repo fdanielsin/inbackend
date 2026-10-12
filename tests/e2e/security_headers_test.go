@@ -90,12 +90,18 @@ func TestSecurityHeaders_NosniffOnEveryAnswer(t *testing.T) {
 		{name: "task creation", category: "happy path", method: http.MethodPost, path: "/api/v1/tasks", body: `{"user_id":1,"title":"New"}`, status: http.StatusCreated},
 		{name: "task update", category: "happy path", method: http.MethodPut, path: "/api/v1/tasks/1", body: `{"completed":true}`, status: http.StatusOK},
 		{name: "task deletion", category: "happy path", method: http.MethodDelete, path: "/api/v1/tasks/2", status: http.StatusOK},
+		{name: "user rename", category: "happy path", method: http.MethodPut, path: "/api/v1/users/1", body: `{"name":"Ada Lovelace"}`, status: http.StatusOK},
+		{name: "user deletion", category: "happy path", method: http.MethodDelete, path: "/api/v1/users/2", status: http.StatusOK},
 		{name: "HEAD of a list", category: "happy path", method: http.MethodHead, path: "/api/v1/users", status: http.StatusOK},
 		{name: "Swagger page", category: "happy path", method: http.MethodGet, path: "/docs", status: http.StatusOK},
 		{name: "contract file", category: "happy path", method: http.MethodGet, path: "/openapi.yaml", status: http.StatusOK},
 
 		{name: "invalid user id", category: "sad path", method: http.MethodGet, path: "/api/v1/users/abc", status: http.StatusBadRequest},
 		{name: "invalid task id on update", category: "sad path", method: http.MethodPut, path: "/api/v1/tasks/abc", body: `{"completed":true}`, status: http.StatusBadRequest},
+		{name: "invalid user id on rename", category: "sad path", method: http.MethodPut, path: "/api/v1/users/abc", body: `{"name":"Ada"}`, status: http.StatusBadRequest},
+		{name: "rename with an e-mail", category: "sad path", method: http.MethodPut, path: "/api/v1/users/1", body: `{"name":"Ada","email":"a@b.co"}`, status: http.StatusBadRequest},
+		{name: "unknown user on rename", category: "sad path", method: http.MethodPut, path: "/api/v1/users/999", body: `{"name":"Ada"}`, status: http.StatusNotFound},
+		{name: "unknown user on deletion", category: "sad path", method: http.MethodDelete, path: "/api/v1/users/999", status: http.StatusNotFound},
 		{name: "malformed JSON body", category: "sad path", method: http.MethodPost, path: "/api/v1/users", body: `{"name":`, status: http.StatusBadRequest},
 		{name: "invalid e-mail", category: "sad path", method: http.MethodPost, path: "/api/v1/users", body: `{"name":"Ada","email":"ada"}`, status: http.StatusBadRequest},
 		{name: "malformed completed filter", category: "sad path", method: http.MethodGet, path: "/api/v1/users/1/tasks?completed=true;", status: http.StatusBadRequest},
@@ -107,6 +113,7 @@ func TestSecurityHeaders_NosniffOnEveryAnswer(t *testing.T) {
 		{name: "e-mail already taken", category: "sad path", method: http.MethodPost, path: "/api/v1/users", body: `{"name":"Owner","email":"owner@example.com"}`, status: http.StatusConflict},
 
 		{name: "preflight of a listed origin", category: "limit", method: http.MethodOptions, path: "/api/v1/tasks/1", headers: preflight(preflightOrigin, http.MethodPut), status: http.StatusNoContent},
+		{name: "preflight of a user deletion", category: "limit", method: http.MethodOptions, path: "/api/v1/users/1", headers: preflight(preflightOrigin, http.MethodDelete), status: http.StatusNoContent},
 		{name: "preflight of an unlisted origin", category: "limit", method: http.MethodOptions, path: "/api/v1/tasks/1", headers: preflight("https://evil.example", http.MethodPut), status: http.StatusNoContent},
 		{name: "preflight asking for a method the API does not have", category: "limit", method: http.MethodOptions, path: "/api/v1/tasks/1", headers: preflight(preflightOrigin, http.MethodPatch), status: http.StatusNoContent},
 		{name: "preflight on an unknown route", category: "limit", method: http.MethodOptions, path: "/nope", headers: preflight(preflightOrigin, http.MethodGet), status: http.StatusNoContent},
@@ -133,6 +140,8 @@ func TestSecurityHeaders_NosniffWhenTheDatabaseIsDown(t *testing.T) {
 	runNosniffCases(t, base, []nosniffCase{
 		{name: "user list with the database down", category: "exception", method: http.MethodGet, path: "/api/v1/users", status: http.StatusInternalServerError},
 		{name: "task update with the database down", category: "exception", method: http.MethodPut, path: "/api/v1/tasks/1", body: `{"completed":true}`, status: http.StatusInternalServerError},
+		{name: "user rename with the database down", category: "exception", method: http.MethodPut, path: "/api/v1/users/1", body: `{"name":"Ada"}`, status: http.StatusInternalServerError},
+		{name: "user deletion with the database down", category: "exception", method: http.MethodDelete, path: "/api/v1/users/1", status: http.StatusInternalServerError},
 		{name: "readiness probe with the database down", category: "exception", method: http.MethodGet, path: "/ready", status: http.StatusServiceUnavailable},
 		{name: "HEAD of the readiness probe with the database down", category: "exception", method: http.MethodHead, path: "/ready", status: http.StatusServiceUnavailable},
 	})

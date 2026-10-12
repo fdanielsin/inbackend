@@ -159,6 +159,13 @@ func TestLanguage_EveryResponseIsLocalized(t *testing.T) {
 		{"unknown user", http.MethodGet, "/api/v1/users/999", "", true, false},
 		{"unknown task", http.MethodDelete, "/api/v1/tasks/999", "", true, false},
 		{"create task", http.MethodPost, "/api/v1/tasks", `{"user_id":1,"title":"Buy milk"}`, true, false},
+		{"rename user", http.MethodPut, "/api/v1/users/1", `{"name":"Grace"}`, true, false},
+		{"rename user with an email", http.MethodPut, "/api/v1/users/1", `{"name":"Grace","email":"g@x.io"}`, true, false},
+		{"rename user with an empty name", http.MethodPut, "/api/v1/users/1", `{"name":" "}`, true, false},
+		{"rename unknown user", http.MethodPut, "/api/v1/users/999", `{"name":"Grace"}`, true, false},
+		{"delete user", http.MethodDelete, "/api/v1/users/1", "", true, false},
+		{"delete unknown user", http.MethodDelete, "/api/v1/users/999", "", true, false},
+		{"delete user with an invalid id", http.MethodDelete, "/api/v1/users/abc", "", true, false},
 		{"stats", http.MethodGet, "/api/v1/stats", "", true, false},
 		{"health", http.MethodGet, "/health", "", true, false},
 		{"ready", http.MethodGet, "/ready", "", true, false},
@@ -173,7 +180,7 @@ func TestLanguage_EveryResponseIsLocalized(t *testing.T) {
 			answers := map[string]response{}
 			for _, language := range []string{"en", "fr"} {
 				s := newTestServer(t)
-				if rq.name == "create task" {
+				if rq.name == "create task" || rq.name == "rename user" || rq.name == "delete user" {
 					s.createUser("Owner", "owner@example.com")
 				}
 				if rq.closeDB {

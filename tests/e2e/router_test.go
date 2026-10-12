@@ -25,6 +25,7 @@ func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 
 	assert.Equal(t, []string{
 		"DELETE /api/v1/tasks/:id",
+		"DELETE /api/v1/users/:id",
 		"GET /",
 		"GET /api/v1/stats",
 		"GET /api/v1/users",
@@ -42,6 +43,7 @@ func TestRouter_RegistersTheContractRoutes(t *testing.T) {
 		"POST /api/v1/tasks",
 		"POST /api/v1/users",
 		"PUT /api/v1/tasks/:id",
+		"PUT /api/v1/users/:id",
 	}, got)
 }
 
@@ -81,6 +83,27 @@ func TestRouter_CORSPreflightAllowsAnyOrigin(t *testing.T) {
 	assert.Equal(t, http.StatusNoContent, rec.Code)
 	assert.Equal(t, "*", rec.Header().Get(echo.HeaderAccessControlAllowOrigin))
 	assert.Equal(t, "GET,HEAD,POST,PUT,DELETE", rec.Header().Get(echo.HeaderAccessControlAllowMethods))
+}
+
+// GIVEN a browser preflight for the user routes that write / THEN PUT and DELETE are allowed and the browser may cache the answer for 600 seconds
+// (the cache is per URL: it does not help the first DELETE of a given user)
+func TestRouter_CORSPreflightOfTheUserRoutes(t *testing.T) {
+	s := newTestServer(t)
+	for _, method := range []string{http.MethodPut, http.MethodDelete} {
+		t.Run("USER-R20: the preflight of "+method+" on a user is answered and cacheable (happy path)", func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodOptions, "/api/v1/users/1", nil)
+			req.Header.Set(echo.HeaderOrigin, "http://localhost:5173")
+			req.Header.Set(echo.HeaderAccessControlRequestMethod, method)
+			req.Header.Set(echo.HeaderAccessControlRequestHeaders, "content-type")
+			rec := httptest.NewRecorder()
+
+			s.e.ServeHTTP(rec, req)
+
+			assert.Equal(t, http.StatusNoContent, rec.Code)
+			assert.Contains(t, rec.Header().Get(echo.HeaderAccessControlAllowMethods), method)
+			assert.Equal(t, "600", rec.Header().Get(echo.HeaderAccessControlMaxAge))
+		})
+	}
 }
 
 // GIVEN a simple cross-origin request / THEN the response carries the CORS origin header

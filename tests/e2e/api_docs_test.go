@@ -200,7 +200,7 @@ func TestAPIDocs_RoutesExistOnlyWithTheOption(t *testing.T) {
 			requireError(t, r, http.StatusNotFound, "ROUTE_NOT_FOUND", "Route not found")
 		})
 	}
-	assert.Len(t, routes(without), 18)
+	assert.Len(t, routes(without), 20)
 	assert.ElementsMatch(t, append(routes(without), "GET /docs", "GET /openapi.yaml", "HEAD /docs", "HEAD /openapi.yaml"), routes(with))
 }
 

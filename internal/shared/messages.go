@@ -39,6 +39,8 @@ const (
 	MsgInvalidRequest         MessageKey = "InvalidRequest"
 	MsgDatabaseDown           MessageKey = "DatabaseUnavailable"
 	MsgUserCreated            MessageKey = "UserCreated"
+	MsgUserUpdated            MessageKey = "UserUpdated"
+	MsgUserDeleted            MessageKey = "UserDeleted"
 	MsgTaskCreated            MessageKey = "TaskCreated"
 	MsgTaskUpdated            MessageKey = "TaskUpdated"
 	MsgTaskDeleted            MessageKey = "TaskDeleted"
@@ -73,6 +75,8 @@ var catalog = map[MessageKey]map[Lang]string{
 	MsgInvalidRequest:         {LangEnglish: "Invalid request", LangFrench: "Requête invalide"},
 	MsgDatabaseDown:           {LangEnglish: "Database unavailable", LangFrench: "Base de données indisponible"},
 	MsgUserCreated:            {LangEnglish: "User created", LangFrench: "Utilisateur créé"},
+	MsgUserUpdated:            {LangEnglish: "User updated", LangFrench: "Utilisateur mis à jour"},
+	MsgUserDeleted:            {LangEnglish: "User and their tasks deleted", LangFrench: "Utilisateur et ses tâches supprimés"},
 	MsgTaskCreated:            {LangEnglish: "Task created", LangFrench: "Tâche créée"},
 	MsgTaskUpdated:            {LangEnglish: "Task updated", LangFrench: "Tâche mise à jour"},
 	MsgTaskDeleted:            {LangEnglish: "Task deleted", LangFrench: "Tâche supprimée"},
