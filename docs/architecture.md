@@ -216,9 +216,10 @@ de `app` sauf `main.go` et les tests E2E.
 | Commands | `CreateUser`, `CreateTask`, `UpdateTask`, `DeleteTask` |
 | Queries | `GetUser`, `ListUsers`, `ListUserTasks`, `GetStats` |
 
-`GET /health` (vivacité, sans base) et `GET /ready` (disponibilité : la base
-répond sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`) sont servis par
-`HealthController` sans command ni query : ils ne passent pas par la couche
+`GET /` (sommaire : nom, version, liens, sans base, servi par
+`RootController`), `GET /health` (vivacité, sans base) et `GET /ready` (disponibilité : la base
+répond sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`) sont servis sans
+command ni query : ils ne passent pas par la couche
 application. Leurs réponses portent `Cache-Control: no-store` et, réussies,
 leurs lignes d'accès sont journalisées en Debug. Pour ajouter un endpoint :
 [`adding-an-endpoint.md`](./adding-an-endpoint.md).

@@ -171,8 +171,10 @@ par une PR de release `develop` vers `main`, CI verte.
 
 Un tag `v*` lance toute la CI puis `publish-image` : l'image reçoit les tags sha
 complet et `v1.2.0` (pas `develop`). Le push de `main` lance la CI sans rien
-publier. Aligner la date de la section du CHANGELOG, `info.version` du contrat et
-la `version` de `GET /health` sur le tag avant de le poser.
+publier. Aligner la date de la section du CHANGELOG, `info.version` du contrat (et son
+exemple dans `HealthResponse` et `ApiSummaryResponse`) et `shared.APIVersion`
+(`internal/shared/version.go`, lue par `GET /health` et `GET /`) sur le tag
+avant de le poser ; un test refuse que le contrat et la constante diffèrent.
 
 ## Docker Compose
 
@@ -204,6 +206,7 @@ et n'est pas faite pour être exposée en production.
 
 ## Sondes
 
+- `GET /` : sommaire (nom, version, liens), sans interroger la base ;
 - `GET /health` : vivacité, sans interroger la base ;
 - `GET /ready` : disponibilité, la base doit répondre en moins de 2 s, sinon 503
   `DATABASE_UNAVAILABLE`.
