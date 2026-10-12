@@ -217,11 +217,13 @@ de `app` sauf `main.go` et les tests E2E.
 | Queries | `GetUser`, `ListUsers`, `ListUserTasks`, `GetStats` |
 
 `GET /` (sommaire : nom, version, liens, sans base, servi par
-`RootController`), `GET /health` (vivacité, sans base) et `GET /ready` (disponibilité : la base
-répond sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`) sont servis sans
-command ni query : ils ne passent pas par la couche
-application. Leurs réponses portent `Cache-Control: no-store` et, réussies,
-leurs lignes d'accès sont journalisées en Debug. Pour ajouter un endpoint :
+`RootController`), `GET /health` (vivacité, sans base) et `GET /ready`
+(disponibilité : la base répond sous 2 s, sinon 503 `DATABASE_UNAVAILABLE`)
+sont servis sans command ni query : ils ne passent pas par la couche
+application. Leurs réponses portent `Cache-Control: no-store`. Seules les
+lignes d'accès réussies de `/health` et `/ready` (`probeRoutes`) sont
+journalisées en Debug ; celles de `/` sortent en Info, comme les autres routes.
+Pour ajouter un endpoint :
 [`adding-an-endpoint.md`](./adding-an-endpoint.md).
 
 ## Éléments explicitement exclus
