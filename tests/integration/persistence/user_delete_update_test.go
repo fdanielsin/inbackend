@@ -102,6 +102,8 @@ func TestUserRepository_Delete_IsAllOrNothing(t *testing.T) {
 			IF OLD.title LIKE 'Task 2 %' THEN RAISE EXCEPTION 'simulated failure'; END IF;
 			RETURN OLD;
 		END $$ LANGUAGE plpgsql`).Error)
+	// the database is shared by the whole package: the failure must not outlive this test
+	t.Cleanup(func() { _ = db.Exec("DROP FUNCTION IF EXISTS fail_on_second_task() CASCADE").Error })
 	require.NoError(t, db.Exec("CREATE TRIGGER fail_second BEFORE DELETE ON task_models FOR EACH ROW EXECUTE FUNCTION fail_on_second_task()").Error)
 
 	t.Run("USER-R13: a failure while deleting a task leaves the user and all its tasks (exception)", func(t *testing.T) {

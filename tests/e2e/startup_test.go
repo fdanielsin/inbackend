@@ -52,6 +52,7 @@ func runUntilExit(t *testing.T, bin string, env []string) (int, string) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, bin) //nolint:gosec // G204: runs the binary built by buildServer
 	cmd.Env = env
+	cmd.WaitDelay = 5 * time.Second
 	out, err := cmd.CombinedOutput()
 	require.NoError(t, ctx.Err(), "the server was expected to stop by itself")
 	var exitErr *exec.ExitError
@@ -136,7 +137,7 @@ func TestStartup_ServesHealthOnConfiguredPort(t *testing.T) {
 	require.NoError(t, err)
 	var status int
 	require.Eventually(t, func() bool {
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := callClient.Do(req)
 		if err != nil {
 			return false
 		}
@@ -198,7 +199,7 @@ func TestStartup_AcceptsPostgresqlScheme(t *testing.T) {
 	})
 
 	require.Eventually(t, func() bool {
-		resp, err := http.Get("http://127.0.0.1:" + port + "/health") //nolint:noctx // polling a local test server
+		resp, err := callClient.Get("http://127.0.0.1:" + port + "/health") //nolint:noctx // polling a local test server
 		if err != nil {
 			return false
 		}

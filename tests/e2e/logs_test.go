@@ -51,7 +51,7 @@ func postJSON(t *testing.T, url, body string) int {
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, url, strings.NewReader(body))
 	require.NoError(t, err)
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := callClient.Do(req)
 	require.NoError(t, err)
 	require.NoError(t, resp.Body.Close())
 	return resp.StatusCode
@@ -75,7 +75,7 @@ func TestServerOutput_NeverContainsPersonalData(t *testing.T) {
 	})
 	base := "http://127.0.0.1:" + port
 	require.Eventually(t, func() bool {
-		resp, err := http.Get(base + "/health") //nolint:noctx // polling a local test server
+		resp, err := callClient.Get(base + "/health") //nolint:noctx // polling a local test server
 		if err != nil {
 			return false
 		}

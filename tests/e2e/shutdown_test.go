@@ -39,7 +39,7 @@ func startServer(t *testing.T, settings ...string) *runningServer {
 	t.Cleanup(func() { _ = s.cmd.Process.Kill() })
 
 	require.Eventually(t, func() bool {
-		resp, err := http.Get("http://" + s.addr + "/health") //nolint:noctx // polling a local test server
+		resp, err := callClient.Get("http://" + s.addr + "/health") //nolint:noctx // polling a local test server
 		if err != nil {
 			return false
 		}
@@ -134,7 +134,7 @@ func TestStartup_CORSAllowedOriginsFromEnvironment(t *testing.T) {
 			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, "http://"+s.addr+"/health", nil)
 			require.NoError(t, err)
 			req.Header.Set("Origin", origin)
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := callClient.Do(req)
 			require.NoError(t, err)
 			_ = resp.Body.Close()
 

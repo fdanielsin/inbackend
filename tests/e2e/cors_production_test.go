@@ -30,7 +30,7 @@ func allowedOrigin(t *testing.T, addr, origin string) string {
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+addr+"/health", nil)
 	require.NoError(t, err)
 	req.Header.Set("Origin", origin)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := callClient.Do(req)
 	require.NoError(t, err)
 	require.NoError(t, resp.Body.Close())
 	return resp.Header.Get("Access-Control-Allow-Origin")

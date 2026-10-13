@@ -211,7 +211,7 @@ func docsStatus(t *testing.T, settings ...string) (int, []byte) {
 	server := startServer(t, settings...)
 	req, err := http.NewRequestWithContext(t.Context(), http.MethodGet, "http://"+server.addr+"/openapi.yaml", nil)
 	require.NoError(t, err)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := callClient.Do(req)
 	require.NoError(t, err)
 	spec, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)

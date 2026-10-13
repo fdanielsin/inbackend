@@ -42,7 +42,7 @@ func (tc nosniffCase) send(t *testing.T, base string) exchange {
 	for name, value := range tc.headers {
 		req.Header.Set(name, value)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := callClient.Do(req)
 	require.NoError(t, err)
 	read, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)

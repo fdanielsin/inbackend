@@ -47,8 +47,13 @@ func StartPostgresOnHostPort(hostPort string) *Postgres {
 // TestMain. They run before and after m.Run, outside the window of -test.timeout, and the
 // provider's client does not always honour a context: a daemon that accepts the connection and
 // never answers blocked the binary for ever. The wait is therefore abandoned, not cancelled.
+//
+// The start bound is 5 minutes to leave room for a first image pull (Podman). The abandoned
+// goroutine may still create the container after the bound: with Ryuk disabled
+// (TESTCONTAINERS_RYUK_DISABLED=true) nothing removes it, so after a failure caused by this bound,
+// look for an orphan postgres container in the provider.
 const (
-	containerStartBound = 2 * time.Minute
+	containerStartBound = 5 * time.Minute
 	containerStopBound  = time.Minute
 )
 

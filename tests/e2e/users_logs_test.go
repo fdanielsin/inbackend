@@ -54,7 +54,7 @@ func TestServerOutput_UserLifecycleNeverContainsPersonalData(t *testing.T) {
 	})
 	base := "http://127.0.0.1:" + port
 	require.Eventually(t, func() bool {
-		resp, err := http.Get(base + "/health") //nolint:noctx // polling a local test server
+		resp, err := callClient.Get(base + "/health") //nolint:noctx // polling a local test server
 		if err != nil {
 			return false
 		}

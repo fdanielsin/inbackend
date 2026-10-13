@@ -289,7 +289,7 @@ func TestLanguage_RealBinaryAnswersInFrench(t *testing.T) {
 	require.NoError(t, err)
 	req.Header.Set(headerAcceptLanguage, "fr-FR,fr;q=0.9,en;q=0.5")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := callClient.Do(req)
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = resp.Body.Close() })
 

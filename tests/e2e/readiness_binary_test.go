@@ -15,7 +15,7 @@ func getStatus(t *testing.T, url string) int {
 	t.Helper()
 	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, url, nil)
 	require.NoError(t, err)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := callClient.Do(req)
 	require.NoError(t, err)
 	_ = resp.Body.Close()
 	return resp.StatusCode

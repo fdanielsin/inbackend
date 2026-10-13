@@ -301,7 +301,7 @@ func TestRequestValidation_DoesNotDependOnTheHost(t *testing.T) {
 			require.NoError(t, err)
 			req.Host = host
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-			resp, err := http.DefaultClient.Do(req)
+			resp, err := callClient.Do(req)
 			require.NoError(t, err)
 			body, err := io.ReadAll(resp.Body)
 			require.NoError(t, err)
