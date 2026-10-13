@@ -33,6 +33,7 @@ func startServer(t *testing.T, settings ...string) *runningServer {
 	s.cmd.Env = serverEnv(append([]string{"DATABASE_URL=" + pg.NewEmptyDatabase(t), "PORT=" + port}, settings...)...)
 	s.cmd.Stdout = s.output
 	s.cmd.Stderr = s.output
+	s.cmd.WaitDelay = 5 * time.Second // the server is killed on cleanup: never wait on a pipe a child keeps open
 	require.NoError(t, s.cmd.Start())
 	go func() { s.exited <- s.cmd.Wait() }()
 	t.Cleanup(func() { _ = s.cmd.Process.Kill() })

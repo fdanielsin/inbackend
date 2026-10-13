@@ -124,6 +124,7 @@ func TestStartup_ServesHealthOnConfiguredPort(t *testing.T) {
 	port := freePort(t)
 	cmd := exec.CommandContext(t.Context(), buildServer(t)) //nolint:gosec // G204: runs the binary built by buildServer
 	cmd.Env = serverEnv("DATABASE_URL="+pg.DSN, "PORT="+port)
+	cmd.WaitDelay = 5 * time.Second // the server is killed on cleanup: never wait on a pipe a child keeps open
 	require.NoError(t, cmd.Start())
 	t.Cleanup(func() {
 		_ = cmd.Process.Kill()
@@ -189,6 +190,7 @@ func TestStartup_AcceptsPostgresqlScheme(t *testing.T) {
 	dsn := "postgresql://" + strings.TrimPrefix(pg.NewEmptyDatabase(t), "postgres://")
 	cmd := exec.CommandContext(t.Context(), buildServer(t)) //nolint:gosec // G204: runs the binary built by buildServer
 	cmd.Env = serverEnv("DATABASE_URL="+dsn, "PORT="+port)
+	cmd.WaitDelay = 5 * time.Second // the server is killed on cleanup: never wait on a pipe a child keeps open
 	require.NoError(t, cmd.Start())
 	t.Cleanup(func() {
 		_ = cmd.Process.Kill()

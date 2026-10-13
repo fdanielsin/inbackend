@@ -46,6 +46,7 @@ func TestServerOutput_UserLifecycleNeverContainsPersonalData(t *testing.T) {
 	cmd.Env = serverEnv("DATABASE_URL="+pg.DSN, "PORT="+port)
 	cmd.Stdout = output
 	cmd.Stderr = output
+	cmd.WaitDelay = 5 * time.Second // the server is killed on cleanup: never wait on a pipe a child keeps open
 	require.NoError(t, cmd.Start())
 	t.Cleanup(func() {
 		_ = cmd.Process.Kill()

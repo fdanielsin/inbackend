@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/fdanielsin/inbackend/internal/app"
 	"github.com/labstack/echo/v5"
@@ -32,6 +33,10 @@ func liveServer(t *testing.T, s *testServer) string {
 	return server.URL
 }
 
+// callClient bounds every exchange with the real binary: a server that stops answering fails
+// the test within seconds instead of waiting for -test.timeout.
+var callClient = &http.Client{Timeout: 30 * time.Second}
+
 func call(t *testing.T, method, url, body string, headers map[string]string) exchange {
 	t.Helper()
 	req, err := http.NewRequestWithContext(t.Context(), method, url, strings.NewReader(body))
@@ -42,7 +47,7 @@ func call(t *testing.T, method, url, body string, headers map[string]string) exc
 	for name, value := range headers {
 		req.Header.Set(name, value)
 	}
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := callClient.Do(req)
 	require.NoError(t, err)
 	read, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)

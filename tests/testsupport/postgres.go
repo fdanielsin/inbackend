@@ -43,7 +43,27 @@ func StartPostgresOnHostPort(hostPort string) *Postgres {
 	return startPostgres(hostPort)
 }
 
+// containerStartBound and containerStopBound cap the calls to the container provider made from
+// TestMain. They run before and after m.Run, outside the window of -test.timeout, and the
+// provider's client does not always honour a context: a daemon that accepts the connection and
+// never answers blocked the binary for ever. The wait is therefore abandoned, not cancelled.
+const (
+	containerStartBound = 2 * time.Minute
+	containerStopBound  = time.Minute
+)
+
 func startPostgres(hostPort string) *Postgres {
+	started := make(chan *Postgres, 1)
+	go func() { started <- doStartPostgres(hostPort) }()
+	select {
+	case pg := <-started:
+		return pg
+	case <-time.After(containerStartBound):
+		return &Postgres{startErr: fmt.Errorf("PostgreSQL container did not start within %s", containerStartBound)}
+	}
+}
+
+func doStartPostgres(hostPort string) *Postgres {
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
 		Image:        "postgres:16-alpine",
@@ -104,8 +124,17 @@ func (p *Postgres) Restart(ctx context.Context) error {
 
 // Terminate stops the container, if it was created.
 func (p *Postgres) Terminate() {
-	if p.container != nil {
+	if p.container == nil {
+		return
+	}
+	done := make(chan struct{})
+	go func() {
 		_ = p.container.Terminate(context.Background())
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(containerStopBound):
 	}
 }
 
