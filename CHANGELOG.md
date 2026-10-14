@@ -4,6 +4,12 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+> **À vérifier avant de mettre à jour (de 1.2.0 vers 1.3.0).**
+>
+> - Migration `000004_task_user_cascade` : appliquée au prochain démarrage, elle prend un verrou exclusif bref sur `user_models` et `task_models` (une instruction `ALTER TABLE`, aucune ligne modifiée). Ensuite, un `DELETE` SQL manuel d'un utilisateur supprime aussi ses tâches, sans avertissement (avant, la base le refusait). Sauvegarder la base avant ; la migration descendante rétablit le refus.
+> - Création d'utilisateur : le contrôle d'e-mail est plus strict. Sont refusés (400 `VALIDATION_FAILED`) `a@b.c` (TLD d'une lettre), `q..x@b.co`, `.q@b.co`, `a@b_c.com` ; les utilisateurs déjà en base ne changent pas. Vérifier que les clients qui créent des utilisateurs n'envoient pas de telles adresses.
+> - Nouvelles routes `PUT /api/v1/users/{id}` (renommer) et `DELETE /api/v1/users/{id}` (supprimer l'utilisateur et toutes ses tâches), **sans authentification** : tout client qui joint l'API peut renommer ou supprimer n'importe quel utilisateur. Avec `CORS_ALLOWED_ORIGINS=*` (valeur par défaut hors `ENV=production`), toute page web le peut aussi ; en production, la liste d'origines reste obligatoire. Risque accepté par l'utilisateur (`docs/security.md`, SEC-R06) : ne pas exposer l'API hors d'un réseau de confiance.
+
 ### Added
 
 - `DELETE /api/v1/users/{id}` supprime l'utilisateur et toutes ses tâches en une seule opération de la base : 200 avec l'enveloppe (message sans nom ni e-mail), 400 `INVALID_ID`, 404 `USER_NOT_FOUND` (aussi à la seconde suppression), 500. Avant, 405. L'e-mail du supprimé peut resservir ; son identifiant n'est jamais réattribué.
