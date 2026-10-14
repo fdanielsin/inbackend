@@ -4,6 +4,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-10-14
+
 > **À vérifier avant de mettre à jour (de 1.2.0 vers 1.3.0).**
 >
 > - Migration `000004_task_user_cascade` : appliquée au prochain démarrage, elle prend un verrou exclusif bref sur `user_models` et `task_models` (une instruction `ALTER TABLE`, aucune ligne modifiée). Ensuite, un `DELETE` SQL manuel d'un utilisateur supprime aussi ses tâches, sans avertissement (avant, la base le refusait). Sauvegarder la base avant ; la migration descendante rétablit le refus.
@@ -148,7 +150,8 @@ Format basé sur [Keep a Changelog 1.1.0](https://keepachangelog.com/fr/1.1.0/).
 
 - Endpoint de statistiques agrégées.
 
-[Unreleased]: https://github.com/fdanielsin/inbackend/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/fdanielsin/inbackend/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/fdanielsin/inbackend/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/fdanielsin/inbackend/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/fdanielsin/inbackend/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/fdanielsin/inbackend/releases/tag/v1.0.0
